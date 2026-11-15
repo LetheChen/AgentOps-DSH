@@ -1,0 +1,55 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/agentops/dag/README.md
+/:
+  en: 31748ca9d0ca655a
+  zh: 44cf97727bb03871
+/agentops-dsh-dag:
+  en: 9d35f5e7a7278111
+  zh: 8001f94dedf36a57
+/agentops-dsh-dag/summary:
+  en: c3aa8923bc1efe9f
+  zh: 4fea9e4b481bd4c6
+/agentops-dsh-dag/table-of-contents:
+  en: b563e4ec4727d0de
+  zh: 45ad74d8dcb4b58c
+/agentops-dsh-dag/use-this-package:
+  en: d2a6d354b40b9c41
+  zh: e5d52bb6b358bd32
+/agentops-dsh-dag/use-this-package/model-facing-tools:
+  en: fccd05f58e0c1ef7
+  zh: 11ebdb12c5853cb2
+/agentops-dsh-dag/use-this-package/run-attribution:
+  en: 4b3f9b6ea4d52625
+  zh: eaf352dba1652d3c
+/agentops-dsh-dag/use-this-package/workflow-editor-routes:
+  en: ce8ccbc5b6da5461
+  zh: 0c84e023bfa7764b
+/agentops-dsh-dag/use-this-package/run-history-routes:
+  en: ffd53eb352c34a4c
+  zh: ca9aa658e62fa223
+/agentops-dsh-dag/use-this-package/node-rerun-route:
+  en: 9ed43e67288e89dc
+  zh: 8f7f5da17a48c644
+/agentops-dsh-dag/use-this-package/collaboration-activity-projection:
+  en: fbc2d928ba616dfe
+  zh: f15e2478fc3d7e5f
+/agentops-dsh-dag/understand-the-implementation:
+  en: b563ea737f84765a
+  zh: 19f532720ba66a99
+/agentops-dsh-dag/further-exploration:
+  en: 9de3e7fb7541a431
+  zh: 32c6a6c73acafd70
+/agentops-dsh-dag/model-experience:
+  en: f8f7ca7fc6c5e449
+  zh: 5e672bf8e012414e
+/agentops-dsh-dag/model-experience/kv-cache-effect:
+  en: e35dc7f542cb4096
+  zh: 1a72d649852a1d85
+/agentops-dsh-dag/known-limitations-and-deferred-work:
+  en: 0a42c54a4885d65e
+  zh: e4eeca64f552ceca
+/agentops-dsh-dag/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 3bb0c20c93f16f98

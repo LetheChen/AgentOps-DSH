@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>03 · AgentOps 治理边界</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="styles.css">
+<style>
+  .gov-page{height:100vh;overflow:hidden}
+  .gov-side-head{display:flex;flex-direction:column;align-items:flex-end;gap:9px;flex:0 0 auto;max-width:650px}
+  .gov-side-head .lede{max-width:640px}
+  .receipt{display:none;align-items:center;gap:7px;padding:5px 9px;border-radius:7px;border:1px solid rgba(255,180,84,.32);background:rgba(255,180,84,.08);font:9px var(--mono);color:#ffcf8f;max-width:500px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .receipt.show{display:flex}.receipt i{width:5px;height:5px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber);font-style:normal;flex:0 0 auto}
+  .gov-chain{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--edge);border:1px solid var(--edge);border-radius:9px;overflow:hidden;flex:0 0 auto}
+  .chain{display:flex;align-items:center;gap:8px;min-width:0;padding:8px 11px;background:rgba(8,13,17,.92);border:0;text-align:left;cursor:pointer;color:var(--dim);transition:.18s}
+  .chain:hover,.chain.on{background:rgba(57,215,255,.065)}.chain b{font:8px var(--mono);color:var(--dimmer)}.chain span{min-width:0;display:flex;flex-direction:column;gap:2px}.chain strong{font-size:10px;font-weight:530;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.chain small{font:7.5px var(--mono);color:var(--dimmer);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.chain.on strong{color:var(--cyan)}
+  .gov-main{display:grid;grid-template-columns:minmax(0,1.43fr) minmax(365px,.77fr);gap:13px;flex:1;min-height:0}
+  .guard-grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:11px;min-height:0}
+  .guard-card{--accent:var(--cyan);position:relative;display:flex;flex-direction:column;min-height:0;overflow:hidden;border:1px solid var(--edge);border-radius:11px;background:linear-gradient(180deg,rgba(12,18,23,.92),rgba(7,11,14,.88));cursor:pointer;transition:border-color .2s,box-shadow .2s,transform .2s;outline:none;text-align:left;padding:0}
+  .guard-card:hover,.guard-card:focus-visible{border-color:color-mix(in srgb,var(--accent) 42%,transparent);transform:translateY(-1px)}
+  .guard-card.active{border-color:color-mix(in srgb,var(--accent) 58%,transparent);box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 0 28px color-mix(in srgb,var(--accent) 10%,transparent)}
+  .guard-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:linear-gradient(180deg,transparent,var(--accent),transparent);opacity:.58}
+  .guard-card::after{content:"";position:absolute;right:-80px;top:-100px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--accent) 9%,transparent),transparent 68%);pointer-events:none}
+  .guard-card[data-key="ownership"]{--accent:var(--teal)}
+  .guard-card[data-key="data"]{--accent:var(--amber)}
+  .guard-card[data-key="limits"]{--accent:var(--red)}
+  .g-head{position:relative;z-index:1;display:flex;align-items:flex-start;gap:9px;padding:11px 13px 9px;border-bottom:1px solid var(--edge)}
+  .g-no{display:grid;place-items:center;width:24px;height:24px;flex:0 0 auto;border-radius:6px;border:1px solid color-mix(in srgb,var(--accent) 37%,transparent);background:color-mix(in srgb,var(--accent) 8%,transparent);font:9px var(--mono);color:var(--accent)}
+  .g-title{min-width:0;flex:1}.g-title h2{font-size:13px;font-weight:560;line-height:1.25}.g-title small{display:block;margin-top:3px;font:7.5px var(--mono);letter-spacing:.08em;color:var(--dimmer);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .g-badge{font:7.5px var(--mono);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 27%,transparent);background:color-mix(in srgb,var(--accent) 6%,transparent);border-radius:999px;padding:2px 6px;white-space:nowrap}
+  .g-body{position:relative;z-index:1;display:flex;flex-direction:column;gap:7px;padding:9px 13px 11px;flex:1;min-height:0}
+  .g-note{font-size:9.5px;line-height:1.55;color:var(--dim)}.g-note b{color:#c2d7e1;font-weight:550}.g-note code{font:8.5px var(--mono);color:var(--accent)}
+  .boundary{display:grid;grid-template-columns:1fr 15px 1fr;align-items:stretch;gap:4px}
+  .boundary-box{min-width:0;border:1px solid var(--edge);border-radius:6px;padding:6px 7px;background:rgba(224,240,250,.025)}
+  .boundary-box span{display:block;font:6.5px var(--mono);letter-spacing:.07em;color:var(--dimmer)}.boundary-box b{display:block;margin-top:3px;font-size:8.5px;font-weight:520;color:#bcd1dc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.boundary-box em{display:block;margin-top:3px;font:7px var(--mono);font-style:normal;color:var(--dimmer);line-height:1.35}.boundary-box.hot{border-color:color-mix(in srgb,var(--accent) 26%,transparent);background:color-mix(in srgb,var(--accent) 4%,transparent)}.boundary-box.hot b{color:var(--accent)}.boundary-arrow{display:grid;place-items:center;color:var(--dimmer);font:10px var(--mono)}
+  .rules{display:flex;flex-direction:column;gap:3px}.rule{display:flex;align-items:flex-start;gap:6px;min-width:0;font-size:8.4px;line-height:1.45;color:var(--dim)}.rule i{display:grid;place-items:center;width:12px;height:12px;flex:0 0 auto;border-radius:50%;border:1px solid color-mix(in srgb,var(--accent) 25%,transparent);font:7px var(--mono);font-style:normal;color:var(--accent)}.rule b{font-weight:550;color:#bdcfd8}.rule code{font:8px var(--mono);color:var(--accent)}
+  .g-foot{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:6px;border-top:1px solid rgba(224,240,250,.06);font:7.5px var(--mono);color:var(--dimmer)}.g-foot code{color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.g-foot span{flex:0 0 auto;color:var(--accent)}
+  .gov-right{display:grid;grid-template-rows:minmax(0,1fr) auto;gap:10px;min-height:0}
+  .evidence{display:flex;flex-direction:column;min-height:0}.ev-body{flex:1;min-height:0;overflow:auto;padding:12px 13px}.ev-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.ev-top h2{font-size:15px;font-weight:560;line-height:1.3}.ev-top small{display:block;margin-top:4px;font:8px var(--mono);color:var(--dimmer)}.ev-badge{flex:0 0 auto;font:7.5px var(--mono);padding:3px 6px;border-radius:4px;border:1px solid rgba(57,215,255,.28);background:rgba(57,215,255,.06);color:var(--cyan)}
+  .ev-summary{margin-top:9px;font-size:9.5px;line-height:1.6;color:var(--dim)}.ev-summary b{color:#c3d7df;font-weight:550}.ev-summary code{font:8.5px var(--mono);color:var(--teal)}
+  .ev-label{margin-top:11px;font:7px var(--mono);letter-spacing:.1em;color:var(--dimmer)}
+  .ev-rules{display:flex;flex-direction:column;gap:5px;margin-top:5px}.ev-rule{display:grid;grid-template-columns:16px minmax(0,1fr);gap:6px;font-size:8.6px;line-height:1.48;color:var(--dim)}.ev-rule i{display:grid;place-items:center;width:14px;height:14px;border-radius:50%;border:1px solid rgba(57,215,255,.23);font:6.5px var(--mono);font-style:normal;color:var(--cyan)}.ev-rule b{color:#bfd1da;font-weight:550}.ev-rule code{font:8px var(--mono);color:var(--teal)}
+  .ev-paths{display:flex;flex-direction:column;gap:4px;margin-top:6px}.ev-paths code{font:7.5px/1.45 var(--mono);color:var(--dimmer);border-left:1px solid rgba(57,215,255,.25);padding-left:6px;word-break:break-all}
+  .ev-limit{margin-top:10px;padding:7px 8px;border:1px solid rgba(255,180,84,.2);border-radius:6px;background:rgba(255,180,84,.045);font-size:8.5px;line-height:1.5;color:#b99c72}.ev-limit b{color:var(--amber);font-weight:550}
+  .health{display:flex;flex-direction:column}.health-body{padding:10px 12px 11px}.health-head{display:flex;align-items:flex-start;justify-content:space-between;gap:9px}.health-head h2{font-size:12px;font-weight:560}.health-head p{margin-top:3px;font-size:8.2px;line-height:1.45;color:var(--dimmer)}.sim-pill{font:7px var(--mono);color:var(--amber);border:1px solid rgba(255,180,84,.3);background:rgba(255,180,84,.06);border-radius:999px;padding:2px 6px;white-space:nowrap}
+  .checks{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:8px}.check{display:flex;align-items:center;gap:5px;min-width:0;padding:5px 6px;border:1px solid var(--edge);border-radius:5px;background:rgba(224,240,250,.02);cursor:pointer;text-align:left;transition:.15s}.check:hover,.check:focus-visible{border-color:rgba(57,215,255,.32)}.check .tick{width:12px;height:12px;display:grid;place-items:center;border-radius:50%;border:1px solid var(--edge);font:8px var(--mono);color:var(--dimmer);flex:0 0 auto}.check .lbl{min-width:0}.check b{display:block;font-size:8px;font-weight:520;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.check span{display:block;margin-top:1px;font:6.8px var(--mono);color:var(--dimmer);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.check.running{border-color:rgba(255,180,84,.36);background:rgba(255,180,84,.05)}.check.running .tick{color:var(--amber)}.check.ok{border-color:rgba(87,224,139,.24);background:rgba(87,224,139,.04)}.check.ok .tick{color:var(--green)}.check.ok .verdict{color:var(--green)}
+  .health-bottom{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:9px;margin-top:8px;padding-top:8px;border-top:1px solid var(--edge)}.gauge{--p:0;position:relative;width:38px;height:38px;border-radius:50%;background:conic-gradient(var(--green) calc(var(--p)*1%),rgba(224,240,250,.08) 0);display:grid;place-items:center}.gauge::before{content:"";position:absolute;inset:4px;border-radius:50%;background:#080d11}.gauge b{position:relative;z-index:1;font:10px var(--mono);color:var(--green)}.health-result b{display:block;font:8px var(--mono);color:var(--dim)}.health-result span{display:block;margin-top:2px;font-size:7.5px;color:var(--dimmer);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.health-result.pass b{color:var(--green)}.health-actions{display:flex;gap:5px}.health-actions .btn{white-space:nowrap}
+  @media(max-width:1180px){.gov-main{grid-template-columns:minmax(0,1.25fr) minmax(340px,.85fr)}.g-body{padding-left:11px;padding-right:11px}.checks{grid-template-columns:1fr}.health-bottom{grid-template-columns:auto 1fr}.health-actions{grid-column:1/-1}}
+  @media(max-width:940px){.gov-page{height:auto;min-height:100vh;overflow:visible}.gov-main{grid-template-columns:1fr}.guard-grid{min-height:680px}.gov-right{min-height:700px}.gov-side-head{align-items:flex-start}.gov-chain{grid-template-columns:1fr 1fr}.footer-rail .keys{display:none}}
+  @media(max-width:620px){.gov-page{padding:14px 10px 10px;gap:10px}.gov-side-head{margin-top:10px}.guard-grid{grid-template-columns:1fr;grid-template-rows:auto;min-height:0}.guard-card{min-height:235px}.gov-chain{grid-template-columns:1fr}.chain:nth-child(n+3){display:none}.checks{grid-template-columns:1fr}.health-bottom{grid-template-columns:auto 1fr}.health-actions{grid-column:1/-1}.footer-rail{display:none}}
+</style>
+</head>
+<body>
+<div class="page gov-page">
+  <header class="mast">
+    <div class="mast-copy">
+      <div class="eyebrow"><i>CHAPTER 03</i><span>policy · ownership · limits</span></div>
+      <h1>层层委派之后，<br><em>靠边界而不是靠自觉</em></h1>
+    </div>
+    <div class="gov-side-head">
+      <p class="lede">治理不是一句“模型会遵守”。这里有四个真实的执行边界：Manager 不碰业务工具，workflow-owning Agent 只能跑被钉定的 DAG，SQL 只允许受控只读查询，运行语义则明确暴露已知限制。</p>
+      <div class="receipt" id="receipt"><i></i><span id="receiptText">第 2 章回执尚未到达</span></div>
+    </div>
+  </header>
+
+  <section class="gov-chain" aria-label="治理链路">
+    <button class="chain on" data-jump="delegation"><b>01</b><span><strong>委派边界</strong><small>entry agent · no business tools</small></span></button>
+    <button class="chain" data-jump="ownership"><b>02</b><span><strong>工作流所有权</strong><small>pinned DAG · depth guard</small></span></button>
+    <button class="chain" data-jump="data"><b>03</b><span><strong>只读取数</strong><small>SQL guard · whitelist · LIMIT</small></span></button>
+    <button class="chain" data-jump="limits"><b>04</b><span><strong>真实运行限制</strong><small>skip semantics · no auto retry</small></span></button>
+  </section>
+
+  <main class="gov-main">
+    <section class="guard-grid" aria-label="四类治理边界">
+      <button class="guard-card active" data-key="delegation" aria-pressed="true">
+        <div class="g-head"><span class="g-no">01</span><span class="g-title"><h2>委派边界</h2><small>ENTRY AGENT · LEAST PRIVILEGE</small></span><span class="g-badge">DEPTH 1</span></div>
+        <div class="g-body">
+          <div class="boundary">
+            <span class="boundary-box"><span>MANAGER CAN</span><b>subagent · 汇总 · 展示</b><em>编排，不执行</em></span>
+            <span class="boundary-arrow">→</span>
+            <span class="boundary-box hot"><span>PRESET ALLOWLIST</span><b>smart_query</b><em>maxDepth: 1 · 一层委派</em></span>
+          </div>
+          <div class="rules">
+            <div class="rule"><i>1</i><span><b>Manager 不持有业务工具。</b> <code>sql_query</code>、<code>describe_database</code>、审批和运维写工具都在 denied_tools。</span></div>
+            <div class="rule"><i>2</i><span><b>只能派白名单里的 Agent。</b> 不允许模型虚构 preset；一次任务派一层，子代理不能继续转派。</span></div>
+            <div class="rule"><i>3</i><span><b>失败不能由 Manager 代跑。</b> 业务 Agent 失败时只如实汇报原因和下一步建议。</span></div>
+          </div>
+          <div class="g-foot"><code>manager.yaml:25-40,52-73</code><span>OPEN EVIDENCE ↗</span></div>
+        </div>
+      </button>
+
+      <button class="guard-card" data-key="ownership" aria-pressed="false">
+        <div class="g-head"><span class="g-no">02</span><span class="g-title"><h2>工作流所有权</h2><small>WORKFLOW-OWNING AGENT · PINNED DAG</small></span><span class="g-badge">NO RECURSION</span></div>
+        <div class="g-body">
+          <div class="boundary">
+            <span class="boundary-box"><span>SMART_QUERY</span><b>只拥有 smart-query</b><em>execution: workflow</em></span>
+            <span class="boundary-arrow">→</span>
+            <span class="boundary-box hot"><span>DAG NODE SUBAGENTS</span><b>复用 smart_query preset</b><em>不是调用方权限</em></span>
+          </div>
+          <div class="rules">
+            <div class="rule"><i>1</i><span><b>preset 钉定工具边界。</b> <code>ownedWorkflowId: smart-query</code>，只暴露 <code>dag_run</code> 与 <code>list_runs</code>。</span></div>
+            <div class="rule"><i>2</i><span><b>模型无法换工作流。</b> 即使传 <code>workflowId</code> / <code>yaml</code>，固定 workflow 解析仍以 preset 为准。</span></div>
+            <div class="rule"><i>3</i><span><b>节点不能递归启动 DAG。</b> Manager depth 0 → smart_query depth 1 → node depth 2；depth &gt; 1 的 <code>dag_run</code> 被拒绝。</span></div>
+          </div>
+          <div class="g-foot"><code>dsh.ts:202-242,675-704</code><span>OPEN EVIDENCE ↗</span></div>
+        </div>
+      </button>
+
+      <button class="guard-card" data-key="data" aria-pressed="false">
+        <div class="g-head"><span class="g-no">03</span><span class="g-title"><h2>只读取数护栏</h2><small>SQL GUARD · WHITELIST · READ ONLY</small></span><span class="g-badge">SELECT ONLY</span></div>
+        <div class="g-body">
+          <div class="boundary">
+            <span class="boundary-box"><span>SQL INPUT</span><b>单语句 SELECT</b><em>WITH … SELECT 可用</em></span>
+            <span class="boundary-arrow">→</span>
+            <span class="boundary-box hot"><span>GUARD PASS</span><b>白名单 + 自动 LIMIT</b><em>SQLite readOnly</em></span>
+          </div>
+          <div class="rules">
+            <div class="rule"><i>1</i><span><b>入口先拒绝高风险语句。</b> 写操作、多语句、系统库、schema/table 白名单外对象都会被拒绝。</span></div>
+            <div class="rule"><i>2</i><span><b>结果范围有防线。</b> denied columns 屏蔽敏感字段；缺少 LIMIT 时自动注入；MySQL 只允许白名单 datasource。</span></div>
+            <div class="rule"><i>3</i><span><b>截断分三层。</b> 工具文本最多 50 行；数据源默认 <code>maxRows=1000</code>；<code>run_sql</code> 提示只保留前 50 行并标 <code>truncated=true</code>。</span></div>
+          </div>
+          <div class="g-foot"><code>guard.ts:50-108 · tools.ts:34</code><span>OPEN EVIDENCE ↗</span></div>
+        </div>
+      </button>
+
+      <button class="guard-card" data-key="limits" aria-pressed="false">
+        <div class="g-head"><span class="g-no">04</span><span class="g-title"><h2>真实运行限制</h2><small>STATE SEMANTICS · RECOVERY BOUNDARIES</small></span><span class="g-badge">KNOWN LIMITS</span></div>
+        <div class="g-body">
+          <div class="boundary">
+            <span class="boundary-box"><span>skip_if HIT</span><b>completed + skipped</b><em>不是 skipped 状态</em></span>
+            <span class="boundary-arrow">→</span>
+            <span class="boundary-box hot"><span>DOWNSTREAM</span><b>只有 failed / skipped 阻断</b><em>outputs.skipped 不阻断</em></span>
+          </div>
+          <div class="rules">
+            <div class="rule"><i>1</i><span><b>没有自动 DAG retry。</b> run_sql 提示里的“最小改写后重试一次”是节点 Agent 行为，不是引擎能力。</span></div>
+            <div class="rule"><i>2</i><span><b>恢复是重跑未完成节点。</b> 进程崩溃可能遗留 running；重跑读取当前 YAML，不保存历史 revision。</span></div>
+            <div class="rule"><i>3</i><span><b>运行记录可追踪但不是快照回放。</b> run-store 保存状态、输出、actor 与错误；不能据此还原旧版工作流定义。</span></div>
+          </div>
+          <div class="g-foot"><code>engine.ts:140-214,288-293</code><span>OPEN EVIDENCE ↗</span></div>
+        </div>
+      </button>
+    </section>
+
+    <aside class="gov-right">
+      <section class="panel evidence">
+        <div class="panel-head"><div class="panel-title"><span class="dot"></span>证据检查器 <span class="panel-sub">SOURCE-BACKED</span></div><span class="chip" id="evKind">POLICY</span></div>
+        <div class="ev-body">
+          <div class="ev-top"><div><h2 id="evTitle">委派边界</h2><small id="evSub">Manager 只编排，不执行</small></div><span class="ev-badge" id="evBadge">ENFORCED</span></div>
+          <div class="ev-summary" id="evSummary"></div>
+          <div class="ev-label">ENFORCEMENT POINTS</div>
+          <div class="ev-rules" id="evRules"></div>
+          <div class="ev-label">EVIDENCE INDEX</div>
+          <div class="ev-paths" id="evPaths"></div>
+          <div class="ev-limit" id="evLimit"></div>
+        </div>
+      </section>
+
+      <section class="panel health">
+        <div class="panel-head"><div class="panel-title"><span class="dot"></span>治理证据核对 <span class="panel-sub">TEACHING SIMULATION</span></div><span class="sim-pill">NOT PRODUCTION HEALTH</span></div>
+        <div class="health-body">
+          <div class="health-head"><div><h2 id="healthTitle">尚未核对</h2><p id="healthDesc">逐项加载源码证据；动画与 PASS 仅表示教学演示已展开，不代表生产系统检查。</p></div></div>
+          <div class="checks" id="checks">
+            <button class="check" data-check="0"><span class="tick">○</span><span class="lbl"><b>委派工具边界</b><span class="verdict">NOT RUN</span></span></button>
+            <button class="check" data-check="1"><span class="tick">○</span><span class="lbl"><b>工作流钉定</b><span class="verdict">NOT RUN</span></span></button>
+            <button class="check" data-check="2"><span class="tick">○</span><span class="lbl"><b>SQL 只读护栏</b><span class="verdict">NOT RUN</span></span></button>
+            <button class="check" data-check="3"><span class="tick">○</span><span class="lbl"><b>数据范围边界</b><span class="verdict">NOT RUN</span></span></button>
+            <button class="check" data-check="4"><span class="tick">○</span><span class="lbl"><b>跳过状态语义</b><span class="verdict">NOT RUN</span></span></button>
+            <button class="check" data-check="5"><span class="tick">○</span><span class="lbl"><b>恢复边界</b><span class="verdict">NOT RUN</span></span></button>
+          </div>
+          <div class="health-bottom">
+            <div class="gauge" id="gauge"><b id="gaugeN">0</b></div>
+            <div class="health-result" id="healthResult"><b>EVIDENCE GATE · NOT RUN</b><span id="healthMeta">0 / 6 checks loaded · teaching only</span></div>
+            <div class="health-actions"><button class="btn small" id="healthReset">重置</button><button class="btn primary small" id="healthRun">全部核对</button></div>
+          </div>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="footer-rail">
+    <span class="keys"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> 章节 · <kbd>←</kbd><kbd>→</kbd> 切换 · <kbd>Home</kbd><kbd>End</kbd> 首尾</span>
+    <span class="path">source scope · agentops/agents · package presets · workflows/smart-query.yaml · packages/agentops/dag · packages/agentops/db</span>
+  </footer>
+</div>
+<script src="../runtime.js"></script>
+<script src="runtime-03.js"></script>
+</body>
+</html>

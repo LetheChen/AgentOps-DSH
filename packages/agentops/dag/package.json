@@ -1,0 +1,57 @@
+{
+  "name": "@agentops/dsh-dag",
+  "description": "AgentOps DAG engine: validated topology, real gateway conditions, branch-safe aggregation and bounded loops.",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "lib/types/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/types/index.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json",
+    "./tools": {
+      "types": "./lib/types/tools.d.ts",
+      "default": "./lib/types/tools.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.json",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "parity": "node --import tsx parity/run_parity.ts"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@agentops/dsh-contracts": "workspace:*",
+    "@agentops/dsh-workflow-catalog": "workspace:*",
+    "@deepseek-ai/dsh-brand": "workspace:*",
+    "yaml": "^2.9.0"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "workspace:~",
+    "@deepseek-ai/dsh-agent": "workspace:*",
+    "@deepseek-ai/dsh-api-session-controller": "workspace:*",
+    "@deepseek-ai/dsh-client-connection": "workspace:*",
+    "@deepseek-ai/dsh-credentials": "workspace:*",
+    "@deepseek-ai/dsh-session": "workspace:*",
+    "@deepseek-ai/dsh-subagent": "workspace:*",
+    "@deepseek-ai/dsh-tools": "workspace:*",
+    "@types/js-yaml": "^4.0.9",
+    "js-yaml": "^4.3.2",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.2"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "workspace:~",
+    "@deepseek-ai/dsh-agent": "workspace:*",
+    "@deepseek-ai/dsh-api-session-controller": "workspace:*",
+    "@deepseek-ai/dsh-client-connection": "workspace:*",
+    "@deepseek-ai/dsh-session": "workspace:*",
+    "@deepseek-ai/dsh-subagent": "workspace:*",
+    "@deepseek-ai/dsh-tools": "workspace:*"
+  }
+}

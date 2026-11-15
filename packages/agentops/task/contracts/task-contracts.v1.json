@@ -1,0 +1,1161 @@
+{
+  "contractVersion": 3,
+  "tables": [
+    "global_revision",
+    "projects",
+    "agent_styles",
+    "design_docs",
+    "ideas",
+    "tasks",
+    "task_stages",
+    "task_relations",
+    "task_events",
+    "task_activities",
+    "task_artifacts",
+    "task_reports",
+    "task_comments",
+    "acceptance_criteria",
+    "doc_change_proposals",
+    "design_doc_changes",
+    "task_runs",
+    "task_leases",
+    "design_notes",
+    "task_contributions",
+    "agent_profiles",
+    "task_report_exports",
+    "project_members",
+    "external_subject_mappings",
+    "task_candidates",
+    "admission_snapshots",
+    "candidate_gate_events",
+    "task_mandates",
+    "decisions",
+    "decision_evidence",
+    "decision_note_artifacts",
+    "decision_relations",
+    "decision_audit",
+    "admission_snapshot_selected_decisions",
+    "task_decision_links",
+    "decision_note_sync_outbox",
+    "migration_cutovers",
+    "migration_audit_journal"
+  ],
+  "revisionTables": [
+    "projects",
+    "tasks",
+    "task_stages",
+    "ideas",
+    "task_relations",
+    "task_events",
+    "task_activities",
+    "task_artifacts",
+    "task_reports",
+    "task_comments",
+    "acceptance_criteria",
+    "design_docs",
+    "doc_change_proposals",
+    "design_doc_changes",
+    "agent_styles",
+    "task_runs",
+    "task_leases",
+    "design_notes",
+    "task_contributions",
+    "agent_profiles",
+    "task_report_exports",
+    "project_members",
+    "external_subject_mappings",
+    "task_candidates",
+    "admission_snapshots",
+    "candidate_gate_events",
+    "task_mandates",
+    "decisions",
+    "decision_evidence",
+    "decision_note_artifacts",
+    "decision_relations",
+    "decision_audit",
+    "admission_snapshot_selected_decisions",
+    "task_decision_links",
+    "decision_note_sync_outbox",
+    "migration_cutovers",
+    "migration_audit_journal"
+  ],
+  "nonRevisionTables": [
+    "global_revision"
+  ],
+  "triggerPrefixes": {
+    "projects": "projects_rev_after_",
+    "tasks": "tasks_rev_after_",
+    "task_stages": "stages_rev_after_",
+    "ideas": "ideas_rev_after_",
+    "task_relations": "task_relations_rev_after_",
+    "task_events": "task_events_rev_after_",
+    "task_activities": "task_activities_rev_after_",
+    "task_artifacts": "task_artifacts_rev_after_",
+    "task_reports": "task_reports_rev_after_",
+    "task_comments": "task_comments_rev_after_",
+    "acceptance_criteria": "acceptance_criteria_rev_after_",
+    "design_docs": "design_docs_rev_after_",
+    "doc_change_proposals": "doc_change_proposals_rev_after_",
+    "design_doc_changes": "design_doc_changes_rev_after_",
+    "agent_styles": "agent_styles_rev_after_",
+    "task_runs": "task_runs_rev_after_",
+    "task_leases": "task_leases_rev_after_",
+    "design_notes": "design_notes_rev_after_",
+    "task_contributions": "task_contributions_rev_after_",
+    "agent_profiles": "agent_profiles_rev_after_",
+    "task_report_exports": "task_report_exports_rev_after_",
+    "project_members": "project_members_rev_after_",
+    "external_subject_mappings": "external_mappings_rev_after_",
+    "task_candidates": "task_candidates_rev_after_",
+    "admission_snapshots": "admission_snapshots_rev_after_",
+    "candidate_gate_events": "candidate_gate_events_rev_after_",
+    "task_mandates": "task_mandates_rev_after_",
+    "decisions": "decisions_rev_after_",
+    "decision_evidence": "decision_evidence_rev_after_",
+    "decision_note_artifacts": "decision_note_artifacts_rev_after_",
+    "decision_relations": "decision_relations_rev_after_",
+    "decision_audit": "decision_audit_rev_after_",
+    "admission_snapshot_selected_decisions": "snapshot_selected_decisions_rev_after_",
+    "task_decision_links": "task_decision_links_rev_after_",
+    "decision_note_sync_outbox": "decision_sync_outbox_rev_after_",
+    "migration_cutovers": "migration_cutovers_rev_after_",
+    "migration_audit_journal": "migration_journal_rev_after_"
+  },
+  "triggers": [
+    "projects_rev_after_insert",
+    "projects_rev_after_update",
+    "projects_rev_after_delete",
+    "tasks_rev_after_insert",
+    "tasks_rev_after_update",
+    "tasks_rev_after_delete",
+    "stages_rev_after_insert",
+    "stages_rev_after_update",
+    "stages_rev_after_delete",
+    "ideas_rev_after_insert",
+    "ideas_rev_after_update",
+    "ideas_rev_after_delete",
+    "task_relations_rev_after_insert",
+    "task_relations_rev_after_update",
+    "task_relations_rev_after_delete",
+    "task_events_rev_after_insert",
+    "task_events_rev_after_update",
+    "task_events_rev_after_delete",
+    "task_activities_rev_after_insert",
+    "task_activities_rev_after_update",
+    "task_activities_rev_after_delete",
+    "task_artifacts_rev_after_insert",
+    "task_artifacts_rev_after_update",
+    "task_artifacts_rev_after_delete",
+    "task_reports_rev_after_insert",
+    "task_reports_rev_after_update",
+    "task_reports_rev_after_delete",
+    "task_comments_rev_after_insert",
+    "task_comments_rev_after_update",
+    "task_comments_rev_after_delete",
+    "acceptance_criteria_rev_after_insert",
+    "acceptance_criteria_rev_after_update",
+    "acceptance_criteria_rev_after_delete",
+    "design_docs_rev_after_insert",
+    "design_docs_rev_after_update",
+    "design_docs_rev_after_delete",
+    "doc_change_proposals_rev_after_insert",
+    "doc_change_proposals_rev_after_update",
+    "doc_change_proposals_rev_after_delete",
+    "design_doc_changes_rev_after_insert",
+    "design_doc_changes_rev_after_update",
+    "design_doc_changes_rev_after_delete",
+    "agent_styles_rev_after_insert",
+    "agent_styles_rev_after_update",
+    "agent_styles_rev_after_delete",
+    "task_runs_rev_after_insert",
+    "task_runs_rev_after_update",
+    "task_runs_rev_after_delete",
+    "task_leases_rev_after_insert",
+    "task_leases_rev_after_update",
+    "task_leases_rev_after_delete",
+    "design_notes_rev_after_insert",
+    "design_notes_rev_after_update",
+    "design_notes_rev_after_delete",
+    "task_contributions_rev_after_insert",
+    "task_contributions_rev_after_update",
+    "task_contributions_rev_after_delete",
+    "agent_profiles_rev_after_insert",
+    "agent_profiles_rev_after_update",
+    "agent_profiles_rev_after_delete",
+    "task_report_exports_rev_after_insert",
+    "task_report_exports_rev_after_update",
+    "task_report_exports_rev_after_delete",
+    "project_members_rev_after_insert",
+    "project_members_rev_after_update",
+    "project_members_rev_after_delete",
+    "external_mappings_rev_after_insert",
+    "external_mappings_rev_after_update",
+    "external_mappings_rev_after_delete",
+    "task_candidates_rev_after_insert",
+    "task_candidates_rev_after_update",
+    "task_candidates_rev_after_delete",
+    "admission_snapshots_rev_after_insert",
+    "admission_snapshots_rev_after_update",
+    "admission_snapshots_rev_after_delete",
+    "candidate_gate_events_rev_after_insert",
+    "candidate_gate_events_rev_after_update",
+    "candidate_gate_events_rev_after_delete",
+    "task_mandates_rev_after_insert",
+    "task_mandates_rev_after_update",
+    "task_mandates_rev_after_delete",
+    "decisions_rev_after_insert",
+    "decisions_rev_after_update",
+    "decisions_rev_after_delete",
+    "decision_evidence_rev_after_insert",
+    "decision_evidence_rev_after_update",
+    "decision_evidence_rev_after_delete",
+    "decision_note_artifacts_rev_after_insert",
+    "decision_note_artifacts_rev_after_update",
+    "decision_note_artifacts_rev_after_delete",
+    "decision_relations_rev_after_insert",
+    "decision_relations_rev_after_update",
+    "decision_relations_rev_after_delete",
+    "decision_audit_rev_after_insert",
+    "decision_audit_rev_after_update",
+    "decision_audit_rev_after_delete",
+    "snapshot_selected_decisions_rev_after_insert",
+    "snapshot_selected_decisions_rev_after_update",
+    "snapshot_selected_decisions_rev_after_delete",
+    "task_decision_links_rev_after_insert",
+    "task_decision_links_rev_after_update",
+    "task_decision_links_rev_after_delete",
+    "decision_sync_outbox_rev_after_insert",
+    "decision_sync_outbox_rev_after_update",
+    "decision_sync_outbox_rev_after_delete",
+    "migration_cutovers_rev_after_insert",
+    "migration_cutovers_rev_after_update",
+    "migration_cutovers_rev_after_delete",
+    "migration_journal_rev_after_insert",
+    "migration_journal_rev_after_update",
+    "migration_journal_rev_after_delete",
+    "admission_snapshots_append_only_update",
+    "admission_snapshots_append_only_delete",
+    "candidate_gate_events_append_only_update",
+    "candidate_gate_events_append_only_delete",
+    "decision_evidence_append_only_update",
+    "decision_evidence_append_only_delete",
+    "decision_note_artifacts_append_only_update",
+    "decision_note_artifacts_append_only_delete",
+    "decision_audit_append_only_update",
+    "decision_audit_append_only_delete",
+    "admission_snapshot_selected_decisions_append_only_update",
+    "admission_snapshot_selected_decisions_append_only_delete",
+    "migration_audit_journal_append_only_update",
+    "migration_audit_journal_append_only_delete",
+    "candidate_gate_events_require_matching_snapshot",
+    "tasks_require_gated_candidate",
+    "task_relations_prevent_parent_cycle",
+    "tasks_prevent_insert_or_replace",
+    "tasks_prevent_project_move",
+    "tasks_prevent_candidate_rebind",
+    "tasks_prevent_parent_cache_insert",
+    "tasks_prevent_parent_cache_update",
+    "task_relations_prevent_update",
+    "task_relations_sync_parent_after_insert",
+    "task_relations_sync_parent_after_delete",
+    "task_candidates_require_gate_for_conversion",
+    "task_candidates_require_selected_links_on_conversion",
+    "task_decision_links_require_selected_decision",
+    "decisions_prevent_invalid_status_transition",
+    "decisions_prevent_implement_without_evidence",
+    "decisions_freeze_approval_fields"
+  ],
+  "indexes": [
+    {
+      "name": "idx_tasks_project",
+      "definition": "tasks(project_id)"
+    },
+    {
+      "name": "idx_tasks_status",
+      "definition": "tasks(status)"
+    },
+    {
+      "name": "idx_tasks_thread",
+      "definition": "tasks(thread_id)"
+    },
+    {
+      "name": "idx_tasks_parent",
+      "definition": "tasks(parent_task_id)"
+    },
+    {
+      "name": "idx_stages_task",
+      "definition": "task_stages(task_id)"
+    },
+    {
+      "name": "idx_ideas_project",
+      "definition": "ideas(project_id)"
+    },
+    {
+      "name": "idx_ideas_status",
+      "definition": "ideas(status)"
+    },
+    {
+      "name": "idx_task_rel_source",
+      "definition": "task_relations(source_task_id)"
+    },
+    {
+      "name": "idx_task_rel_target",
+      "definition": "task_relations(target_task_id)"
+    },
+    {
+      "name": "idx_task_events_task",
+      "definition": "task_events(task_id, created_at)"
+    },
+    {
+      "name": "idx_task_activities_task",
+      "definition": "task_activities(task_id, created_at)"
+    },
+    {
+      "name": "idx_task_artifacts_task",
+      "definition": "task_artifacts(task_id)"
+    },
+    {
+      "name": "idx_task_reports_task",
+      "definition": "task_reports(task_id, submitted_at DESC)"
+    },
+    {
+      "name": "idx_task_comments_task",
+      "definition": "task_comments(task_id, created_at)"
+    },
+    {
+      "name": "idx_acceptance_task",
+      "definition": "acceptance_criteria(task_id)"
+    },
+    {
+      "name": "idx_design_docs_project",
+      "definition": "design_docs(project_id)"
+    },
+    {
+      "name": "idx_doc_proposals_task",
+      "definition": "doc_change_proposals(task_id, status)"
+    },
+    {
+      "name": "idx_doc_changes_doc",
+      "definition": "design_doc_changes(doc_id, changed_at DESC)"
+    },
+    {
+      "name": "idx_task_runs_task",
+      "definition": "task_runs(task_id)"
+    },
+    {
+      "name": "idx_task_leases_task_status",
+      "definition": "task_leases(task_id, status, expires_at)"
+    },
+    {
+      "name": "idx_task_leases_session",
+      "definition": "task_leases(session_id, status)"
+    },
+    {
+      "name": "idx_task_leases_one_active",
+      "definition": "UNIQUE task_leases(task_id) WHERE status = 'active'"
+    },
+    {
+      "name": "idx_design_notes_task",
+      "definition": "design_notes(task_id)"
+    },
+    {
+      "name": "idx_design_notes_project",
+      "definition": "design_notes(project_id)"
+    },
+    {
+      "name": "idx_contributions_task",
+      "definition": "task_contributions(task_id)"
+    },
+    {
+      "name": "idx_contributions_agent",
+      "definition": "task_contributions(agent_id)"
+    },
+    {
+      "name": "idx_task_report_exports_report",
+      "definition": "task_report_exports(report_id, exported_at DESC)"
+    },
+    {
+      "name": "idx_ideas_capture",
+      "definition": "UNIQUE ideas(channel, source_system, source_ref, content_hash) WHERE channel IN ('connector','agent_extract')"
+    },
+    {
+      "name": "idx_task_runs_one_active",
+      "definition": "UNIQUE task_runs(task_id) WHERE status IN ('pending','running')"
+    },
+    {
+      "name": "idx_task_runs_idempotency",
+      "definition": "UNIQUE task_runs(task_id, idempotency_key) WHERE idempotency_key IS NOT NULL"
+    },
+    {
+      "name": "idx_tasks_candidate",
+      "definition": "tasks(source_candidate_id)"
+    },
+    {
+      "name": "idx_projects_ownership",
+      "definition": "projects(ownership_state, updated_at DESC)"
+    },
+    {
+      "name": "idx_task_rel_type_source",
+      "definition": "task_relations(relation_type, source_task_id)"
+    },
+    {
+      "name": "idx_task_rel_one_parent",
+      "definition": "UNIQUE task_relations(source_task_id) WHERE relation_type = 'parent'"
+    },
+    {
+      "name": "idx_project_members_project",
+      "definition": "project_members(project_id, revoked_at)"
+    },
+    {
+      "name": "idx_external_mappings_principal",
+      "definition": "external_subject_mappings(principal_type, principal_id)"
+    },
+    {
+      "name": "idx_candidates_project_status",
+      "definition": "task_candidates(project_id, status, updated_at DESC)"
+    },
+    {
+      "name": "idx_candidates_source",
+      "definition": "task_candidates(source_type, source_system, source_ref)"
+    },
+    {
+      "name": "idx_snapshots_candidate_version",
+      "definition": "admission_snapshots(candidate_id, candidate_version DESC)"
+    },
+    {
+      "name": "idx_gate_candidate_version",
+      "definition": "candidate_gate_events(candidate_id, candidate_version DESC)"
+    },
+    {
+      "name": "idx_mandates_task_status",
+      "definition": "task_mandates(task_id, status)"
+    },
+    {
+      "name": "idx_decisions_project_status",
+      "definition": "decisions(project_id, status, decision_key)"
+    },
+    {
+      "name": "idx_decisions_authority_key",
+      "definition": "decisions(authority_scope, authority_level, project_id)"
+    },
+    {
+      "name": "idx_decisions_authoritative",
+      "definition": "UNIQUE decisions(project_id, workspace_id, repository_ref, subject_type, subject_id, authority_scope, environment, branch_key, rollout_key, tenant_key, region_key, decision_key) WHERE status = 'implemented'"
+    },
+    {
+      "name": "idx_gate_idempotency",
+      "definition": "UNIQUE candidate_gate_events(candidate_id, idempotency_key)"
+    },
+    {
+      "name": "idx_gate_one_approve",
+      "definition": "UNIQUE candidate_gate_events(candidate_id, candidate_version) WHERE action = 'approve'"
+    },
+    {
+      "name": "idx_decision_evidence_decision",
+      "definition": "decision_evidence(decision_id, created_at)"
+    },
+    {
+      "name": "idx_decision_artifacts_decision",
+      "definition": "decision_note_artifacts(decision_id, decision_version DESC)"
+    },
+    {
+      "name": "idx_decision_relations_source",
+      "definition": "decision_relations(source_decision_id)"
+    },
+    {
+      "name": "idx_decision_relations_target",
+      "definition": "decision_relations(target_decision_id)"
+    },
+    {
+      "name": "idx_decision_audit_decision",
+      "definition": "decision_audit(decision_id, created_at DESC)"
+    },
+    {
+      "name": "idx_selected_decisions_snapshot",
+      "definition": "admission_snapshot_selected_decisions(snapshot_id, collection_type, selected_rank)"
+    },
+    {
+      "name": "idx_task_decision_links_one_active",
+      "definition": "UNIQUE task_decision_links(task_id, decision_id) WHERE active = 1"
+    },
+    {
+      "name": "idx_task_decision_links_snapshot",
+      "definition": "task_decision_links(admission_snapshot_id, active)"
+    },
+    {
+      "name": "idx_decision_outbox_status",
+      "definition": "decision_note_sync_outbox(job_status, available_at)"
+    },
+    {
+      "name": "idx_migration_journal_cutover",
+      "definition": "migration_audit_journal(cutover_id, created_at)"
+    }
+  ],
+  "routes": [
+    {
+      "method": "POST",
+      "path": "/api/agentops/candidates"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/candidates/{candidate_id}/analyze"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/candidates/{candidate_id}/preflight-search"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/candidates/{candidate_id}/gate"
+    },
+    {
+      "method": "GET",
+      "path": "/api/agentops/candidates/{candidate_id}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/agentops/decisions/search"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/decisions"
+    },
+    {
+      "method": "GET",
+      "path": "/api/agentops/decisions/{decision_id}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/decisions/{decision_id}/revise"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/decisions/{decision_id}/implement"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/decisions/{decision_id}/reject"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/decisions/{decision_id}/archive"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/decisions/{decision_id}/supersede"
+    },
+    {
+      "method": "GET",
+      "path": "/api/agentops/tasks/projects"
+    },
+    {
+      "method": "GET",
+      "path": "/api/agentops/tasks/workspaces"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/tasks/projects"
+    },
+    {
+      "method": "GET",
+      "path": "/api/agentops/tasks/ideas"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/tasks/ideas"
+    },
+    {
+      "method": "GET",
+      "path": "/api/agentops/tasks/relations"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/tasks/relations"
+    },
+    {
+      "method": "GET",
+      "path": "/api/agentops/tasks/proposals"
+    },
+    {
+      "method": "GET",
+      "path": "/api/agentops/tasks/revision"
+    },
+    {
+      "method": "GET",
+      "path": "/api/agentops/tasks"
+    },
+    {
+      "method": "GET",
+      "path": "/api/agentops/tasks/search"
+    },
+    {
+      "method": "GET",
+      "path": "/api/agentops/tasks/graph"
+    },
+    {
+      "method": "GET",
+      "path": "/api/agentops/tasks/dashboard"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/tasks"
+    },
+    {
+      "method": "GET",
+      "path": "/api/agentops/tasks/{task_id}"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/agentops/tasks/{task_id}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/tasks/{task_id}/advance"
+    },
+    {
+      "method": "GET",
+      "path": "/api/agentops/tasks/{task_id}/transitions"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/tasks/{task_id}/claim"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/tasks/{task_id}/rollback"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/tasks/{task_id}/close"
+    },
+    {
+      "method": "GET",
+      "path": "/api/agentops/tasks/{task_id}/reports"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/tasks/{task_id}/reports"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/tasks/{task_id}/reports/{report_id}/export"
+    },
+    {
+      "method": "GET",
+      "path": "/api/agentops/tasks/{task_id}/reports/{report_id}/export"
+    },
+    {
+      "method": "GET",
+      "path": "/api/agentops/tasks/{task_id}/reports/{report_id}/exports"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/tasks/{task_id}/reports/{report_id}/review"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/tasks/{task_id}/design-notes/{note_id}/status"
+    },
+    {
+      "method": "GET",
+      "path": "/api/agentops/tasks/{task_id}/comments"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/tasks/{task_id}/comments"
+    },
+    {
+      "method": "GET",
+      "path": "/api/agentops/tasks/{task_id}/relations"
+    },
+    {
+      "method": "GET",
+      "path": "/api/agentops/tasks/{task_id}/runs"
+    },
+    {
+      "method": "GET",
+      "path": "/api/agentops/tasks/{task_id}/leases"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/tasks/{task_id}/leases/{lease_id}/heartbeat"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/tasks/{task_id}/leases/{lease_id}/release"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/tasks/{task_id}/runs/{run_id}/finish"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/tasks/{task_id}/execute"
+    },
+    {
+      "method": "GET",
+      "path": "/api/agentops/tasks/{task_id}/criteria"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/tasks/{task_id}/criteria"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/tasks/{task_id}/criteria/{criterion_id}/status"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/tasks/{task_id}/ideas/{idea_id}/confirm"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/tasks/{task_id}/ideas/{idea_id}/convert"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/tasks/proposals/{proposal_id}/apply"
+    },
+    {
+      "method": "GET",
+      "path": "/api/agentops/tasks/{task_id}/activities"
+    },
+    {
+      "method": "GET",
+      "path": "/api/agentops/tasks/{task_id}/artifacts"
+    }
+  ],
+  "canonicalRoutes": [
+    {
+      "method": "POST",
+      "path": "/api/agentops/tasks/ideas/{idea_id}/confirm"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/tasks/ideas/{idea_id}/convert"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agentops/tasks/ideas/{idea_id}/triage"
+    },
+    {
+      "method": "GET",
+      "path": "/api/agentops/tasks/activities"
+    }
+  ],
+  "p0": {
+    "statuses": [
+      "idea",
+      "backlog",
+      "discussing",
+      "reviewing",
+      "closed"
+    ],
+    "edges": [
+      {
+        "from": "idea",
+        "to": "backlog",
+        "action": "立项",
+        "requiresUser": false
+      },
+      {
+        "from": "backlog",
+        "to": "discussing",
+        "action": "触发方案讨论",
+        "requiresUser": false
+      },
+      {
+        "from": "discussing",
+        "to": "reviewing",
+        "action": "提交方案评审",
+        "requiresUser": false
+      },
+      {
+        "from": "reviewing",
+        "to": "closed",
+        "action": "评审通过，关闭任务",
+        "requiresUser": true
+      },
+      {
+        "from": "reviewing",
+        "to": "backlog",
+        "action": "退回立项",
+        "requiresUser": true
+      },
+      {
+        "from": "reviewing",
+        "to": "discussing",
+        "action": "退回讨论",
+        "requiresUser": true
+      },
+      {
+        "from": "idea",
+        "to": "closed",
+        "action": "废弃灵感",
+        "requiresUser": true
+      },
+      {
+        "from": "backlog",
+        "to": "closed",
+        "action": "取消待办",
+        "requiresUser": true
+      },
+      {
+        "from": "discussing",
+        "to": "closed",
+        "action": "取消讨论",
+        "requiresUser": true
+      }
+    ],
+    "terminal": [
+      "closed"
+    ]
+  },
+  "v1": {
+    "statuses": [
+      "idea",
+      "backlog",
+      "discussing",
+      "reviewing",
+      "closed",
+      "decomposing",
+      "in_progress",
+      "validating",
+      "closing",
+      "paused",
+      "blocked",
+      "failed",
+      "canceled",
+      "abandoned"
+    ],
+    "edges": [
+      {
+        "from": "idea",
+        "to": "discussing",
+        "action": "用户审核立项",
+        "requiresUser": true
+      },
+      {
+        "from": "discussing",
+        "to": "discussing",
+        "action": "多轮讨论",
+        "requiresUser": false
+      },
+      {
+        "from": "discussing",
+        "to": "decomposing",
+        "action": "方案讨论完成，自动拆解",
+        "requiresUser": false
+      },
+      {
+        "from": "decomposing",
+        "to": "reviewing",
+        "action": "拆分完成，提交评审",
+        "requiresUser": false
+      },
+      {
+        "from": "reviewing",
+        "to": "backlog",
+        "action": "评审通过，入待办池",
+        "requiresUser": false
+      },
+      {
+        "from": "backlog",
+        "to": "in_progress",
+        "action": "调度 agent 执行",
+        "requiresUser": false
+      },
+      {
+        "from": "in_progress",
+        "to": "in_progress",
+        "action": "并行子任务调度",
+        "requiresUser": false
+      },
+      {
+        "from": "backlog",
+        "to": "validating",
+        "action": "子任务全部完成，父任务收尾",
+        "requiresUser": false
+      },
+      {
+        "from": "in_progress",
+        "to": "validating",
+        "action": "agent 执行完成",
+        "requiresUser": false
+      },
+      {
+        "from": "validating",
+        "to": "closing",
+        "action": "验收通过",
+        "requiresUser": true
+      },
+      {
+        "from": "closing",
+        "to": "closed",
+        "action": "关闭（硬约束满足）",
+        "requiresUser": false
+      },
+      {
+        "from": "reviewing",
+        "to": "discussing",
+        "action": "评审打回：方案有问题",
+        "requiresUser": true
+      },
+      {
+        "from": "reviewing",
+        "to": "decomposing",
+        "action": "评审打回：拆分不当",
+        "requiresUser": true
+      },
+      {
+        "from": "validating",
+        "to": "in_progress",
+        "action": "local 执行偏差",
+        "requiresUser": true
+      },
+      {
+        "from": "validating",
+        "to": "decomposing",
+        "action": "partial 拆解错",
+        "requiresUser": true
+      },
+      {
+        "from": "validating",
+        "to": "discussing",
+        "action": "global 方案错",
+        "requiresUser": true
+      },
+      {
+        "from": "closing",
+        "to": "validating",
+        "action": "关闭前退回重验",
+        "requiresUser": true
+      },
+      {
+        "from": "closing",
+        "to": "in_progress",
+        "action": "关闭前退回执行",
+        "requiresUser": true
+      },
+      {
+        "from": "closing",
+        "to": "decomposing",
+        "action": "关闭前退回分解",
+        "requiresUser": true
+      },
+      {
+        "from": "closing",
+        "to": "discussing",
+        "action": "关闭前退回方案",
+        "requiresUser": true
+      },
+      {
+        "from": "backlog",
+        "to": "discussing",
+        "action": "退回讨论",
+        "requiresUser": true
+      },
+      {
+        "from": "backlog",
+        "to": "idea",
+        "action": "退回灵感重新讨论",
+        "requiresUser": true
+      },
+      {
+        "from": "in_progress",
+        "to": "blocked",
+        "action": "外部阻塞",
+        "requiresUser": false
+      },
+      {
+        "from": "validating",
+        "to": "blocked",
+        "action": "外部阻塞",
+        "requiresUser": false
+      },
+      {
+        "from": "blocked",
+        "to": "in_progress",
+        "action": "阻塞解除恢复",
+        "requiresUser": false
+      },
+      {
+        "from": "in_progress",
+        "to": "paused",
+        "action": "用户暂停",
+        "requiresUser": true
+      },
+      {
+        "from": "validating",
+        "to": "paused",
+        "action": "用户暂停",
+        "requiresUser": true
+      },
+      {
+        "from": "paused",
+        "to": "in_progress",
+        "action": "用户恢复",
+        "requiresUser": true
+      },
+      {
+        "from": "in_progress",
+        "to": "failed",
+        "action": "agent 崩溃/超时",
+        "requiresUser": false
+      },
+      {
+        "from": "failed",
+        "to": "in_progress",
+        "action": "修复后重试",
+        "requiresUser": false
+      },
+      {
+        "from": "idea",
+        "to": "canceled",
+        "action": "用户取消",
+        "requiresUser": true
+      },
+      {
+        "from": "backlog",
+        "to": "canceled",
+        "action": "用户取消",
+        "requiresUser": true
+      },
+      {
+        "from": "discussing",
+        "to": "canceled",
+        "action": "用户取消",
+        "requiresUser": true
+      },
+      {
+        "from": "reviewing",
+        "to": "canceled",
+        "action": "用户取消",
+        "requiresUser": true
+      },
+      {
+        "from": "decomposing",
+        "to": "canceled",
+        "action": "用户取消",
+        "requiresUser": true
+      },
+      {
+        "from": "in_progress",
+        "to": "canceled",
+        "action": "用户取消",
+        "requiresUser": true
+      },
+      {
+        "from": "validating",
+        "to": "canceled",
+        "action": "用户取消",
+        "requiresUser": true
+      },
+      {
+        "from": "closing",
+        "to": "canceled",
+        "action": "用户取消",
+        "requiresUser": true
+      },
+      {
+        "from": "paused",
+        "to": "canceled",
+        "action": "用户取消",
+        "requiresUser": true
+      },
+      {
+        "from": "blocked",
+        "to": "canceled",
+        "action": "用户取消",
+        "requiresUser": true
+      },
+      {
+        "from": "failed",
+        "to": "canceled",
+        "action": "用户取消",
+        "requiresUser": true
+      },
+      {
+        "from": "idea",
+        "to": "abandoned",
+        "action": "30天无活动自动归档",
+        "requiresUser": false
+      },
+      {
+        "from": "backlog",
+        "to": "abandoned",
+        "action": "30天无活动自动归档",
+        "requiresUser": false
+      },
+      {
+        "from": "discussing",
+        "to": "abandoned",
+        "action": "30天无活动自动归档",
+        "requiresUser": false
+      },
+      {
+        "from": "reviewing",
+        "to": "abandoned",
+        "action": "30天无活动自动归档",
+        "requiresUser": false
+      },
+      {
+        "from": "decomposing",
+        "to": "abandoned",
+        "action": "30天无活动自动归档",
+        "requiresUser": false
+      },
+      {
+        "from": "in_progress",
+        "to": "abandoned",
+        "action": "30天无活动自动归档",
+        "requiresUser": false
+      },
+      {
+        "from": "validating",
+        "to": "abandoned",
+        "action": "30天无活动自动归档",
+        "requiresUser": false
+      },
+      {
+        "from": "closing",
+        "to": "abandoned",
+        "action": "30天无活动自动归档",
+        "requiresUser": false
+      },
+      {
+        "from": "paused",
+        "to": "abandoned",
+        "action": "30天无活动自动归档",
+        "requiresUser": false
+      },
+      {
+        "from": "blocked",
+        "to": "abandoned",
+        "action": "30天无活动自动归档",
+        "requiresUser": false
+      },
+      {
+        "from": "failed",
+        "to": "abandoned",
+        "action": "30天无活动自动归档",
+        "requiresUser": false
+      }
+    ],
+    "terminal": [
+      "abandoned",
+      "canceled",
+      "closed"
+    ]
+  },
+  "counts": {
+    "tables": 38,
+    "revisionTables": 37,
+    "indexes": 56,
+    "triggers": 142,
+    "routes": 58,
+    "canonicalRoutes": 4,
+    "p0Edges": 9,
+    "v1Edges": 52
+  }
+}

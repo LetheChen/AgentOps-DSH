@@ -1,0 +1,29 @@
+{
+  "name": "@agentops/dsh-workflow-compiler",
+  "description": "Compiles an AgentOps workflow definition into the DSH workflow script the PTC runtime executes.",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "lib/types/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/types/index.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.json"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@agentops/dsh-contracts": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.2"
+  }
+}

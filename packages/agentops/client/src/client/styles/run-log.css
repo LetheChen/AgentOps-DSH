@@ -1,0 +1,536 @@
+/*
+ * Unified run-log layout and the two record-oriented tabs inside it.
+ *
+ * The shell owns the page rhythm. The DAG, session, and surface views render
+ * as panels without introducing their own page margins or nested page chrome.
+ */
+
+.ao-runlog-shell {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 1760px;
+  height: 100%;
+  min-height: 0;
+  margin: 0 auto;
+  padding: 24px clamp(18px, 3.2vw, 48px) 0;
+  color: var(--color-text-primary);
+}
+
+.ao-runlog-header {
+  flex: 0 0 auto;
+  flex-direction: row;
+}
+
+.ao-runlog-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ao-runlog-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-full);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-tertiary);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.ao-runlog-tabs {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 4px;
+  margin: 16px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  width: max-content;
+}
+
+.ao-runlog-tabs button {
+  height: 30px;
+  margin: 0;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-full);
+  corner-shape: round;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .ao-runlog-tabs button:hover {
+    color: var(--color-text-primary);
+    background: var(--color-bg-elevated);
+  }
+}
+
+.ao-runlog-tabs button.active {
+  color: var(--color-primary-soft);
+  background: var(--color-primary-tint);
+  box-shadow: none;
+}
+
+.ao-runlog-tabs button.active::after {
+  content: none;
+}
+
+.ao-runlog-content {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px 0 32px;
+  scrollbar-gutter: stable;
+}
+
+.ao-runlog-content > .ao-page.agentops-surface.ao-page {
+  width: 100%;
+  max-width: none;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  gap: 16px;
+}
+
+@media (max-width: 860px) {
+  .ao-runlog-shell {
+    padding: 18px 14px 0;
+  }
+}
+
+.ao-runlog-section-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+  padding-bottom: 2px;
+}
+
+.ao-runlog-section-heading {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ao-runlog-section-heading h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+}
+
+.ao-runlog-section-heading p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.ao-runlog-content .rh-toolbar {
+  padding: 12px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-surface);
+}
+
+.ao-runlog-content .rh-count {
+  padding-right: 2px;
+}
+
+/* ── Publication records ── */
+
+.ao-surface-card {
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.16);
+}
+
+.ao-surface-list {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ao-surface-item {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.ao-surface-item:last-child {
+  border-bottom: 0;
+}
+
+.ao-surface-item-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 35%, var(--color-border-subtle));
+  border-radius: var(--radius-md);
+  background: var(--color-primary-tint);
+  color: var(--color-primary-soft);
+}
+
+.ao-surface-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ao-surface-item-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ao-surface-item-title-row strong {
+  min-width: 0;
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.ao-surface-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  color: var(--color-text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.ao-surface-item-meta code {
+  max-width: 420px;
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ao-surface-item-meta time {
+  white-space: nowrap;
+}
+
+.ao-surface-preview-action {
+  justify-content: center;
+  min-width: 72px;
+}
+
+.ao-a2ui-inline-preview {
+  overflow: hidden;
+  border-color: var(--color-border-default);
+  background: var(--color-bg-surface);
+}
+
+.ao-a2ui-preview-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-elevated);
+}
+
+.ao-a2ui-preview-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ao-a2ui-preview-heading h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.ao-a2ui-preview-heading > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 12px;
+  min-width: 0;
+  color: var(--color-text-tertiary);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.ao-a2ui-preview-heading .ao-mono {
+  max-width: 420px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ao-a2ui-preview-body {
+  min-height: 460px;
+  padding: 12px;
+  background: var(--color-bg-base);
+}
+
+.ao-a2ui-preview-body .agentops-surface.ao-surface-screen {
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+}
+
+.ao-surface-screen-head,
+.ao-surface-screen-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.ao-surface-screen-head {
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.ao-surface-screen-head > span:first-child {
+  color: var(--color-text-primary);
+  font-weight: 500;
+}
+
+.ao-surface-screen-head-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-tertiary);
+}
+
+.ao-surface-screen-foot {
+  border-top: 1px solid var(--color-border-subtle);
+  color: var(--color-text-tertiary);
+  font-size: 9px;
+}
+
+/* ── Session replay ── */
+
+.ao-replay-split {
+  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+  align-items: stretch;
+}
+
+.ao-replay-list-card,
+.ao-replay-events-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 500px;
+  max-height: calc(100vh - 250px);
+  overflow: hidden;
+}
+
+.ao-replay-list-toolbar {
+  flex: 0 0 auto;
+  padding: 10px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-elevated);
+}
+
+.ao-replay-list-toolbar .input-base {
+  width: 100%;
+  height: 32px;
+  font-size: 12px;
+}
+
+.ao-replay-list-card .ao-list {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+}
+
+.ao-replay-events-card > .ao-card-title {
+  flex: 0 0 auto;
+}
+
+.ao-replay-table-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.ao-replay-table {
+  min-width: 780px;
+  table-layout: fixed;
+}
+
+.ao-replay-table th:nth-child(1) { width: 50px; }
+.ao-replay-table th:nth-child(2) { width: 180px; }
+.ao-replay-table th:nth-child(3) { width: 170px; }
+
+.ao-replay-table td {
+  padding-top: 9px;
+  padding-bottom: 9px;
+}
+
+.ao-replay-index {
+  color: var(--color-text-tertiary);
+  text-align: right;
+}
+
+.ao-replay-type,
+.ao-replay-time {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ao-replay-preview > div {
+  max-height: 132px;
+  overflow: auto;
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  scrollbar-gutter: stable;
+}
+
+@media (hover: hover) {
+  .ao-surface-item:hover {
+    background: var(--color-bg-hover);
+  }
+}
+
+@media (max-width: 1100px) {
+  .ao-replay-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ao-replay-list-card {
+    min-height: 0;
+    max-height: 280px;
+  }
+
+  .ao-replay-events-card {
+    min-height: 420px;
+    max-height: none;
+  }
+}
+
+@media (max-width: 680px) {
+  .ao-runlog-header {
+    padding: 18px 16px 10px;
+  }
+
+  .ao-runlog-tabs {
+    gap: 18px;
+    margin: 0 16px;
+    overflow-x: auto;
+  }
+
+  .ao-runlog-content {
+    padding: 14px 16px 22px;
+  }
+
+  .ao-runlog-section-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ao-runlog-section-toolbar .ao-page-actions {
+    justify-content: flex-start;
+  }
+
+  .ao-surface-item {
+    grid-template-columns: 30px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .ao-surface-item-icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  .ao-surface-preview-action {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .ao-a2ui-preview-head {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .ao-a2ui-preview-head > .btn-secondary {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .ao-a2ui-preview-heading {
+    grid-column: 1;
+  }
+}
+
+/* ── DAG run details ── */
+
+.ao-runlog-content .rh-table-card {
+  border-color: var(--color-border-default);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.16);
+}
+
+.ao-runlog-content .rh-run-table td:nth-child(5),
+.ao-runlog-content .rh-run-table td:nth-child(6),
+.ao-runlog-content .rh-node-table td:nth-child(4),
+.ao-runlog-content .rh-node-table td:nth-child(5),
+.ao-runlog-content .rh-node-table td:nth-child(6) {
+  white-space: nowrap;
+}
+
+.ao-runlog-content .rh-node-table td:nth-child(2) {
+  white-space: nowrap;
+}
+
+.ao-runlog-content .rh-detail-row > td {
+  background: var(--color-bg-base);
+}
+
+.ao-runlog-content .rh-detail {
+  background: linear-gradient(180deg, var(--color-bg-elevated), var(--color-bg-base));
+}
+
+.ao-runlog-content .rh-detail-summary > div {
+  background: var(--color-bg-surface);
+  border-color: var(--color-border-default);
+}

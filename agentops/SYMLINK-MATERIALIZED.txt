@@ -1,0 +1,18 @@
+# 上游 symlink 在 Windows 检出时被实体化：这里记录两侧的 blob SHA，
+# 用于让检查脚本能区分「本来就是实体化的预期差异」与「有人改了内容」。
+# 格式：<上游 symlink blob> <本地实体化后 blob 或 -> <path>
+# 由 `agentops/scripts/gen-symlink-manifest.py` 生成；新增/删除 symlink 时重跑。
+47dc3e3d863cfb5727b87d785d09abf9743c0a72 5a22674a96a4cd01a8d6c1c8d29e8d3a92670ebe .agents/notes/implemented/CLAUDE.md
+fb40f7ffce2d5b4c13f844c962da35dc771caec0 0d12d9c3019c61d282fa760e05a3f746726b1adb .agents/skills/agent-experience/SKILL.md
+2b7a412b8fa0fb7e985b0793321bd4e698f2b6cd - .claude/skills
+47dc3e3d863cfb5727b87d785d09abf9743c0a72 69dbd7d69eb978392336ea2136ff855738c6625d CLAUDE.md
+8a6e191c8e97ad8f581569c74f922c60aa5797c0 08e9986ee37a1f1d7506f73cd284abd62856cef2 apps/cli/tests/profiles/acp/cordis.yml
+47dc3e3d863cfb5727b87d785d09abf9743c0a72 50f203586c870998b2776e919eff6ce09c784953 packages/CLAUDE.md
+bb85c10476f74cedd0285da78a06cdd6246ae8f9 4129b103daf9485a01d14ce5d280ebd708480f28 snapshots/acp/escalation-approved/system-prompt.expected.md
+c77f354b59928be0fc5371c4a14aee8e85a10a25 1949c7d605c04c46c870675c3aa2779b493f9cfd snapshots/acp/escalation-approved/tool-schemas.expected.json
+7d5e489c58e4975138807a6955d21cce9eca8138 4956076bc63bc7d032f6ec5e282908d15f9f33d8 snapshots/acp/image-compaction/system-prompt.expected.md
+4ca0dd39b2abbfbf8d5bbb8ba56efdc36a0621f7 6288c223879372bcebc2eb6b1979c4f54e68f316 snapshots/sdk/account-provider-signout/system-prompt.expected.md
+11d7ccbf24f03aa14f119900c72e2691ccd338aa 1949c7d605c04c46c870675c3aa2779b493f9cfd snapshots/sdk/account-provider-signout/tool-schemas.expected.json
+83624c92b714a954e3b43d12785ceb222f3f4828 a66cf16a13190d2eda8d1a684ce460bf7d16a8b0 snapshots/session/agent-instructions/workspace/AGENTS.md
+83624c92b714a954e3b43d12785ceb222f3f4828 862c12a2353e631e7ef1a97ccb00e59246d7a3ce snapshots/session/agent-instructions/workspace/nested/AGENTS.md
+47dc3e3d863cfb5727b87d785d09abf9743c0a72 edd71c7fe952545005dd9941d3a67d2e22b49777 vendor/CLAUDE.md

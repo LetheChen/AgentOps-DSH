@@ -1,0 +1,7 @@
+# Notice
+
+AgentOps-DSH is an open-source derivative of DeepSeek Harness (DSH), developed by DeepSeek AI and distributed under the MIT License.
+
+Upstream project: https://github.com/deepseek-ai/deepseek-harness
+
+The DSH source and its third-party notices remain subject to their original licenses. See `LICENSE` and `THIRD_PARTY_NOTICES.md`. AgentOps-DSH is not an official DeepSeek AI release, and its name does not imply endorsement by DeepSeek AI.

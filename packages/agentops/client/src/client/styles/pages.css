@@ -1,0 +1,60 @@
+/*
+ * Styles owned by the credential, session-replay, and generative-UI pages.
+ *
+ * The shared shell (page-shell.css) owns the frame; these rules cover only
+ * what those three pages add: the connection form, its field grid, and the
+ * row of per-row actions.
+ */
+
+.vp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.vp-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.vp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.vp-field-label {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.vp-field-hint {
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.vp-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.vp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+@media (max-width: 640px) {
+  .vp-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

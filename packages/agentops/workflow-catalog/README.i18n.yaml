@@ -1,0 +1,40 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/agentops/workflow-catalog/README.md
+/:
+  en: 3000a3c283c26d87
+  zh: 1645f2dcbdbaaaee
+/agentops-dsh-workflow-catalog:
+  en: 96445b30c7ce767f
+  zh: 9c77d1e9d369c2ea
+/agentops-dsh-workflow-catalog/summary:
+  en: 0125904bd4373311
+  zh: bedd410a931be75f
+/agentops-dsh-workflow-catalog/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: be08589a8d2e121d
+/agentops-dsh-workflow-catalog/use-this-package:
+  en: bbff250eba0f1b89
+  zh: b20a47f82d8ab6e0
+/agentops-dsh-workflow-catalog/use-this-package/when-to-use:
+  en: d4e883d49b10f4b9
+  zh: 98dbd562855da862
+/agentops-dsh-workflow-catalog/understand-the-implementation:
+  en: 7c989a4f6d8ac9f6
+  zh: 6a195657e398cbc1
+/agentops-dsh-workflow-catalog/further-exploration:
+  en: eb759297244b4875
+  zh: c7025cd53789a24a
+/agentops-dsh-workflow-catalog/model-experience:
+  en: 65d102442df6cc2e
+  zh: e400dee3f2c8218d
+/agentops-dsh-workflow-catalog/model-experience/kv-cache-effect:
+  en: c7e12285c928b8df
+  zh: d0cf878d43df19d5
+/agentops-dsh-workflow-catalog/known-limitations-and-deferred-work:
+  en: 42712f750a08e6f2
+  zh: 9abeb709a12e934d
+/agentops-dsh-workflow-catalog/known-limitations-and-deferred-work/dev-note:
+  en: 5a1ceb53ab179483
+  zh: cf5f321321f426c6

@@ -1,0 +1,45 @@
+workflow_id: parity-gateway
+name: Parity Gateway
+version: 1
+description: |
+  对拍用：gateway 选端口。
+  旧引擎的 gateway 是 stub（恒走第一端口）；新引擎按 condition 求值。
+  这套 fixture 就是用来暴露该差异的，差异本身是预期结果。
+inputs:
+  - name: topic
+    type: string
+    required: false
+    default: parity
+nodes:
+  check:
+    name: 判定
+    type: agent
+    agent: echo_agent
+    harness: deterministic
+    after: []
+    outputs:
+      decided:
+        to: [route]
+  route:
+    name: 路由
+    type: gateway
+    gateway_kind: condition
+    after: [check]
+    condition: "{{check.score}} > 0.5"
+    outputs:
+      high:
+        to: handle_high
+      low:
+        to: handle_low
+  handle_high:
+    name: 高分处理
+    type: agent
+    agent: echo_agent
+    harness: deterministic
+    after: [route]
+  handle_low:
+    name: 低分处理
+    type: agent
+    agent: echo_agent
+    harness: deterministic
+    after: [route]

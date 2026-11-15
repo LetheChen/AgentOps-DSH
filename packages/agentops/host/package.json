@@ -1,0 +1,68 @@
+{
+  "name": "@agentops/dsh-host",
+  "description": "AgentOps host capabilities on the DeepSeek Harness: deployment snapshot, knowledge, DAG and task domains.",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json",
+    "./tools": {
+      "types": "./lib/types/tools.d.ts",
+      "default": "./lib/types/tools.js"
+    },
+    "./surfaces": {
+      "types": "./lib/types/surfaces.d.ts",
+      "default": "./lib/types/surfaces.js"
+    },
+    "./persona-static": {
+      "types": "./lib/types/persona-static.d.ts",
+      "default": "./lib/types/persona-static.js"
+    },
+    "./tool-policy": {
+      "types": "./lib/types/tool-policy.d.ts",
+      "default": "./lib/types/tool-policy.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts"
+  },
+  "license": "MIT",
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "workspace:~",
+    "@deepseek-ai/dsh-api-session-controller": "workspace:*",
+    "@deepseek-ai/dsh-brand": "workspace:*",
+    "@deepseek-ai/dsh-home-paths": "workspace:*",
+    "@deepseek-ai/dsh-llm": "workspace:*",
+    "@deepseek-ai/dsh-skill": "workspace:*",
+    "@deepseek-ai/dsh-system-prompt": "workspace:*",
+    "@deepseek-ai/dsh-tools": "workspace:*"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "workspace:~",
+    "@deepseek-ai/dsh-api-session-controller": "workspace:*",
+    "@deepseek-ai/dsh-brand": "workspace:*",
+    "@deepseek-ai/dsh-home-paths": "workspace:*",
+    "@deepseek-ai/dsh-llm": "workspace:*",
+    "@deepseek-ai/dsh-skill": "workspace:*",
+    "@deepseek-ai/dsh-system-prompt": "workspace:*",
+    "@deepseek-ai/dsh-tools": "workspace:*",
+    "@types/js-yaml": "^4.0.9",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@agentops/dsh-contracts": "workspace:*",
+    "ajv": "^8.20.0",
+    "extract-zip": "^2.0.1",
+    "js-yaml": "^4.3.2"
+  }
+}

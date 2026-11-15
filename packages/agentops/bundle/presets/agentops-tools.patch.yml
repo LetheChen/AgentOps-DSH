@@ -1,0 +1,41 @@
+# AgentOps agent preset: the only place the model-facing tools can mount.
+#
+# `tools` is provided per Agent scope. A root row with `inject: ['tools']`
+# never applies (silently), so these rows live in a preset `plugins` list and
+# are mounted for each Agent built from this preset.
+#
+# Applied by adding this file to a profile's preset layer, or by copying the
+# `preset-agentops` row into an existing preset's `config.plugins`.
+
+- insert:
+    - id: preset-agentops
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: agentops
+        order: 20
+        hidden: true
+        plugins:
+          - id: agentops-system-tools
+            name: '@agentops/dsh-host/tools'
+
+          - id: agentops-knowledge-tools
+            name: '@agentops/dsh-knowledge/tools'
+            config:
+              readableSpaces: [finance, hr, ops, weekly, smart_query, project_analysis]
+              allowedImportRoots: []
+
+          - id: agentops-dag-tools
+            name: '@agentops/dsh-dag/tools'
+            config:
+              provider: spawn
+              concurrency: 4
+              workflowDir: !!js dshHomePath('agentops', 'workflows')
+
+          - id: agentops-db-tools
+            name: '@agentops/dsh-db/tools'
+
+
+
+
+          - id: agentops-security-tools
+            name: '@agentops/dsh-security/tools'

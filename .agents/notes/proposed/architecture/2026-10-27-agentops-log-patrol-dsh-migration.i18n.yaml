@@ -1,0 +1,43 @@
+# Bilingual-pair consistency record for 2026-10-27-agentops-log-patrol-dsh-migration.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/proposed/architecture/2026-10-27-agentops-log-patrol-dsh-migration.md
+/agent-note-agentops-log-patrol-and-workflow-management-migration-to-dsh:
+  en: bd5ee78c5f44516a
+  zh: 311ee0685e54d68e
+/agent-note-agentops-log-patrol-and-workflow-management-migration-to-dsh/problem:
+  en: ca4846414c3a2ae3
+  zh: c965a1abd1c27d79
+/agent-note-agentops-log-patrol-and-workflow-management-migration-to-dsh/proposal:
+  en: 91f702ec8dc2b04d
+  zh: 68c9e4dbc876125a
+/agent-note-agentops-log-patrol-and-workflow-management-migration-to-dsh/proposal/service-and-transaction-protocol:
+  en: 33d0b468eec3d55b
+  zh: 0c137a5021c43b6e
+/agent-note-agentops-log-patrol-and-workflow-management-migration-to-dsh/proposal/source-identity-and-local-directories:
+  en: 9b5257e36628b934
+  zh: 045bf25e6e76de58
+/agent-note-agentops-log-patrol-and-workflow-management-migration-to-dsh/proposal/log-capture-file-identity-and-storage:
+  en: 9585173c6b330a35
+  zh: 68c809ad841facf5
+/agent-note-agentops-log-patrol-and-workflow-management-migration-to-dsh/proposal/host-key-and-credential-order:
+  en: 899321bf746447d2
+  zh: e7f264479609621a
+/agent-note-agentops-log-patrol-and-workflow-management-migration-to-dsh/proposal/analyst-findings-and-projection:
+  en: 35e3aebfbb4b9321
+  zh: c601bf1cbe81b18a
+/agent-note-agentops-log-patrol-and-workflow-management-migration-to-dsh/proposal/workflow-management-and-consumers:
+  en: 6edb06db43f1dae8
+  zh: 3928f3943faab990
+/agent-note-agentops-log-patrol-and-workflow-management-migration-to-dsh/proposal/package-pr-0-and-documentation-ownership:
+  en: 9d07171a3b3764e1
+  zh: ebaec2ec160c0900
+/agent-note-agentops-log-patrol-and-workflow-management-migration-to-dsh/alternatives-considered:
+  en: 0cd47e44c58f3076
+  zh: 5ff81010835c7fd6
+/agent-note-agentops-log-patrol-and-workflow-management-migration-to-dsh/acceptance-criteria:
+  en: 5e61d6d5361eb4dc
+  zh: c36d700535fa9918
+/agent-note-agentops-log-patrol-and-workflow-management-migration-to-dsh/risks:
+  en: 494704bd6e4c7346
+  zh: 1d2ff9d9e5c9140d

@@ -1,0 +1,42 @@
+# config/agents/weekly-reporter.yaml
+agent_id: weekly-reporter
+tier: T2
+execution: workflow
+workflow: weekly-report
+domain: personal_assistant
+display_name: 周报助手
+description: 把多人周报原始内容（纯流水账文本）提炼成结构化项目内周报，沉淀 weekly-report 知识库；Vault 导出仅在显式启用时可选；执行手册 = skill
+  weekly-report-summary
+harness: local_llm
+model:
+  provider: minimax
+  id: MiniMax-M3
+system_prompt: |
+  你是 AgentOps 的周报助手 agent。收到周报原始内容（纯流水账文本或 workspace 内文档）后：
+  1. 先调 read_skill 加载 weekly-report-summary，严格按执行手册完成提炼、分类、分级、生成和自检。
+  2. 项目内归档是必达路径：用 write_file 把最终 markdown 写到 workspace 的相对路径
+     reports/weekly-report.md（由工具解析到当前 workspace，不接受项目外绝对路径）。
+  3. 调用 ingest_source，domain=weekly-report，source_content=最终 markdown；
+     不得传 source_path 或任何文件路径参数。
+  4. 仅在 obsidian_vault 已显式启用时尝试可选 Vault 导出；
+     返回 vault_disabled 时记录 vault_status="disabled" 并继续，不得把外部目录说成必需项。
+  5. 汇报项目内 archive_path、vault_status、S/A/B/C 分布和 Top 3，不要只说“已生成”。
+  6. 完成全部步骤后调用 finalize。
+
+  【Windows 环境铁律】
+  - 写文件必须用 write_file，禁止 bash heredoc。
+  - 所有工具调用必须真调，不允许只 thinking。
+  - 输入文档必须位于当前 workspace；无法读取时请用户重新提供内容，不得猜测。
+permissions:
+
+  allowed_tools:
+  - read_file
+  - write_file
+  - obsidian_vault
+  - ingest_source
+  - read_skill
+  - finalize
+  denied_tools: []
+max_concurrent_runs: 1
+timeout_seconds: 1800
+cost_limit_per_run: 1

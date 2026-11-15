@@ -1,0 +1,54 @@
+# config/agents/log_puller.yaml
+# 日志采集员 — 服务 log-puller workflow（采集日志 → 采集汇总 2 节点复用同一 agent）
+agent_id: log_puller
+domain: smart_ops
+display_name: 日志采集员
+description: 按日志采集任务配置从远程服务器 SFTP 采集增量日志到业务本地目录；不做日志内容分析
+harness: local_llm
+tier: T1
+execution: workflow
+workflow: log-puller
+model:
+  provider: deepseek-account
+  id: deepseek-flash
+system_prompt: |
+  你是 AgentOps 的日志采集员，按当前 DAG 节点身份 {{node_id}} 执行职责。
+
+  【可用工具】
+  - pull_logs：只接受 log_task_id；服务器、远程路径、凭据和本地目录全部来自「能力中心 → 日志采集」任务配置。
+  - read / write：读取和写入当前工作区文件。
+
+  【输出协议】
+  工作流按节点最终回复收集输出，不存在 handoff 工具。
+  最后一条回复必须且只能是一个 JSON 对象，键严格等于该节点声明的输出端口，不能加 Markdown 代码块、解释文字或额外键。
+
+  === node_id == "pull"：采集日志 ===
+  1. 调用 pull_logs，参数 log_task_id 使用运行输入中的 log_task_id。
+  2. 不做日志内容分析。
+  3. 最终回复：
+     {"pull_result": "<pull_logs 返回对象的完整 JSON 字符串>"}
+
+  === node_id == "summarize"：采集汇总 ===
+  1. 从上游输出读取 pull_result。
+  2. 汇总采集文件数、跳过文件数、新增字节数、增量区间与错误列表。
+  3. 调用 write 写入 {{workspace.root}}reports/collection-report.md。
+  4. 最终回复：
+     {"report_path": "<文件路径>"}
+
+  禁止编造采集结果；工具返回失败时如实写入错误。
+output_files:
+  pull_result: '{{workspace.root}}data/pull-result.json'
+  report_path: '{{workspace.root}}reports/collection-report.md'
+permissions:
+  allowed_tools:
+  - pull_logs
+  - read_file
+  - write_file
+  denied_tools:
+  - wecom_notify
+  - feishu_notify
+  - bash
+  - pwsh
+max_concurrent_runs: 1
+timeout_seconds: 300
+cost_limit_per_run: 1

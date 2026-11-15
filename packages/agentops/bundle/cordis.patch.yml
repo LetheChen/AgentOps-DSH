@@ -1,0 +1,108 @@
+# AgentOps distribution bundle.
+#
+# Mounted on top of dsh-base + dsh-web-app. Every AgentOps capability is a
+# separate plugin row here; removing a row disables that capability without
+# touching the DSH core packages.
+#
+# The profile that consumes this bundle is `agentops`; see
+# packages/agentops/README.md for the assembly order.
+#
+# Root rows only: `tools` is an Agent-scoped service, so anything that
+# registers model tools lives in presets/agentops-tools.patch.yml and is
+# mounted by a preset. A root row with `inject: ['tools']` would never apply.
+#
+# Knowledge DB path resolution (in order): the row's `dbPath`, then
+# AGENTOPS_KNOWLEDGE_DB, then $DSH_HOME/agentops/knowledge.db. The configured
+# grants keep access closed by default; every shared runtime domain joins an
+# enabled grant set so dashboard-created domains are immediately searchable.
+
+- insert:
+    # M1 — deployment and system status (read-only service).
+    #
+    # The three directory configs are required: `packages/agentops/host/src/dsh.ts`
+    # registers `/agents`, `/schedules` and `/archive` only when the matching
+    # config is non-empty, so an unset row leaves the panels without an API.
+    # Values resolve under DSH_HOME through the boot-provided `dshHomePath`.
+    - id: agentops-system
+      name: '@agentops/dsh-host'
+      config:
+        agentDir: !!js dshHomePath('agentops', 'agents')
+        schedulesFile: !!js dshHomePath('agentops', 'schedules.yaml')
+        workflowDir: !!js dshHomePath('agentops', 'workflows')
+        skillManagedDir: !!js dshHomePath('agentops', 'skills')
+        skillsDisabledFile: !!js dshHomePath('agentops', 'skills-disabled.json')
+        archiveDir: !!js dshHomePath('agentops', 'outputs')
+        toolMapFile: !!js dshHomePath('agentops', 'mappings', 'tool-map.yaml')
+        domainDir: !!js dshHomePath('agentops', 'domains')
+        actorDir: !!js dshHomePath('agentops', 'actors')
+
+    # M2 — independent knowledge base: spaces, versions, chunks, retrieval.
+    # Keep the row empty here; deployment patches own the visibility policy.
+    - id: agentops-knowledge
+      name: '@agentops/dsh-knowledge'
+      config:
+        readableSpaces: [finance, hr, ops, weekly, smart_query, project_analysis]
+        allowedImportRoots: []
+
+    # M3 — DAG engine: validate legacy YAML and run it with one subagent per node.
+    #
+    # `workflowDir` is required for the same reason as the host directories above:
+    # without it `/api/agentops/workflows` and `/api/agentops/workflow-run-hint`
+    # are never registered.
+    - id: agentops-dag
+      name: '@agentops/dsh-dag'
+      config:
+        provider: spawn
+        concurrency: 4
+        workflowDir: !!js dshHomePath('agentops', 'workflows')
+
+    # M4 — task domain: 14-state lifecycle, gated transitions, event history.
+    - id: agentops-task
+      name: '@agentops/dsh-task'
+      config:
+        schemaMode: v1
+        agentDir: !!js dshHomePath('agentops', 'agents')
+
+
+    # M8 — security domain: users, roles, sessions, usage and audit in a new DB.
+    - id: agentops-vault
+      name: '@agentops/dsh-vault'
+
+    - id: agentops-capability
+      name: '@agentops/dsh-capability'
+
+    - id: agentops-log-collection
+      name: '@agentops/dsh-log-collection'
+    - id: agentops-ui-capability
+      name: '@agentops/dsh-ui-capability'
+    - id: agentops-db
+      name: '@agentops/dsh-db'
+
+    - id: agentops-security
+      name: '@agentops/dsh-security'
+
+    # Workflow definition catalogue: the data source the workflow page reads.
+    - id: agentops-workflow-catalog
+      name: '@agentops/dsh-workflow-catalog'
+      config:
+        directory: !!js dshHomePath('agentops', 'workflows')
+
+    # Client half: registers the AgentOps panel and sidebar entry in the Web GUI.
+    - id: agentops-client
+      name: '@agentops/dsh-client'
+
+    # Manager is the user-facing dispatch entry; internal AgentOps presets stay
+    # resolvable for workflows and subagents but are omitted from mode pickers.
+    - id: agent-preset-registry
+      name: '@deepseek-ai/dsh-agent-preset-registry'
+      config:
+        default: manager
+
+# AgentOps skills live in the package; register the directory so every session
+# (regardless of cwd) sees them.
+- id: skill-filesystem
+  config:
+    customSkillDirs:
+      - /app/packages/agentops/skills
+      - !!js dshHomePath('agentops', 'skills')
+    disabledSkillsFile: !!js dshHomePath('agentops', 'skills-disabled.json')

@@ -1,0 +1,28 @@
+# Bilingual-pair consistency record for agentops.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/subsystems/agentops.md
+/agentops-workspace-layout-and-workflow-catalogue:
+  en: ade2682ff71267fd
+  zh: 149a2788926041ca
+/agentops-workspace-layout-and-workflow-catalogue/layout-paths:
+  en: 3d9b222143c9cda5
+  zh: 385b8c5c3816480c
+/agentops-workspace-layout-and-workflow-catalogue/validation-and-containment:
+  en: 59d4199fcebc6682
+  zh: e04e9fd9208a4c62
+/agentops-workspace-layout-and-workflow-catalogue/execution-policy:
+  en: 3ca353401744399c
+  zh: a12d54f625013d68
+/agentops-workspace-layout-and-workflow-catalogue/model-context:
+  en: a242a79825df3ffd
+  zh: f5b19116d01604ba
+/agentops-workspace-layout-and-workflow-catalogue/workflow-catalogue:
+  en: 9a3951e5f24407e1
+  zh: 77bc34f28e26b182
+/agentops-workspace-layout-and-workflow-catalogue/task-domain:
+  en: 5aefb4a0c37cc594
+  zh: 79cbf127dd0a7021
+/agentops-workspace-layout-and-workflow-catalogue/types:
+  en: d3501a7dcfa1381a
+  zh: 1f48e49e293ba7f0

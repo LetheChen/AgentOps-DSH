@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>AgentOps · Manager → 智能问数 · 教学演示</title>
+<link rel="icon" href="data:,">
+<style>
+  :root{
+    --bg:#06080a;--bg2:#0a0f13;--panel:rgba(224,240,250,.045);--edge:rgba(224,240,250,.11);
+    --edge-hi:rgba(57,215,255,.45);--ink:#d6e7ef;--dim:#7e97a6;--dimmer:#5c7381;
+    --cyan:#39d7ff;--teal:#3ef0c0;--amber:#ffb454;--violet:#9c8cff;--red:#ff6b6b;
+    --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;--bar-h:50px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);overflow:hidden;display:grid;grid-template-rows:var(--bar-h) minmax(0,1fr)}
+  #bar{display:flex;align-items:center;gap:12px;padding:0 14px;background:linear-gradient(180deg,#0a1014,#070b0e);border-bottom:1px solid var(--edge);position:relative;z-index:4;min-width:0}
+  #bar::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:linear-gradient(90deg,transparent,rgba(57,215,255,.4),transparent)}
+  .brand{display:flex;align-items:baseline;gap:8px;white-space:nowrap}.brand b{font-size:14px;font-weight:650;letter-spacing:.01em}.brand b em{font-style:normal;color:var(--cyan)}.brand span{font-family:var(--mono);font-size:9px;color:var(--dimmer)}
+  #tabs{display:flex;align-items:center;gap:4px;min-width:0;overflow:hidden}
+  #tabs a{display:flex;align-items:center;gap:7px;padding:6px 10px 6px 7px;border-radius:8px;text-decoration:none;color:var(--dim);border:1px solid transparent;transition:.16s;white-space:nowrap;min-width:0}
+  #tabs a b{font-family:var(--mono);font-size:9.5px;font-weight:500;color:var(--dimmer);border:1px solid var(--edge);border-radius:4px;padding:1px 4px}
+  #tabs a span{font-size:12px}#tabs a i{font-style:normal;font-family:var(--mono);font-size:9px;color:var(--dimmer);max-width:0;overflow:hidden;opacity:0;transition:.2s;white-space:nowrap}
+  #tabs a:hover{color:var(--ink);border-color:var(--edge);background:var(--panel)}#tabs a.on{color:var(--cyan);border-color:var(--edge-hi);background:rgba(57,215,255,.09)}#tabs a.on b{color:var(--cyan);border-color:rgba(57,215,255,.4)}#tabs a.on i{max-width:210px;opacity:1}
+  #spacer{flex:1}.nav2{display:flex;align-items:center;gap:7px}.nav2 #idx{font-family:var(--mono);font-size:10px;color:var(--dimmer);letter-spacing:.06em;min-width:32px;text-align:center}
+  .nav2 button{width:28px;height:26px;display:grid;place-items:center;cursor:pointer;background:rgba(224,240,250,.04);border:1px solid var(--edge);border-radius:6px;color:var(--dim)}
+  .nav2 button:hover:not(:disabled){color:var(--cyan);border-color:var(--edge-hi);background:rgba(57,215,255,.1)}.nav2 button:disabled{opacity:.3;cursor:default}
+  #carry{display:flex;align-items:center;gap:6px;max-width:280px;padding:4px 5px 4px 9px;border-radius:8px;background:rgba(255,180,84,.1);border:1px solid rgba(255,180,84,.34);font-size:10.5px;color:#ffcf8f;white-space:nowrap;min-width:0}
+  #carry[hidden]{display:none}#carry b{font-size:8.5px;letter-spacing:.08em;color:rgba(255,180,84,.74)}#carry span{overflow:hidden;text-overflow:ellipsis;max-width:150px}
+  #carry button{width:18px;height:18px;display:grid;place-items:center;border-radius:5px;cursor:pointer;background:none;border:0;color:rgba(255,180,84,.65);font-size:13px;padding:0}#carry button:hover{background:rgba(255,180,84,.2);color:var(--amber)}
+  #tip{font-family:var(--mono);font-size:9.5px;color:var(--dimmer);white-space:nowrap}#tip kbd{font-family:var(--mono);font-size:9px;border:1px solid var(--edge);border-radius:3px;padding:0 4px;color:var(--dim)}
+  #stage{position:relative;min-height:0;background:var(--bg)}iframe{display:block;width:100%;height:100%;border:0;background:var(--bg)}iframe.swap{animation:fade .3s ease}@keyframes fade{from{opacity:0}to{opacity:1}}
+  #cover{position:absolute;inset:0;z-index:8;display:grid;place-items:center;background:radial-gradient(760px 480px at 68% 35%,rgba(57,215,255,.12),transparent 62%),radial-gradient(600px 460px at 22% 78%,rgba(156,140,255,.08),transparent 62%),#06080a;cursor:pointer;transition:opacity .5s,visibility .5s}
+  #cover[hidden]{display:none}#cover.out{opacity:0;visibility:hidden}
+  #cover::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(57,215,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(57,215,255,.035) 1px,transparent 1px);background-size:44px 44px;mask-image:radial-gradient(circle at 50% 45%,#000,transparent 72%)}
+  .cover-in{position:relative;width:min(1020px,86vw);display:grid;grid-template-columns:minmax(0,1.3fr) minmax(280px,.7fr);gap:50px;align-items:end}
+  .cover-kicker{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--dimmer);margin-bottom:18px}.cover-kicker i{font-style:normal;color:var(--cyan);border:1px solid rgba(57,215,255,.35);background:rgba(57,215,255,.08);padding:3px 7px;border-radius:4px}
+  .cover-title{font-size:clamp(45px,6.4vw,92px);line-height:.98;font-weight:500;letter-spacing:-.045em}.cover-title em{font-style:normal;color:var(--cyan);text-shadow:0 0 46px rgba(57,215,255,.25)}.cover-sub{margin-top:22px;max-width:720px;color:var(--dim);font-size:14px;line-height:1.75}.cover-sub b{color:#d3e6ef;font-weight:550}
+  .cover-stats{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--edge);border:1px solid var(--edge);border-radius:10px;overflow:hidden;margin-top:28px}
+  .cover-stat{background:rgba(7,12,16,.9);padding:13px 15px}.cover-stat b{display:block;font-family:var(--mono);font-size:25px;color:var(--cyan);font-weight:500}.cover-stat:nth-child(2) b{color:var(--teal)}.cover-stat:nth-child(3) b{color:var(--amber)}.cover-stat:nth-child(4) b{color:var(--violet)}.cover-stat span{display:block;margin-top:4px;font-size:10px;color:var(--dimmer)}
+  .cvc{display:flex;flex-direction:column;gap:5px;padding:13px 14px;border-left:1px solid var(--edge);background:rgba(224,240,250,.025);animation:in .5s ease both;animation-delay:calc(var(--i)*70ms)}
+  .cvc .n{font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;color:var(--dimmer)}.cvc b{font-size:13px;font-weight:550}.cvc .en{font-family:var(--mono);font-size:8px;color:var(--dimmer);line-height:1.45}.cvc i{height:1px;background:linear-gradient(90deg,var(--cyan),transparent);margin-top:7px;opacity:.45}
+  @keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .cover-hint{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);font-family:var(--mono);font-size:9px;color:var(--dimmer);letter-spacing:.08em;white-space:nowrap}
+  @media(max-width:1050px){#tabs a i{display:none}#tip{display:none}.cover-in{grid-template-columns:1fr;gap:26px}.cover-right{display:grid;grid-template-columns:1fr 1fr}.cover-hint{bottom:14px}}
+  @media(max-width:760px){#bar{gap:7px;padding:0 8px}.brand span,#carry,#tip{display:none}.brand b{font-size:12px}#tabs{gap:1px;flex:1}#tabs a{padding:6px 7px}#tabs a span{display:none}#tabs a.on span{display:inline;font-size:11px}#idx{display:none}.nav2{gap:4px}.cover-in{width:90vw}.cover-title{font-size:49px}.cover-sub{font-size:12px}.cover-right{grid-template-columns:1fr;max-height:210px;overflow:auto}.cover-stats{grid-template-columns:1fr 1fr}.cover-hint{display:none}}
+</style>
+</head>
+<body>
+<div id="bar">
+  <div class="brand"><b>Agent<em>Ops</em></b><span>TEACHING TOUR / SOURCE-GROUNDED</span></div>
+  <nav id="tabs" aria-label="章节"></nav>
+  <div id="spacer"></div>
+  <div id="carry" hidden><b>CONTEXT</b><span id="carryTxt"></span><button id="carryX" aria-label="清除上下文">×</button></div>
+  <div class="nav2"><span id="idx">0 / 3</span><button id="prevB" aria-label="上一章">‹</button><button id="nextB" aria-label="下一章">›</button></div>
+  <div id="tip"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> 切换 · <kbd>←</kbd><kbd>→</kbd> 翻页</div>
+</div>
+<div id="stage"><iframe id="frame" title="章节内容"></iframe></div>
+<div id="cover" role="dialog" aria-label="AgentOps 教学演示封面" hidden>
+  <div class="cover-in">
+    <div class="cover-left">
+      <div class="cover-kicker"><i>AGENTOPS / FIELD GUIDE</i><span>实现能力 × 运行机制 × 治理边界</span></div>
+      <h1 class="cover-title">一次问数，<br><em>穿过三层协作</em></h1>
+      <p class="cover-sub">从用户向 <b>Manager Agent</b> 提问开始，跟随任务被异步派发给 <b>smart_query</b>，再进入被钉定的工作流，观察五个 DAG 节点如何以不同业务角色运行、回投结果，并最终由 Manager 汇总给用户。</p>
+      <div class="cover-stats">
+        <div class="cover-stat"><b>3</b><span>协作层级 · Manager → Agent → Node</span></div>
+        <div class="cover-stat"><b>5</b><span>工作流节点 · 4 条正常主路径</span></div>
+        <div class="cover-stat"><b>1</b><span>固定工作流 · smart-query</span></div>
+        <div class="cover-stat"><b>0</b><span>Manager 持有业务取数工具</span></div>
+      </div>
+    </div>
+    <div class="cover-right" id="cvCards"></div>
+  </div>
+  <div class="cover-hint">CLICK TO ENTER · CONTENT FROM REPOSITORY EVIDENCE · ANIMATION IS TEACHING SIMULATION</div>
+</div>
+
+<script src="runtime.js"></script>
+<script>
+(function(){
+  'use strict';
+  const CH = [
+    {k:'01',name:'能力地图',en:'capabilities · entry → delegation → nodes',file:'tour/01-capabilities.html',title:'能力地图'},
+    {k:'02',name:'跨 Agent 运行',en:'subagent → pinned workflow → node roles',file:'tour/02-runtime.html',title:'跨 Agent 运行'},
+    {k:'03',name:'治理边界',en:'permissions · ownership · known limits',file:'tour/03-governance.html',title:'治理边界'}
+  ];
+  const fr = document.getElementById('frame');
+  const tabs = document.getElementById('tabs');
+  const idxEl = document.getElementById('idx');
+  const prevB = document.getElementById('prevB');
+  const nextB = document.getElementById('nextB');
+  const coverEl = document.getElementById('cover');
+  const QS = new URLSearchParams(location.search);
+  let cur = -1, lastKey = '', coverUp = false, coverT = 0, carry = null;
+  tabs.innerHTML = CH.map(c => `<a href="#${c.k}" data-k="${c.k}"><b>${c.k}</b><span>${c.name}</span><i>${c.en}</i></a>`).join('');
+  const links = [...tabs.querySelectorAll('a')];
+  function qsFor(c){ return carry ? 'cw=' + encodeURIComponent(VT.enc(carry)) : ''; }
+  function srcFor(c){ const q = qsFor(c); return q ? c.file + '?' + q : c.file; }
+  function go(i, push){
+    i = Math.max(0, Math.min(CH.length - 1, i));
+    const c = CH[i], q = qsFor(c), key = c.k + '?' + q, s = srcFor(c);
+    document.title = c.title + ' · AgentOps';
+    if(key !== lastKey && !coverUp){ lastKey = key; fr.classList.remove('swap'); fr.src = s; void fr.offsetWidth; fr.classList.add('swap'); }
+    cur = i;
+    if(push !== false) history.replaceState(null, '', '#' + c.k);
+    links.forEach((a, n) => a.classList.toggle('on', n === i));
+    idxEl.textContent = (i + 1) + ' / ' + CH.length;
+    prevB.disabled = i === 0; nextB.disabled = i === CH.length - 1;
+  }
+  function startCover(){
+    coverUp = true;
+    document.getElementById('cvCards').innerHTML = CH.map((c,i) => `<div class="cvc" style="--i:${i}"><span class="n">${c.k} / ${CH.length}</span><b>${c.name}</b><span class="en">${c.en}</span><i></i></div>`).join('');
+    coverEl.hidden = false; coverT = setTimeout(coverHide, 4200);
+  }
+  function coverHide(){
+    if(!coverUp) return;
+    coverUp = false; clearTimeout(coverT); coverEl.classList.add('out');
+    setTimeout(() => { coverEl.hidden = true; }, 520); go(cur < 0 ? 0 : cur, false);
+  }
+  coverEl.addEventListener('pointerdown', coverHide);
+  document.getElementById('bar').addEventListener('pointerdown', () => { if(coverUp) coverHide(); });
+  prevB.onclick = () => go(cur - 1); nextB.onclick = () => go(cur + 1);
+  addEventListener('hashchange', () => { const k = location.hash.replace('#',''); const i = CH.findIndex(c => c.k === k); go(i < 0 ? 0 : i); });
+  function navAction(action){
+    if(action === 'home') go(0); else if(action === 'end') go(CH.length - 1);
+    else if(action === 'prev') go(cur - 1); else if(action === 'next') go(cur + 1);
+    else if(/^[123]$/.test(action)) go(+action - 1);
+  }
+  addEventListener('keydown', e => {
+    if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if(coverUp){ coverHide(); e.preventDefault(); return; }
+    let action = '';
+    if(/^[123]$/.test(e.key)) action = e.key;
+    else if(e.key === 'ArrowRight') action = 'next'; else if(e.key === 'ArrowLeft') action = 'prev';
+    else if(e.key === 'Home') action = 'home'; else if(e.key === 'End') action = 'end';
+    if(!action) return; navAction(action); e.preventDefault();
+  });
+  const carryEl = document.getElementById('carry'), carryTxt = document.getElementById('carryTxt');
+  function setCarry(c, apply){
+    carry = c;
+    if(!c) carryEl.hidden = true;
+    else { carryEl.hidden = false; carryTxt.textContent = c.label || c.workflow || '上下文已装载'; carryEl.title = c.detail || ''; }
+    if(apply !== false && cur >= 0) go(cur);
+  }
+  document.getElementById('carryX').onclick = () => setCarry(null);
+  addEventListener('message', e => {
+    const d = e.data; if(!d) return;
+    if(d.type === 'vt:go'){
+      if(d.carry) setCarry(d.carry, false);
+      const i = CH.findIndex(c => c.k === d.k); if(i >= 0) go(i);
+    } else if(d.type === 'vt:nav') navAction(d.action);
+  });
+  const hadHash = !!location.hash;
+  if(!hadHash && QS.get('cover') !== '0') startCover();
+  (function route(){ const k = location.hash.replace('#',''); const i = CH.findIndex(c => c.k === k); go(i < 0 ? 0 : i); })();
+})();
+</script>
+</body>
+</html>

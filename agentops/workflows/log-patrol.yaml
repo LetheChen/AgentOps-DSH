@@ -1,0 +1,193 @@
+workflow_id: log-patrol
+name: 日志巡检
+version: 5
+description: |
+  4 步 DAG 版日志巡检：scan → analyze → report → notify。
+  采集由独立的「日志采集」工作流完成，本工作流只分析已落地的日志，
+  不重复采集，也不依赖采集是否在同一次运行中完成。
+
+workspace:
+  root: "workspace/log-patrol/{{run_id}}/"
+  structure:
+    reports: reports/
+layout:
+  nodes:
+    scan:
+      x: 80
+      y: 60
+    analyze:
+      x: 360
+      y: 60
+    report:
+      x: 640
+      y: 60
+    notify:
+      x: 920
+      y: 60
+inputs:
+  - name: log_task_id
+    type: string
+    required: true
+    description: 日志采集任务 ID（对应「能力中心 → 日志采集」中的任务，如 oa_approval）
+  - name: level
+    type: string
+    required: false
+    default: ERROR
+    description: "日志级别过滤: ERROR / WARN / FATAL（默认 ERROR）"
+  - name: time_range
+    type: string
+    required: false
+    default: 24h
+    description: 报告口径说明（实际分析范围由分析位点决定）
+nodes:
+  scan:
+    name: 扫描日志
+    type: agent
+    agent: log_analyst
+    business_role: 日志扫描员
+    role_prompt: |
+      你是日志扫描员，负责扫描日志采集任务已落地到本地的新增日志。
+
+      执行步骤（严格按顺序）：
+      1. 调用 log_read_delta 工具，参数：
+         - log_task_id = {{log_task_id}}
+         - level = {{level}}
+         该工具读取"上次分析位点"到"当前文件末尾"之间的内容，不重复分析已看过部分。
+      2. 如果返回 truncated=true，在结果中标注"结果已截断"。
+      3. 整理为结构化 JSON：
+         {total_files, matched_lines, errors: [{source, timestamp, level, message}]}
+      4. 最终回复必须是一个 JSON 对象：{"scan_result": "<扫描结果 JSON 字符串>"}，不得包含代码块或额外文字。
+
+    harness: local_llm
+    after: []
+    timeout_seconds: 120
+    inputs:
+      - log_task_id
+      - level
+    outputs:
+      scan_result:
+        to: "analyze.in:scan_result"
+    command_config: null
+    await_command_config: null
+    while_config: null
+  analyze:
+    name: 分析异常
+    type: agent
+    agent: log_analyst
+    business_role: 异常分析员
+    role_prompt: |
+      你是异常分析员，负责基于 scan_result 判定 4 类重大问题。
+
+      4 类规则（任一命中即算重大问题）：
+      1. critical_keyword：OutOfMemoryError / ConnectionRefused / disk full / database is locked /
+         deadlock / panic / 503 / 500 / SQL syntax / NullPointer / StackOverflow /
+         segmentation fault / Cannot allocate memory / Too many open files / 502 / 504
+      2. fatal_level：FATAL / CRITICAL
+      3. high_frequency：5 分钟内同一错误 > 10 次
+      4. mass_error：本次分析区间匹配总条数 > 100
+
+      输出结构化 JSON：
+      {critical_issues: [{type, source, count, first_seen, last_seen, sample_message}], summary, total_critical}
+      最终回复必须是一个 JSON 对象：{"critical_issues": "<JSON 字符串>", "critical_summary": "<文本摘要，无问题时为空字符串>"}。
+
+    harness: local_llm
+    after: [scan]
+    timeout_seconds: 180
+    inputs:
+      - scan_result
+    outputs:
+      critical_issues:
+        to: "report.in:critical_issues"
+      critical_summary:
+        to: "notify.in:critical_summary"
+    command_config: null
+    await_command_config: null
+    while_config: null
+  report:
+    name: 生成报告
+    type: agent
+    agent: log_analyst
+    business_role: 报告撰写员
+    role_prompt: |
+      你是报告撰写员，负责把分析结果写入 Markdown 报告。
+
+      必须真实调用 write_file 工具写入 `{{workspace.root}}reports/patrol-report.md`，
+      禁止只 thinking。
+
+      最终回复必须是一个 JSON 对象：{"report_path": "<文件路径>", "critical_summary": "<文本摘要>"}。
+
+    harness: local_llm
+    after: [analyze]
+    timeout_seconds: 120
+    inputs:
+      - critical_issues
+      - critical_summary
+    outputs:
+      report_path:
+        to: "notify.in:report_path"
+      critical_summary:
+        to: "notify.in:critical_summary"
+    command_config: null
+    await_command_config: null
+    while_config: null
+  notify:
+    name: 飞书通知
+    type: agent
+    agent: log_analyst
+    business_role: 告警通知员
+    role_prompt: |
+      你是告警通知员，负责根据上游 critical_summary 决定是否推送飞书。
+
+      1. 从上游输出读取 report.critical_summary。
+      2. 如果为空 / "无重大问题" / "skip" / 数量为 0 → 不推送，直接输出 {"notify_result": "\"skipped\": no critical issues"}。
+      3. 否则调用 feishu_notify 工具：
+         - content = critical_summary 文本
+         - title = "日志巡检告警 · {{log_task_id}}"
+         - msg_type = post
+         Webhook URL 由能力中心绑定的飞书机器人实例解析，不要传 URL。
+      4. 最终回复必须是一个 JSON 对象：{"notify_result": "<推送结果 JSON 字符串>"}。
+
+    harness: local_llm
+    after: [report]
+    timeout_seconds: 120
+    inputs:
+      - critical_summary
+      - report_path
+    outputs:
+      notify_result:
+        to: ""
+    skip_if: "{{not report.critical_summary}}"
+    command_config: null
+    await_command_config: null
+    while_config: null
+widgets:
+  - id: w_patrol_progress
+    type: progress_status
+    title: 巡检进度
+    emit_on:
+      node: scan
+      event: node.started
+    props:
+      title: 日志巡检
+      steps:
+        - id: scan
+          title: 扫描日志
+          node: scan
+        - id: analyze
+          title: 分析异常
+          node: analyze
+        - id: report
+          title: 生成报告
+          node: report
+        - id: notify
+          title: 飞书通知
+          node: notify
+  - id: w_patrol_report
+    type: artifact_ref
+    title: 巡检报告
+    emit_on:
+      node: report
+      event: node.completed
+    props:
+      path: "{{report.report_path}}"
+      format: markdown

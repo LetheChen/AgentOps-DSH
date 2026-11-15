@@ -1,0 +1,19 @@
+# config/domains/oa_query.yaml — OA 查询业务域（PLAN N7 / F3）
+#
+# 用途：①工具 allowed_domains 归类 ②未来挂 agent 的域挂载点（config_loader.py:340 校验）。
+# 本次**不建** domain=oa_query 的 agent（PLAN 订正 C3：会话链路无 handoff，建了是死配置）。
+domain: oa_query
+display_name: OA 流程查询域
+description: 致远 OA 事项查询（待办/已办/已发/待发/跟踪/督办），只读
+default_permissions:
+  allowed_tools:
+    - oa_affair_query
+    - oa_affair_detail
+  denied_tools:
+    - server_restart
+    - db_migrate
+    - ssh_exec
+    - sql_execute
+    - submit_form
+    - approval_flow
+cost_limit_per_run: 0.5

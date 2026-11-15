@@ -1,0 +1,787 @@
+# 旧工具目录与 DSH 映射表。
+#
+# 元数据（display_name / description / allowed_domains / requires_human_approval）
+# 由旧项目 config/tools/*.yaml 与 api/server.py 的 _BUILTIN_TOOLS 刷新：
+#   node --import tsx agentops/scripts/gen-tool-catalogue.ts --write
+# mapped / used_by / note 是人工标注，脚本只刷新元数据，不覆盖人工判断。
+# mapped: 插件包 + 工具名（运行期真实存在）；null = 尚未迁移，页面标「未迁移」。
+# 用法：生成器据此产出 preset 行的 only 列表；`mapped: null` 的条目一律不写进 only。
+version: 3
+agents: [coding_agent, log_analyst, log_puller, manager, multi-agent-report, oa_assistant, proposal_planner, quality_inspector, smart_analysis, smart_approval, smart_form, smart_ops, smart_query, task_conductor, task_decomposer, task_dispatcher, task_monitor, task_planner, video_creator, weekly-reporter]
+tools:
+  subagent:
+    display_name: "派发子任务"
+    description: "启动一个业务 Agent 子代理执行任务；立即返回 subagentId，完成后结果自动回投给派发者。执行方式（skill 或其工作流）由该 Agent 的 preset 声明决定。"
+    allowed_domains: [manager]
+    requires_human_approval: false
+    mapped: { plugin: "@deepseek-ai/dsh-tool-subagent", tool: "subagent" }
+    used_by: [manager]
+    note: "DSH 原生 delegation 工具；allowedAgentPresets 由生成器按业务 Agent 目录派生"
+  send_message:
+    display_name: "追问子代理"
+    description: "向自己直接派发的子代理追加消息（等价 CLI 的 send_message）。"
+    allowed_domains: [manager]
+    requires_human_approval: false
+    mapped: { plugin: "@deepseek-ai/dsh-tool-subagent-control", tool: "send_message" }
+    used_by: [manager]
+    note: "子代理 continuable：追问与补指令经此工具"
+  interrupt_agent:
+    display_name: "取消子代理"
+    description: "停止一个自己直接派发的子代理。"
+    allowed_domains: [manager]
+    requires_human_approval: false
+    mapped: { plugin: "@deepseek-ai/dsh-tool-subagent-control", tool: "interrupt_agent" }
+    used_by: [manager]
+    note: ""
+  aggregate:
+    display_name: "结果聚合"
+    description: "Manager 聚合各子任务结果"
+    allowed_domains: [manager]
+    requires_human_approval: false
+    mapped: null
+    used_by: [manager]
+    note: "无（DSH 的编排由 DAG 引擎承担，不是模型可调工具）"
+  approval_flow:
+    display_name: "审批流转"
+    description: "推进审批流程（提交/批准/驳回/转交）"
+    allowed_domains: [smart_approval]
+    requires_human_approval: false
+    mapped: null
+    used_by: [smart_approval, manager, oa_assistant, smart_analysis, smart_form, smart_ops, smart_query]
+    note: "无（DSH 审批域未迁移）"
+  approval_query:
+    display_name: "审批查询"
+    description: "查询审批单状态、审批历史"
+    allowed_domains: [smart_approval]
+    requires_human_approval: false
+    mapped: null
+    used_by: [smart_approval]
+    note: "无（DSH 审批域未迁移）"
+  bash:
+    display_name: "执行命令"
+    description: "执行 shell 命令"
+    allowed_domains: []
+    requires_human_approval: false
+    mapped: { plugin: "@deepseek-ai/dsh-tool-pwsh", tool: "pwsh" }
+    used_by: [coding_agent, manager, multi-agent-report, video_creator, log_puller, proposal_planner, quality_inspector, task_conductor, task_decomposer, task_dispatcher, task_planner]
+  board_cleanup:
+    display_name: "清理可视化看板"
+    description: "物理删除当前会话可视化看板中的历史卡片。 - surface_id：删除指定卡片 - all=true：清空当前会话整块看板 必须显式传入 confirm=true。session 由当前运行自动推导，模型不能指定其他会话。"
+    allowed_domains: [manager]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-host/tools", tool: "board_cleanup" }
+    used_by: [manager]
+  classify_intent:
+    display_name: "意图识别"
+    description: "Manager 识别用户意图（编排 vs 直接对话）"
+    allowed_domains: [manager]
+    requires_human_approval: false
+    mapped: null
+    used_by: [manager]
+    note: "无（意图识别交给 DSH agent-loop 的模型自身）"
+  collect_child_result:
+    display_name: "收集子任务结果"
+    description: "阻塞等待子 run 完成（达到终态：completed/failed/cancelled/dormant/active）， 返回子 agent 的最终消息列表 + final_outputs + summary，供 manager 整合给用户。 这是 trigger_workflow 的标准伴侣：派任务必须 + 收结果。LLM 收到结果后可以： 1. 整合子 agent 的回复向用户汇报 2. 再调一次 trigger_workflow 触发下一个子任务 3. 把结果作为 emit_widget / memo 推给用户 阻塞时间：默认 600s（10 分钟），超时返回当前状态 + 部分结果。"
+    allowed_domains: [manager]
+    requires_human_approval: false
+    mapped: null
+    used_by: [manager]
+    note: "无（DSH 子代理由运行时回传，无需工具）"
+  data_analysis:
+    display_name: "数据分析"
+    description: "执行数据分析（统计/趋势/预测/归因）"
+    allowed_domains: [smart_analysis]
+    requires_human_approval: false
+    mapped: null
+    used_by: [manager, smart_analysis, smart_query]
+    note: "无（DSH 侧走 sql_query + 模型自行分析）"
+  db_migrate:
+    display_name: "数据库迁移"
+    description: "执行数据库迁移脚本（高危操作）"
+    allowed_domains: [smart_ops]
+    requires_human_approval: true
+    mapped: null
+    used_by: [smart_ops, manager, oa_assistant, proposal_planner, smart_analysis, smart_approval, smart_form, smart_query]
+    note: "无（DSH 不向模型暴露迁移）"
+  describe_database:
+    display_name: "查询数据库表结构"
+    description: "返回某数据库连接的表结构（可用 schema / 表清单 / 禁止访问的列）。 数据来源是 config/db_whitelist.yaml（白名单即 schema 授权），不连数据库。 当你要写 SQL 查询但不确定有哪些表/字段时，先调本工具看表结构。 常见场景：用户问业务数据 → describe_database('mysql:audit_reader') 看表 → 写 SELECT。"
+    allowed_domains: [manager, smart_query, smart_analysis]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-db/tools", tool: "describe_database" }
+    used_by: [manager]
+  dispatch:
+    display_name: "任务派发"
+    description: "Manager 将子任务派发给业务域 Agent"
+    allowed_domains: [manager]
+    requires_human_approval: false
+    mapped: null
+    used_by: [manager]
+    note: "无（DSH 用 DAG 引擎派发节点）"
+  emit_alert:
+    display_name: "监控告警推送"
+    description: "把告警/提示推送到监控中心全局告警队列，经 SSE 通道实时推给前端（severity/tip_type 受控）"
+    allowed_domains: [video_production, smart_ops]
+    requires_human_approval: false
+    mapped: null
+    used_by: [log_puller, task_conductor, task_dispatcher, task_monitor]
+    note: "无（DSH 侧告警走消息通道，不是模型可调工具）"
+  export_report:
+    display_name: "导出报表"
+    description: "导出数据报表（Excel/PDF/CSV）"
+    allowed_domains: [smart_query, smart_analysis]
+    requires_human_approval: false
+    mapped: null
+    used_by: [smart_analysis, smart_query]
+    note: "无（DSH 侧报告由 write_file 落盘）"
+  extract_content:
+    display_name: "内容提取"
+    description: "从公网 http/https URL 提取网页、PDF、文档或音视频文本。 支持 article / pdf / doc / video / audio / auto 模式。 不读取本地文件路径，拒绝私网、回环、链路本地和云元数据地址； 仅允许 80/443 端口，限制重定向次数、响应大小与 MIME 类型。 不做 LLM 提炼，只做文本提取。"
+    allowed_domains: [content_curator]
+    requires_human_approval: false
+    mapped: null
+    used_by: [manager]
+    note: "无（present_content 的上游解析已内置）"
+  ffprobe_check:
+    display_name: "视频质检"
+    description: "用 ffprobe 解析 mp4 元数据，校验时长/分辨率/音轨"
+    allowed_domains: [video_production]
+    requires_human_approval: false
+    mapped: null
+    used_by: []
+    note: "旧项目工具，本批 20 个 agent 未引用"
+  finalize:
+    display_name: "完成会话"
+    description: "Agent 完成工具，标记当前回合结束"
+    allowed_domains: []
+    requires_human_approval: false
+    mapped: null
+    used_by: [log_analyst, log_puller, manager, multi-agent-report, proposal_planner, smart_analysis, smart_approval, smart_form, smart_ops, smart_query, task_conductor, task_decomposer, task_dispatcher, task_monitor, task_planner, video_creator, weekly-reporter]
+    note: "无（DSH 的 agent-loop 自己收尾）"
+  form_validate:
+    display_name: "表单校验"
+    description: "校验 OA 表单字段完整性、格式合法性"
+    allowed_domains: [smart_form]
+    requires_human_approval: false
+    mapped: null
+    used_by: [smart_form]
+    note: "无（DSH 表单域未迁移）"
+  get_run_supervision:
+    display_name: "查看子任务进度"
+    description: "查看某个子任务的执行状态和节点进度。Manager Agent 用来监督子 agent 执行情况。 返回 Run 状态 + 各节点状态（running/completed/failed/skipped）+ 关键里程碑。 当用户问\"任务跑到哪了\"或\"进度怎么样\"时调用此工具。"
+    allowed_domains: [manager]
+    requires_human_approval: false
+    mapped: null
+    used_by: [manager]
+    note: "无（DSH 无运行监管工具）"
+  handoff:
+    display_name: "handoff"
+    description: ""
+    allowed_domains: []
+    requires_human_approval: false
+    mapped: null
+    used_by: [multi-agent-report, smart_query]
+    note: "无（DSH 的节点端口由 DAG 引擎自动注入）"
+  hyperframes_render:
+    display_name: "hyperframes_render"
+    description: "将 composition.html 渲染为 MP4 视频（自动包装为 hyperframes project + 复制媒体资源）"
+    allowed_domains: [video_production]
+    requires_human_approval: false
+    mapped: null
+    used_by: [video_creator]
+    note: "无（视频渲染未迁移）"
+  ingest_source:
+    display_name: "知识库 Ingest"
+    description: "LLM Wiki 的 Ingest 操作。把调用方提供的内容写入项目内知识域： raw 不可变原文、index 导航、log 时间线，以及可选 target_pages。 只接受 source_content；source_ref 是不透明标识，工具不会读取任何本地路径。"
+    allowed_domains: [content_curator, proposal_planner, weekly-reporter]
+    requires_human_approval: false
+    mapped: null
+    used_by: [manager, proposal_planner, weekly-reporter]
+    note: "无（DSH 侧对应 knowledge_import_plan，只出计划不落库）"
+  lint_knowledge:
+    display_name: "知识库 Lint"
+    description: "LLM Wiki Lint 操作工具。content_curator agent 的核心能力是冲突检测（FR-16）： 当新内容要归档时，需要先与历史笔记对比，检测 4 类冲突（fact/version/opinion/complement）。 本工具做程序化检查（contradictions/orphans/missing_pages/index_sync/dead_links/stale） + 输出结构化候选对，confidence 留空让 LLM 后续打分。auto_fix 仅对 index_sync 生效（标记问题， 实际修复需 agent 调 ingest_source 重新 ingest 或人工调整）。"
+    allowed_domains: [content_curator, proposal_planner]
+    requires_human_approval: false
+    mapped: null
+    used_by: []
+    note: "旧项目工具，本批 20 个 agent 未引用"
+  list_failed_runs:
+    display_name: "失败任务查询"
+    description: "查询最近 N 小时内失败的 DAG run + 节点失败事件（直接读 audit.db，不依赖后端进程）"
+    allowed_domains: [smart_ops]
+    requires_human_approval: false
+    mapped: null
+    used_by: [task_monitor]
+    note: "无（DSH 无失败运行查询工具）"
+  list_session_runs:
+    display_name: "列出当前会话的所有子任务"
+    description: "列出当前会话（Session）关联的所有子任务。Manager Agent 用来查看自己调度过的所有任务。 不传 session_id 时自动用当前活跃 run_id 作为 session_id。 当用户问\"我有哪些任务在跑\"或\"这次会话做了什么\"时调用此工具。"
+    allowed_domains: [manager]
+    requires_human_approval: false
+    mapped: null
+    used_by: [manager]
+    note: "无（改为页面能力 /agentops/agent-catalog/:id/usage）"
+  list_tasks:
+    display_name: "查询任务列表"
+    description: "查询任务列表（只读），供 agent 查看任务列表与当前版本号。 支持按 project_id / status 过滤。"
+    allowed_domains: [manager, task_planner]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-task/tools-v1", tool: "task_list" }
+    used_by: [task_planner]
+  log_list_tasks:
+    display_name: "列出日志采集任务"
+    description: "列出当前部署已配置的日志采集任务，用于在运行巡检前发现 log_task_id。"
+    allowed_domains: [smart_ops]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-log-collection/tools", tool: "log_list_tasks" }
+    used_by: [log_analyst, log_puller]
+    note: "替代旧 config/patrol.yaml 的发现方式"
+  log_query:
+    display_name: "日志增量读取"
+    description: "读取日志采集任务最近一次采集新增的区间（按级别过滤），不返回全天内容。"
+    allowed_domains: [smart_ops]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-log-collection/tools", tool: "log_read_delta" }
+    used_by: [log_analyst, smart_ops, proposal_planner]
+    note: "映射到 log_read_delta：只读 deltaStart..deltaEnd"
+  mark_draft_ingested:
+    display_name: "标记草稿已归档"
+    description: "归档成功后提交草稿摄取状态。必须传扫描阶段返回的 state_key 与 content_sha256；内容变化、路径越界或状态文件损坏时 fail-closed。"
+    allowed_domains: [content_curator]
+    requires_human_approval: false
+    mapped: null
+    used_by: []
+    note: "旧项目工具，本批 20 个 agent 未引用"
+  mm_image:
+    display_name: "mm_image"
+    description: "MiniMax CLI 图像生成，支持 --prompt-optimizer 自动优化 prompt"
+    allowed_domains: [video_production]
+    requires_human_approval: false
+    mapped: null
+    used_by: [manager, video_creator]
+    note: "无（MiniMax 专用工具）"
+  mm_search:
+    display_name: "mm_search"
+    description: "MiniMax CLI 网页搜索，用于 Step 1 收集视频素材数据"
+    allowed_domains: [video_production]
+    requires_human_approval: false
+    mapped: null
+    used_by: [video_creator]
+    note: "无（MiniMax 专用工具）"
+  mm_speech:
+    display_name: "mm_speech"
+    description: "MiniMax CLI 语音合成，用 speech-2.8-hd 高音质模型生成场景旁白"
+    allowed_domains: [video_production]
+    requires_human_approval: false
+    mapped: null
+    used_by: [video_creator]
+    note: "无（MiniMax 专用工具）"
+  oa_affair_detail:
+    display_name: "OA 事项详情"
+    description: "查询单条 OA 事项的流程状态与单据字段。需要 object_id（来自 oa_affair_query 结果）。detail_level：state 仅状态（最快）/ basic 状态+审批完成时间（默认）/ full 再加金额事由。调用者身份未知时拒绝。"
+    allowed_domains: [oa_query, manager]
+    requires_human_approval: false
+    mapped: null
+    used_by: [manager, oa_assistant]
+    note: "无（OA 域未迁移）"
+  oa_affair_query:
+    display_name: "OA 事项查询"
+    description: "查询致远 OA 事项列表（待办/已办/已发/待发/跟踪/督办 6 类事项盒通用），按时间范围 + 业务范围 + 业务类型过滤，查询对象自动锁定为当前登录用户本人（人员编码由平台身份绑定，不接受传入）。默认只查协同（collaboration）业务；公文（edoc）不在默认范围，用户明确要查公文/收文时才传 apps=edoc。返回事项标题、发起时间、状态、object_id。注意：OA 不返回总数；不提供审批意见与当前办理人。"
+    allowed_domains: [oa_query, manager]
+    requires_human_approval: false
+    mapped: null
+    used_by: [manager, oa_assistant]
+    note: "无（OA 域未迁移）"
+  oa_form_extract:
+    display_name: "OA 表单提炼"
+    description: "按审核视角提炼单据原料——归一化主表字段、明细子表、附件清单与下载。查询范围锁定为当前登录用户本人（不接受人员编码入参）。不做任何审核判断。"
+    allowed_domains: [oa_query]
+    requires_human_approval: false
+    mapped: null
+    used_by: [oa_assistant]
+    note: "无（OA 域未迁移）"
+  obsidian_vault:
+    display_name: "Obsidian Vault 访问"
+    description: "Obsidian Vault 旧路径只读兼容工具。仅当 OBSIDIAN_VAULT_ROOT 指向项目根内专用子目录时可读。 支持文件列举、读取、关键词搜索、tag 搜索、增量扫描和路径校验。 write_file 已永久禁用，始终返回 vault_write_disabled。 未启用时统一返回 vault_disabled，项目内知识沉淀不依赖本工具。"
+    allowed_domains: [content_curator, proposal_planner, weekly-reporter]
+    requires_human_approval: false
+    mapped: null
+    used_by: [manager, proposal_planner, weekly-reporter]
+    note: "无（Obsidian 集成未迁移）"
+  plan_tasks:
+    display_name: "任务分解"
+    description: "Manager 将任务拆解为多步骤计划"
+    allowed_domains: [manager]
+    requires_human_approval: false
+    mapped: null
+    used_by: [manager]
+    note: "无（DSH 用 DAG 引擎排期）"
+  present_content:
+    display_name: "present_content"
+    description: ""
+    allowed_domains: []
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-host/tools", tool: "present_content" }
+    used_by: [manager, oa_assistant, smart_analysis, smart_query]
+  pull_logs:
+    display_name: "远程日志拉取"
+    description: "按日志采集任务配置从绑定 SSH 实例只读拉取 active 日志文件到租户任务目录。"
+    allowed_domains: [smart_ops]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-log-collection/tools", tool: "pull_logs" }
+    used_by: [log_puller]
+  query_kb:
+    display_name: "知识库查询（通用版）"
+    description: "通用知识库查询工具。两个个人助理 agent（content_curator / proposal_planner） 查询历史笔记、实体/概念页、对比页时调用。按 domain 路由到 config/knowledge/<domain>/， 支持 5 种 category（patterns/cases/entities/concepts/comparisons）和关键词搜索。 同时返回 index.md 导航摘要 + log.md 最近 10 条操作记录。 与视频生产专用版 query_knowledge 解耦（向后兼容，不动视频生产域）。"
+    allowed_domains: [content_curator, proposal_planner, smart_query]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-knowledge/tools", tool: "knowledge_search" }
+    used_by: [proposal_planner, smart_query]
+  knowledge_wiki_categories:
+    display_name: "Wiki 分类目录查询"
+    description: "查询 Agent 自动维护的 Wiki 二级分类目录。归档前先复用已有目录；没有匹配时才在固定知识域内新建最多两级目录。禁止新建顶级知识域。"
+    allowed_domains: [personal_assistant, video_production, smart_query]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-knowledge/tools", tool: "knowledge_wiki_categories" }
+    used_by: [proposal_planner, video_creator, smart_query]
+  knowledge_wiki_draft:
+    display_name: "Wiki 草稿"
+    description: "创建 LLM Wiki 草稿并自动分类。传入固定 targetSpaceId 和复用/新建的 categoryPath。"
+    allowed_domains: [personal_assistant, video_production, smart_query]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-knowledge/tools", tool: "knowledge_wiki_draft" }
+    used_by: [proposal_planner, video_creator, smart_query]
+  knowledge_wiki_check:
+    display_name: "Wiki 草稿检查"
+    description: "检查 Wiki 草稿的重复、敏感信息、来源和分类关联。"
+    allowed_domains: [personal_assistant, video_production, smart_query]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-knowledge/tools", tool: "knowledge_wiki_check" }
+    used_by: [proposal_planner, video_creator, smart_query]
+  knowledge_wiki_publish:
+    display_name: "Wiki 发布"
+    description: "把检查通过的草稿发布到固定知识域和二级分类目录，并写入检索与记忆星云。"
+    allowed_domains: [personal_assistant, video_production, smart_query]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-knowledge/tools", tool: "knowledge_wiki_publish" }
+    used_by: [proposal_planner, video_creator, smart_query]
+  query_knowledge:
+    display_name: "query_knowledge"
+    description: "按类别和章节查询视频生产知识库的详细规则。支持按 scene_type 匹配图像 prompt 模板。"
+    allowed_domains: [video_production]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-knowledge/tools", tool: "knowledge_search" }
+    used_by: [video_creator]
+  read_file:
+    display_name: "读取文件"
+    description: "读取工作区文件内容"
+    allowed_domains: []
+    requires_human_approval: false
+    mapped: { plugin: "@deepseek-ai/dsh-tool-fs", tool: "read" }
+    used_by: [coding_agent, log_analyst, log_puller, manager, multi-agent-report, proposal_planner, quality_inspector, task_conductor, task_decomposer, task_dispatcher, task_monitor, task_planner, video_creator, weekly-reporter]
+  read_skill:
+    display_name: "读取 Skill 内容"
+    description: "读取一个 Skill 的完整内容（按需加载，不全量注入 system_prompt）。 skill 列表 metadata 已在 system_prompt 的「## 可用 Skill」段展示， 当你需要某个 skill 的详细操作指引时调本工具加载完整 body。 常见场景：用户要求生成 workflow → 调 read_skill('workflow-author') 学规范； 用户要求选择 DAG 拓扑 → 调 read_skill('dag-patterns') 看模式指南。"
+    allowed_domains: [manager, smart_query, smart_ops, smart_approval, smart_form, smart_analysis, video_production, personal_assistant, oa_query]
+    requires_human_approval: false
+    mapped: { plugin: "@deepseek-ai/dsh-tool-skill", tool: "skill" }
+    used_by: [manager, oa_assistant, weekly-reporter]
+  report_surface_state:
+    display_name: "生成式 UI surface state 推送"
+    description: "Agent 在执行期间主动 emit 生成式 UI 面板快照（partial / final），前端 SupervisionPanel 按 view_id 路由到对应 A2UI 组件实时渲染。 与 NODE_COMPLETED 不同：本工具是 agent 主动 emit，可推多次（started → partial → final 单调推进）， 而 NODE_COMPLETED 是节点终态一次性 emit。 校验链： 1. view_id 在 actor allowed_surface_views 白名单 2. data_model 符合 fields 类型约束 3. components 是有效 A2UI 组件树（30+ 组件） 4. output_contract 与 view_id 声明一致 5. phase 单调推进（per-view 维度） 6. surface_id digest pinning 防重复 emit"
+    allowed_domains: [manager, any_agent_with_visual_profile]
+    requires_human_approval: false
+    mapped: null
+    used_by: [manager, multi-agent-report]
+    note: "无（DSH 侧生成式 UI 面板由 present_content 渲染，不再单独推送 surface state）"
+  request_cross_domain:
+    display_name: "跨域请求"
+    description: "经 Manager 中转的跨业务域请求"
+    allowed_domains: []
+    requires_human_approval: false
+    mapped: null
+    used_by: [smart_analysis, smart_approval, smart_form, smart_ops, smart_query]
+    note: "无（DSH 用 DAG 的跨节点数据边代替）"
+  scan_drafts:
+    display_name: "草稿目录扫描"
+    description: "扫描显式指定的 Vault 内相对草稿目录，返回新增或未处理文档。 已处理状态只读取项目内状态文件，并要求路径键与全文哈希同时匹配； frontmatter 不作为处理凭据。since 非空时额外按 mtime 过滤。 仅在 OBSIDIAN_VAULT_ROOT 显式启用时可用，不读取项目外默认目录。"
+    allowed_domains: [content_curator]
+    requires_human_approval: false
+    mapped: null
+    used_by: []
+    note: "旧项目工具，本批 20 个 agent 未引用"
+  server_restart:
+    display_name: "服务器重启"
+    description: "重启指定服务器（高危操作）"
+    allowed_domains: [smart_ops]
+    requires_human_approval: true
+    mapped: null
+    used_by: [smart_ops, manager, oa_assistant, proposal_planner, smart_analysis, smart_approval, smart_form, smart_query]
+    note: "无（运维动作不交给模型）"
+  server_status:
+    display_name: "服务器状态"
+    description: "查询服务器状态（CPU/内存/磁盘/进程）"
+    allowed_domains: [smart_ops]
+    requires_human_approval: false
+    mapped: null
+    used_by: [smart_ops]
+    note: "无（DSH 的 agentops_system_status 只报自身状态）"
+  sql_execute:
+    display_name: "SQL 执行"
+    description: "执行写操作 SQL（INSERT/UPDATE/DELETE/DDL），仅 DBA 使用"
+    allowed_domains: []
+    requires_human_approval: true
+    mapped: null
+    used_by: [coding_agent, manager, oa_assistant, proposal_planner, smart_analysis, smart_approval, smart_form, smart_ops, smart_query, task_planner]
+    note: "无（DSH 的 db 工具只读）"
+  sql_query:
+    display_name: "SQL 查询"
+    description: "执行只读 SQL 查询"
+    allowed_domains: [smart_query, smart_analysis]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-db/tools", tool: "sql_query" }
+    used_by: [manager, smart_query, coding_agent, oa_assistant, proposal_planner, smart_analysis, smart_approval, smart_form, smart_ops, task_planner]
+  ssh_exec:
+    display_name: "SSH 命令执行"
+    description: "通过 SSH 在远程服务器执行命令（高危操作）"
+    allowed_domains: [smart_ops]
+    requires_human_approval: true
+    mapped: null
+    used_by: [smart_ops, manager, oa_assistant, proposal_planner, smart_analysis, smart_approval, smart_form, smart_query]
+    note: "无（DSH 不向模型暴露远程执行）"
+  submit_form:
+    display_name: "表单提交"
+    description: "提交 OA 表单（报销/请假/申请等）"
+    allowed_domains: [smart_form]
+    requires_human_approval: false
+    mapped: null
+    used_by: [smart_form, manager, oa_assistant, smart_analysis, smart_approval, smart_ops, smart_query]
+    note: "无（表单域未迁移）"
+  system_probe:
+    display_name: "系统资源探针"
+    description: "探测系统资源（进程存活/端口可达/磁盘/内存/CPU 使用率），任一指标超阈值则 abnormal=true"
+    allowed_domains: [smart_ops]
+    requires_human_approval: false
+    mapped: null
+    used_by: [task_monitor]
+    note: "无（DSH 无系统探针工具）"
+  candidate_create:
+    display_name: "捕获任务候选"
+    description: "把用户输入或外部来源捕获为 Candidate，进入待分析、待 Gate 的准入区。捕获不会创建正式 Task；只有用户通过 Gate 后才能创建 Task。"
+    allowed_domains: [task_planner, task_management]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-task/tools-v1", tool: "candidate_create" }
+    used_by: [task_planner]
+  task_advance_stage:
+    display_name: "推进任务状态"
+    description: "推进任务到下一个状态（idea→backlog→discussing→reviewing→closed）。 带乐观锁 if_version，冲突自动重试一次。 reviewing→closed 是用户决策态（requires_user=True），agent 不可自动关闭，必须等用户审批。 非法转移返回 400 + 合法目标列表。"
+    allowed_domains: [manager, task_planner]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-task/tools-v1", tool: "task_advance" }
+    used_by: [task_planner, task_conductor, task_decomposer, task_dispatcher]
+  task_approval:
+    display_name: "发起任务评审"
+    description: "发起任务决策评审（轻量风险分级 + 用户确认，非 OA 审批流）。 low → 自动通过标记 approved，进 decomposing； medium → 通知用户，可放行； high → 强制人审（进 reviewing）。 审批通过标记 approved（瞬时）；退回则回 backlog。"
+    allowed_domains: [manager]
+    requires_human_approval: false
+    mapped: null
+    used_by: [coding_agent]
+    note: "无（DSH 任务域无审批态）"
+  task_assign_agent:
+    display_name: "指派执行 Agent"
+    description: "更新任务的 assignee_type/assignee_id/assignee_name 与 style_id 字段。 带乐观锁 if_version，冲突返回 version_conflict。 至少需提供一个 assignee_* 或 style_id 字段。"
+    allowed_domains: [manager]
+    requires_human_approval: false
+    mapped: null
+    used_by: []
+    note: "旧项目工具，本批 20 个 agent 未引用"
+  task_auto_evolve:
+    display_name: "任务自动演进"
+    description: "执行调度扫描确认的确定性动作：abandon（不活跃归档 → abandoned）/ unblock（依赖就绪解除 blocked→in_progress）。 逐条走 advance_stage 状态机（单一事实源），单条失败不影响其余； 工具端二次校验候选合法性，拒绝 LLM 臆造的动作（如对 closed 任务归档、对非 blocked 任务解除阻塞）。 禁止执行 requires_user=True 的转移（advance_stage 守卫兜底）。"
+    allowed_domains: [task_management]
+    requires_human_approval: false
+    mapped: null
+    used_by: [task_conductor]
+    note: "无（DSH 任务域无自动演进）"
+  task_claim:
+    display_name: "认领任务"
+    description: "认领一个待执行任务并绑定当前会话线程。"
+    allowed_domains: [manager, task_planner, coding_agent]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-task/tools-v1", tool: "task_claim" }
+    used_by: [coding_agent, task_inbox]
+  task_get:
+    display_name: "读取任务"
+    description: "读取任务详情、允许状态转移与当前版本。"
+    allowed_domains: [task_management, coding_agent]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-task/tools-v1", tool: "task_get" }
+    used_by: [coding_agent, task_planner, task_decomposer, task_dispatcher]
+  task_advance:
+    display_name: "推进任务状态"
+    description: "按状态机推进任务，写入乐观锁、事件与审计。"
+    allowed_domains: [task_management, coding_agent]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-task/tools-v1", tool: "task_advance" }
+    used_by: [coding_agent, task_planner, task_conductor, task_decomposer, task_dispatcher]
+  task_comment:
+    display_name: "任务评论"
+    description: "写入讨论、报告或评审评论。"
+    allowed_domains: [task_management, coding_agent]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-task/tools-v1", tool: "task_comment" }
+    used_by: [coding_agent]
+  task_report_submit:
+    display_name: "提交任务报告"
+    description: "提交正式 Markdown 报告、产物引用和验收自检。"
+    allowed_domains: [task_management, coding_agent]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-task/tools-v1", tool: "task_report_submit" }
+    used_by: [coding_agent]
+  task_validate:
+    display_name: "任务验收"
+    description: "提交质量验收结果并受状态机门禁约束。"
+    allowed_domains: [task_management, quality_inspector]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-task/tools-v1", tool: "task_validate" }
+    used_by: [coding_agent, quality_inspector]
+  task_rollback:
+    display_name: "任务回退"
+    description: "按目标阶段执行受控回退。"
+    allowed_domains: [task_management, quality_inspector]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-task/tools-v1", tool: "task_rollback" }
+    used_by: [coding_agent, quality_inspector]
+  task_close:
+    display_name: "关闭任务"
+    description: "关闭任务前硬约束检查（全部满足才 closed）： 1. 交付物验收通过（acceptance_criteria 全部 passed） 2. 受影响设计文档已回写（doc_change_proposals 无 pending） 两步推进：validating → closing → closed。 agent 禁用此工具（仅用户/manager 可关闭）。"
+    allowed_domains: [manager]
+    requires_human_approval: false
+    mapped: null
+    used_by: [coding_agent, quality_inspector]
+    note: "无（DSH 任务域无关闭动作）"
+  task_commit_stage:
+    display_name: "提交阶段产出"
+    description: "回写 task_stages.stage_output（create_stage + commit_stage）。 若提供 target_status 则同时推进状态机（需带 if_version）。 agent 完成阶段性产出后调用，把变更/拆解/验证结果落库。"
+    allowed_domains: [manager, coding_agent, task_planner]
+    requires_human_approval: false
+    mapped: null
+    note: "无（v1 任务域没有阶段回写工具，阶段由 advance 与报告承载）"
+    used_by: [coding_agent]
+  task_conductor_scan:
+    display_name: "任务调度扫描"
+    description: "扫描任务表，返回五类清单（归档候选/解除阻塞候选/卡死任务/长期未处理 idea/建议开工任务）。 纯只读，无任何写操作。判定阈值可传参覆盖（默认 30 天归档 / 7 天卡死）。"
+    allowed_domains: [task_management]
+    requires_human_approval: false
+    mapped: null
+    used_by: [task_conductor]
+    note: "无（DSH 任务域无巡检扫描）"
+  task_convert_idea:
+    display_name: "灵感转任务"
+    description: "将灵感池中的 idea 转为正式任务（status=backlog）。 回写 idea.converted_task_id，原 idea 标记为 converted。 标题默认取 idea.content 前 80 字，可显式传入 title 覆盖。"
+    allowed_domains: [manager]
+    requires_human_approval: false
+    mapped: null
+    used_by: []
+    note: "旧项目工具，本批 20 个 agent 未引用"
+  task_create_project:
+    display_name: "创建项目"
+    description: "创建一个新项目（项目是任务的容器）。 项目有自己的 identifier 前缀（如 AGENTOPS-1），后续任务按项目编号自增。"
+    allowed_domains: [manager, task_planner]
+    requires_human_approval: false
+    mapped: null
+    used_by: [task_planner]
+    note: "无（DSH task tools 不提供项目创建工具；项目由 HTTP/管理面创建）"
+  task_decompose_apply:
+    display_name: "拆分落库"
+    description: "按分解决策（strategy=recursive）创建子任务：parent 指向父任务、状态 decomposing （方案继承自父任务，跳过讨论直接进调度池）。高风险父任务的拆分方案 评论区 @用户 人审（决策 #7：确认后才进自动调度）。"
+    allowed_domains: [task_management]
+    requires_human_approval: false
+    mapped: null
+    used_by: [task_decomposer]
+    note: "无（DSH 任务域无任务分解）"
+  task_decompose_decide:
+    display_name: "分解决策"
+    description: "四因子（工作量/耦合度/依赖结构/风险隔离）跑确定性决策树，输出拆分策略 （none 单agent直接执行 / single 单agent依次执行 / recursive 父子+DAG） 并生成可解释的分解决策书存 task_reports。LLM 只评估因子，决策逻辑 100% 确定性。"
+    allowed_domains: [task_management]
+    requires_human_approval: false
+    mapped: null
+    used_by: [task_decomposer]
+    note: "无（DSH 任务域无任务分解）"
+  task_detail_get:
+    display_name: "任务详情查询"
+    description: "只读查询任务详情：标题/描述/风险/状态/子任务清单/前置依赖。 供 task_decomposer（estimate 因子评估）等 agent 获取任务上下文。"
+    allowed_domains: [task_management]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-task/tools-v1", tool: "task_get" }
+    used_by: [task_decomposer, task_dispatcher]
+  task_dispatch_execute:
+    display_name: "执行派发"
+    description: "按就绪清单派发执行：二次校验（状态/依赖/风险/并发）→ ε-greedy（20% 均匀随机探索） + 声望加权轮询（时间衰减有效声望 + 保底权重）选 executor → advance_stage(decomposing→in_progress) → execute_coding（harness 按 executor 配置）。 medium 风险派发后评论区 @用户（知情可召回）。父任务收尾：子任务全终态 → in_progress→validating 进验收链路。配置读 config/dispatch.yaml。"
+    allowed_domains: [task_management]
+    requires_human_approval: false
+    mapped: null
+    used_by: [task_dispatcher]
+    note: "无（DSH 任务域无派发执行）"
+  task_dispatch_scan:
+    display_name: "调度派发扫描"
+    description: "扫描 decomposing 态任务：叶子 + 依赖就绪 + 风险门禁（low/medium 自动）→ 就绪清单； high 风险 → 人工确认清单；依赖未就绪/父任务等子任务 → 挂起清单； 子任务全完成的父任务 → 收尾候选。并发占用 = in_progress 任务数（保守口径）。 纯只读，配置读 config/dispatch.yaml。"
+    allowed_domains: [task_management]
+    requires_human_approval: false
+    mapped: null
+    used_by: [task_dispatcher]
+    note: "无（DSH 任务域无派发扫描）"
+  task_execute_coding:
+    display_name: "派发编码执行"
+    description: "派发 coding_agent 在授权 workspace 沙箱内执行 coding 类任务。 校验任务处于 in_progress，装配 prompt（基础铁律 + 任务上下文 + 风格 overlay）， 创建/复用执行会话，弱关联 task_run。 无 harness 工厂时走 mock 模式（返回 mock run_id，不真正起进程）。"
+    allowed_domains: [manager, coding_agent]
+    requires_human_approval: false
+    mapped: null
+    used_by: [coding_agent, task_dispatcher]
+    note: "无（编码执行走 DSH 子代理，不是一个工具）"
+  task_link_run:
+    display_name: "关联任务执行"
+    description: "弱关联 task_run：把一个 run/session 绑到任务上。 弱关联指 run_id/session_id 不强制 FK，便于跨存储/跨进程关联 （mock 模式或外部 run 也能挂）。 role 标识关联角色（main_execution/sub_task/verification 等）。"
+    allowed_domains: [manager, coding_agent]
+    requires_human_approval: false
+    mapped: null
+    used_by: [coding_agent]
+    note: "无（DSH 任务域不挂运行链接）"
+  idea_capture:
+    display_name: "采集收件箱记录"
+    description: "把一段对话、群消息或连接器抓取写入收件箱。只落记录，不建任务；bot 与 agent 通道的采集停在 captured，等待用户分诊。"
+    allowed_domains: [task_management]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-task/tools-v1", tool: "idea_capture" }
+    used_by: [task_inbox]
+  idea_list:
+    display_name: "查询收件箱"
+    description: "按状态、通道或业务类型列出收件箱记录，只读。"
+    allowed_domains: [task_management]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-task/tools-v1", tool: "idea_list" }
+    used_by: [task_inbox]
+  idea_triage:
+    display_name: "分诊收件箱记录"
+    description: "把一条收件箱记录分类、标记就绪、忽略或归档。只有用户或 task_inbox 能标记就绪；bot 与 agent 采集仍需用户确认。"
+    allowed_domains: [task_management]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-task/tools-v1", tool: "idea_triage" }
+    used_by: [task_inbox]
+  task_claim_ready:
+    display_name: "认领就绪任务"
+    description: "调度前把任务绑定到当前线程，避免两个调度会话重复领取同一任务。"
+    allowed_domains: [task_management]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-task/tools-v1", tool: "task_claim" }
+    used_by: [task_inbox]
+  task_execute_ready:
+    display_name: "启动任务执行"
+    description: "为就绪任务建立执行绑定；带幂等键，重试返回同一运行；同一任务只允许一个活跃运行。"
+    allowed_domains: [task_management]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-task/tools-v1", tool: "task_execute" }
+    used_by: [task_inbox]
+  task_relations_complete:
+    display_name: "关系风险补全"
+    description: "分解过程中 agent 评估补全阻断关系（blocks，自带环检测）与风险级别 （变更必须带理由）。中低风险静默落库；风险升级到 high 时评论区 @用户 确认。"
+    allowed_domains: [task_management]
+    requires_human_approval: false
+    mapped: null
+    used_by: [task_decomposer]
+    note: "无（DSH 任务域无关系补全）"
+  task_submit_idea:
+    display_name: "提交灵感任务"
+    description: "创建一个新任务（初始状态 idea），写入 tasks 表。 自动分配 identifier（项目前缀 + 自增序号）。 thread_id 用于 V1 claim 协议的「不抢占他人认领」判定。"
+    allowed_domains: [manager, task_planner]
+    requires_human_approval: false
+    mapped: null
+    used_by: [coding_agent, task_planner]
+    note: "无（改用 candidate_create 捕获 Candidate；用户 Gate 通过后才创建 Task）"
+  task_submit_report:
+    display_name: "提交任务报告"
+    description: "agent 完成阶段性产出后提交 task_report： - content 为正文（变更/验证/风险） - artifact_ids 关联交付物 - self_check 为验收自检结果（对照 acceptance_criteria） 博客评论模式：report 落库后用户/其他 agent 可在 task_comments 回复。 若提供 comment_body 则同步写一条 comment_type=report 评论。"
+    allowed_domains: [coding_agent, task_planner]
+    requires_human_approval: false
+    mapped: null
+    used_by: [coding_agent]
+    note: "无（DSH 任务域无报告提交动作）"
+  tavily_search:
+    display_name: "Tavily 联网搜索"
+    description: "联网研究工具——调用 Tavily Search API 获取实时网页信息。 适用于行业研究、竞品分析、新闻监控、技术调研、事实核查等场景。 工具读取环境变量 TAVILY_API_KEY（缺失时返回 ok=false + error=missing_api_key）。 返回结构：{ok, query, answer?, results[{title, url, content, score}], result_count} 失败时返回 {ok: false, error: \"missing_api_key|network_error|http_error|rate_limited|parse_error\", detail} 详细调用纪律见 skills/tavily-search/SKILL.md。"
+    allowed_domains: [manager, smart_query, smart_ops, smart_approval, smart_form, smart_analysis, research, weekly_report, proposal_planning, content_curation, video_production, personal_assistant]
+    requires_human_approval: false
+    mapped: null
+    used_by: []
+    note: "旧项目工具，本批 20 个 agent 未引用"
+  todo:
+    display_name: "todo"
+    description: ""
+    allowed_domains: []
+    requires_human_approval: false
+    mapped: { plugin: "@deepseek-ai/dsh-tool-todo", tool: "todo_write" }
+    used_by: [oa_assistant]
+  dag_catalog:
+    display_name: "工作流目录"
+    description: "列出 DSH 当前工作流目录中的工作流、输入声明、节点数与校验状态；创建工作流前用于查重，落盘后用于确认可发现。"
+    allowed_domains: [manager]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-dag/tools", tool: "dag_catalog" }
+    used_by: [manager]
+    note: "Manager 工作流创建治理工具"
+  dag_validate:
+    display_name: "工作流校验"
+    description: "校验 AgentOps-DSH 工作流 YAML 的解析、节点引用、依赖拓扑、输入声明和表达式；只校验，不执行。"
+    allowed_domains: [manager]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-dag/tools", tool: "dag_validate" }
+    used_by: [manager]
+    note: "生产工作流落盘前必须通过"
+  trigger_workflow:
+    display_name: "触发预定义工作流"
+    description: "直接触发一个预定义 workflow（templated / hybrid / conversational / task 四种 run_mode）。 这是 Manager Agent 推荐的工作流触发方式：不需要 bash 工具，不需要 curl HTTP 调用， 不依赖任何 sandbox/docker。handler 内部直连 orchestrator.run()，等价于 /api/agent/run 端点。 返回 {run_id} 后，前端会在组件面板自动显示 DAG 节点进度（通过 SSE 实时推送）。 workflow_id 必须是 workflows/*.yaml 中真实存在的 workflow 标识 （如 log-patrol / video-pipeline / smart-query）。 templated / hybrid 模式需要 workflow 存在；本工具主要用于 templated 模式触发预定义 workflow。"
+    allowed_domains: [manager]
+    requires_human_approval: false
+    mapped: null
+    used_by: [manager, proposal_planner, task_conductor, task_decomposer, task_dispatcher, task_planner]
+    note: "语义不同：旧工具触发另一条 workflow，DSH 的 dag_run 只在当前会话跑 DAG"
+  upsert_generated_view:
+    display_name: "upsert_generated_view"
+    description: ""
+    allowed_domains: []
+    requires_human_approval: false
+    mapped: null
+    used_by: [manager]
+    note: "无（present_content + surfaces 已覆盖）"
+  validate_duration:
+    display_name: "validate_duration"
+    description: "视频时长与音频校验，检测吞音/长空白/音频重复/资源错位。返回 exit_code=1 表示有阻断错误"
+    allowed_domains: [video_production]
+    requires_human_approval: false
+    mapped: null
+    used_by: [video_creator]
+    note: "无（视频时长校验未迁移）"
+  wecom_notify:
+    display_name: "企业微信推送"
+    description: "发送企业微信群机器人消息。Webhook URL 从能力中心绑定的企业微信实例加密凭证读取。"
+    allowed_domains: [smart_ops]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-capability/tools", tool: "wecom_notify" }
+    used_by: [log_analyst, coding_agent, log_puller, proposal_planner, task_conductor, task_decomposer, task_dispatcher, task_monitor, task_planner]
+    note: "能力中心实例解析，URL 不出现在工具参数中"
+  feishu_notify:
+    display_name: "飞书群推送"
+    description: "发送飞书群机器人消息。Webhook URL 从能力中心绑定的飞书机器人实例加密凭证读取。"
+    allowed_domains: [smart_ops]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-capability/tools", tool: "feishu_notify" }
+    used_by: [log_analyst]
+    note: "能力中心实例解析，URL 不出现在工具参数中"
+  write_file:
+    display_name: "写入文件"
+    description: "写入工作区文件"
+    allowed_domains: []
+    requires_human_approval: false
+    mapped: { plugin: "@deepseek-ai/dsh-tool-fs", tool: "write" }
+    used_by: [coding_agent, log_analyst, log_puller, manager, multi-agent-report, proposal_planner, task_conductor, task_decomposer, task_dispatcher, task_monitor, task_planner, video_creator, weekly-reporter, quality_inspector]

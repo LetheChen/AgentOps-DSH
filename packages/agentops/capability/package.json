@@ -1,0 +1,52 @@
+{
+  "name": "@agentops/dsh-capability",
+  "description": "AgentOps capability center: definitions, connector instances, sealed credentials, Agent bindings, policy and transactional audit.",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "lib/types/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/types/index.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json",
+    "./tools": {
+      "default": "./lib/types/notify-tools.js",
+      "types": "./lib/types/notify-tools.d.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.json",
+    "test": "node --import tsx --test tests/*.test.ts"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/types/**/*.d.ts"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "mysql2": "^3.24.6",
+    "pg": "^8.23.1",
+    "ssh2": "^1.17.0"
+  },
+  "devDependencies": {
+    "@agentops/dsh-vault": "workspace:*",
+    "@deepseek-ai/cordis": "workspace:~",
+    "@deepseek-ai/dsh-client-connection": "workspace:*",
+    "@deepseek-ai/dsh-home-paths": "workspace:*",
+    "@types/pg": "^8.23.1",
+    "@types/ssh2": "^1.15.6",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.2"
+  },
+  "peerDependencies": {
+    "@agentops/dsh-vault": "workspace:*",
+    "@deepseek-ai/cordis": "workspace:~",
+    "@deepseek-ai/dsh-client-connection": "workspace:*",
+    "@deepseek-ai/dsh-home-paths": "workspace:*"
+  }
+}

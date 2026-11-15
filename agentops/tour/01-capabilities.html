@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>01 · AgentOps 能力地图</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="styles.css">
+<style>
+  .cap-page{height:100vh;overflow:hidden}
+  .cap-side{display:flex;flex-direction:column;align-items:flex-end;gap:9px;flex:0 0 auto;max-width:650px}
+  .cap-side .lede{max-width:640px}
+  .carry-mini{display:none;align-items:center;gap:6px;max-width:520px;padding:4px 9px;border-radius:7px;border:1px solid rgba(255,180,84,.28);background:rgba(255,180,84,.07);font:9px var(--mono);color:#ffcf8f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.carry-mini.show{display:flex}.carry-mini i{width:5px;height:5px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber)}
+  .stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--edge);border:1px solid var(--edge);border-radius:9px;overflow:hidden;flex:0 0 auto}
+  .stat{background:rgba(8,13,17,.92);padding:9px 12px}.stat b{display:flex;align-items:baseline;gap:6px;font:500 20px/1.05 var(--mono);color:var(--cyan)}.stat b small{font-size:8.5px;color:var(--dimmer);font-weight:400;letter-spacing:.06em}.stat span{display:block;margin-top:4px;font-size:9.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.stat:nth-child(2) b{color:var(--teal)}.stat:nth-child(3) b{color:var(--amber)}.stat:nth-child(4) b{color:var(--violet)}
+  .cap-main{display:grid;grid-template-columns:minmax(0,1.42fr) minmax(330px,.72fr);gap:14px;flex:1;min-height:0}
+  .map-panel{display:flex;flex-direction:column;min-height:0}.map-head-wrap{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}.filters{display:flex;gap:4px;flex-wrap:wrap}.filter{background:transparent;border:1px solid transparent;border-radius:6px;padding:5px 7px;cursor:pointer;font-size:9.5px;color:var(--dimmer);white-space:nowrap}.filter:hover{color:var(--dim);background:rgba(224,240,250,.04)}.filter.on{color:var(--cyan);background:rgba(57,215,255,.075);border-color:rgba(57,215,255,.24)}
+  .board{position:relative;flex:1;min-height:0;overflow:auto;padding:17px 18px;background:radial-gradient(circle at 50% 10%,rgba(57,215,255,.06),transparent 34%),linear-gradient(rgba(57,215,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(57,215,255,.018) 1px,transparent 1px);background-size:auto,24px 24px,24px 24px}
+  .layer{position:relative;display:grid;grid-template-columns:88px minmax(0,1fr);gap:12px;align-items:stretch;margin-bottom:10px}.layer:last-of-type{margin-bottom:0}.layer-label{display:flex;flex-direction:column;justify-content:center;gap:4px;font:8px/1.4 var(--mono);letter-spacing:.11em;color:var(--dimmer);text-transform:uppercase}.layer-label b{font-size:9px;color:var(--dim);font-weight:500}.layer-label em{font-style:normal;color:var(--cyan)}
+  .layer-card{border:1px solid var(--edge);border-radius:10px;background:rgba(9,14,18,.82);padding:12px 13px;min-width:0;position:relative;overflow:hidden}.layer-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:linear-gradient(180deg,transparent,var(--cyan),transparent);opacity:.48}.layer-card.manager::before{background:linear-gradient(180deg,transparent,var(--amber),transparent)}.layer-card.workflow::before{background:linear-gradient(180deg,transparent,var(--teal),transparent)}
+  .layer-title{display:flex;align-items:center;justify-content:space-between;gap:10px}.layer-title b{font-size:13px;font-weight:550}.layer-title small{font:8px var(--mono);color:var(--dimmer);white-space:nowrap}.layer-note{margin-top:5px;font-size:9.5px;color:var(--dim);line-height:1.55}.layer-note code{font:9px var(--mono);color:var(--cyan)}
+  .cap-chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px}.cap-chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--edge);background:rgba(224,240,250,.03);color:var(--dim);border-radius:6px;padding:5px 7px;font-size:9px;cursor:pointer;transition:.15s}.cap-chip b{font:8px var(--mono);color:var(--cyan);font-weight:500}.cap-chip:hover,.cap-chip.active{border-color:rgba(57,215,255,.4);background:rgba(57,215,255,.08);color:#c7e6f2}.cap-chip.dim{opacity:.22}
+  .connector{display:flex;align-items:center;justify-content:center;height:23px;color:var(--dimmer);font:8px var(--mono);letter-spacing:.08em;position:relative}.connector::before,.connector::after{content:"";width:min(37%,210px);height:1px;background:linear-gradient(90deg,transparent,rgba(57,215,255,.35))}.connector::after{background:linear-gradient(90deg,rgba(57,215,255,.35),transparent)}.connector span{padding:0 8px}.connector.handoff::before,.connector.handoff::after{background:linear-gradient(90deg,transparent,rgba(255,180,84,.42))}.connector.handoff span{color:rgba(255,180,84,.72)}
+  .dag-box{border:1px dashed rgba(57,215,255,.22);border-radius:9px;padding:10px;background:rgba(57,215,255,.018)}.dag-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}.dag-top span{font:8px var(--mono);letter-spacing:.1em;color:var(--dimmer)}.dag-top b{font:8px var(--mono);font-weight:500;color:var(--teal)}
+  .node-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:6px}.node-mini{border:1px solid var(--edge);border-radius:7px;background:rgba(7,11,14,.72);padding:7px 8px;min-width:0}.node-mini b{display:block;font:9.5px var(--mono);color:#c6dce6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.node-mini span{display:block;margin-top:2px;font-size:8.5px;color:var(--dimmer);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.node-mini.route{border-color:rgba(57,215,255,.29)}.node-mini.refuse{border-color:rgba(255,180,84,.2)}.node-mini.run{grid-column:2}.node-mini.present{grid-column:1/-1;border-color:rgba(87,224,139,.25)}
+  .result-rail{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}.result-box{border:1px solid var(--edge);border-radius:7px;background:rgba(224,240,250,.025);padding:8px}.result-box span{display:block;font:7.5px var(--mono);letter-spacing:.09em;color:var(--dimmer)}.result-box b{display:block;margin-top:4px;font-size:9.5px;font-weight:500;color:#c6dce6}.result-box em{display:block;margin-top:3px;font:8px/1.45 var(--mono);font-style:normal;color:var(--dim)}
+  .board-foot{display:flex;justify-content:space-between;gap:10px;margin-top:10px;font:8px var(--mono);color:var(--dimmer)}.board-foot i{font-style:normal;color:var(--teal)}
+  .inspector{display:flex;flex-direction:column;min-height:0}.ins-body{padding:13px 14px;overflow:auto;min-height:0;flex:1;display:flex;flex-direction:column;gap:11px}.ins-kicker{display:flex;align-items:center;gap:7px}.ins-no{display:grid;place-items:center;width:24px;height:24px;border-radius:6px;border:1px solid rgba(57,215,255,.35);background:rgba(57,215,255,.08);font:9px var(--mono);color:var(--cyan)}.ins-group{font:8px var(--mono);letter-spacing:.08em;color:var(--dimmer);text-transform:uppercase}.ins-title{font-size:18px;line-height:1.2;font-weight:550}.ins-desc{margin-top:-4px;font-size:10.5px;line-height:1.68;color:var(--dim)}.ins-desc b{color:#c7dce6;font-weight:550}
+  .field-label{font:8px var(--mono);letter-spacing:.1em;color:var(--dimmer);margin-bottom:5px}.io-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.io-box{border:1px solid var(--edge);border-radius:7px;padding:8px;background:rgba(224,240,250,.024)}.io-box span{display:block;font:7.5px var(--mono);color:var(--dimmer);margin-bottom:4px}.io-box p{font-size:9px;line-height:1.55;color:var(--dim)}.io-box code{font:8.5px var(--mono);color:var(--teal)}
+  .value-path{display:flex;flex-direction:column;gap:4px}.value-step{display:grid;grid-template-columns:18px minmax(0,1fr);gap:7px;align-items:start;font-size:9px;line-height:1.45;color:var(--dim)}.value-step i{display:grid;place-items:center;width:16px;height:16px;border-radius:50%;border:1px solid rgba(57,215,255,.28);font:7px var(--mono);font-style:normal;color:var(--cyan)}.value-step b{color:#bdd3de;font-weight:500}
+  .evidence{border:1px solid rgba(62,240,192,.18);border-radius:7px;background:rgba(62,240,192,.035);padding:8px}.evidence code{display:block;font:8.5px/1.6 var(--mono);color:#83cdb8;word-break:break-all}.evidence code + code{margin-top:2px}.limit{border-left:2px solid rgba(255,180,84,.55);padding:7px 9px;background:rgba(255,180,84,.045);font-size:9px;line-height:1.58;color:#ad9d86}.limit b{color:var(--amber);font-weight:550}
+  .ins-actions{display:flex;flex-direction:column;gap:7px;padding-top:2px}.ins-actions .btn{width:100%}.handoff-note{font-size:8.5px;line-height:1.55;color:var(--dimmer);text-align:center}
+  @media(max-width:1120px){.cap-page{height:auto;overflow:auto}.cap-main{grid-template-columns:1fr}.map-panel{min-height:650px}.inspector{min-height:560px}.cap-side{max-width:520px}.stat-strip{grid-template-columns:1fr 1fr}.board{min-height:570px}}
+  @media(max-width:760px){.cap-side{display:block;padding-top:10px}.cap-side .lede{margin-top:9px}.cap-main{gap:10px}.board{padding:12px 10px;min-height:760px}.layer{grid-template-columns:1fr;gap:5px}.layer-label{flex-direction:row;gap:7px;align-items:center}.connector{height:21px}.node-grid{grid-template-columns:1fr}.node-mini.run{grid-column:auto}.node-mini.present{grid-column:auto}.result-rail{grid-template-columns:1fr}.stat-strip{grid-template-columns:1fr 1fr}.io-grid{grid-template-columns:1fr}.map-head-wrap{width:100%;justify-content:flex-start}.panel-head{align-items:flex-start;flex-direction:column}.inspector{min-height:600px}}
+</style>
+</head>
+<body>
+<div class="page cap-page">
+  <header class="mast">
+    <div class="mast-copy">
+      <div class="eyebrow"><i>CHAPTER 01</i><span>capability map</span></div>
+      <h1>一句话问数，<br><em>穿过三层协作</em></h1>
+    </div>
+    <div class="cap-side">
+      <p class="lede">这不是“一个 Agent 自己查库”。Manager 只做识别与派发，<b>smart_query</b> 拥有并启动固定工作流，工作流再把五类业务角色交给 DAG 节点 subagent。点击能力卡查看输入、输出与源码证据。</p>
+      <div class="carry-mini" id="carryMini"><i></i><span id="carryMiniText"></span></div>
+      <div class="btn-row"><span class="chip green">SOURCE-GROUNDED</span><span class="chip amber">TEACHING VIEW</span></div>
+    </div>
+  </header>
+
+  <section class="stat-strip" aria-label="协作概览">
+    <div class="stat"><b>3 <small>LAYERS</small></b><span>Manager → Agent → DAG node</span></div>
+    <div class="stat"><b>5 <small>ROLES</small></b><span>意图分类 / 接待 / SQL / 执行 / 讲解</span></div>
+    <div class="stat"><b>1 <small>PINNED FLOW</small></b><span>smart-query 由 preset 绑定</span></div>
+    <div class="stat"><b>0 <small>BIZ TOOLS</small></b><span>Manager 不持有 sql_query</span></div>
+  </section>
+
+  <main class="cap-main">
+    <section class="panel map-panel">
+      <div class="panel-head">
+        <div class="panel-title"><span class="dot"></span>能力链路 <span class="panel-sub">CLICK A CAPABILITY</span></div>
+        <div class="map-head-wrap">
+          <div class="filters" role="group" aria-label="能力筛选">
+            <button class="filter on" data-filter="all">全部 <b>06</b></button>
+            <button class="filter" data-filter="entry">入口编排 <b>02</b></button>
+            <button class="filter" data-filter="flow">工作流执行 <b>02</b></button>
+            <button class="filter" data-filter="evidence">结果追踪 <b>02</b></button>
+          </div>
+          <button class="btn small" id="tourBtn">逐步巡览</button>
+        </div>
+      </div>
+      <div class="board">
+        <div class="layer">
+          <div class="layer-label"><b>LAYER 0</b><em>USER ↔ MANAGER</em><span>entry / dispatch</span></div>
+          <div class="layer-card manager">
+            <div class="layer-title"><b>Manager Agent</b><small>local_llm · MiniMax-M3 · max 1 run</small></div>
+            <p class="layer-note">判断请求是否需要业务执行；需要时生成自包含任务，通过 <code>subagent</code> 派发。它不知道 smart_query 内部跑哪条 workflow。</p>
+            <div class="cap-chips">
+              <button class="cap-chip" data-cap="C1"><b>C1</b>意图识别与任务分解</button>
+              <button class="cap-chip" data-cap="C2"><b>C2</b>异步子代理委派</button>
+            </div>
+          </div>
+        </div>
+        <div class="connector handoff"><span>subagent(agent_preset=smart_query, prompt) · 立即返回 subagentId</span></div>
+        <div class="layer">
+          <div class="layer-label"><b>LAYER 1</b><em>DELEGATED AGENT</em><span>workflow owner</span></div>
+          <div class="layer-card workflow">
+            <div class="layer-title"><b>smart_query Agent</b><small>execution: workflow · smart-query</small></div>
+            <p class="layer-note">第一动作必须是 <code>dag_run</code>，<code>question</code> 传用户原话；工具已钉定工作流，模型传入的 <code>workflowId</code> 或 <code>yaml</code> 会被忽略。</p>
+            <div class="cap-chips"><button class="cap-chip" data-cap="C3"><b>C3</b>固定工作流所有权</button></div>
+          </div>
+        </div>
+        <div class="connector"><span>dag_run(inputs.question, inputs.database=audit_reader)</span></div>
+        <div class="layer">
+          <div class="layer-label"><b>LAYER 2</b><em>WORKFLOW NODES</em><span>role subagents</span></div>
+          <div class="layer-card">
+            <div class="dag-box">
+              <div class="dag-top"><span>SMART-QUERY · V3 · AGENT NODES ONLY</span><b>NORMAL PATH 4 / DECLARED 5</b></div>
+              <div class="node-grid">
+                <div class="node-mini route"><b>route_intent</b><span>意图分类员 · output intent</span></div>
+                <div class="node-mini refuse"><b>refuse_intent</b><span>接待员 · skip_if intent</span></div>
+                <div class="node-mini" style="grid-column:1/-1"><b>plan_sql</b><span>SQL 工程师 · output sql</span></div>
+                <div class="node-mini run"><b>run_sql</b><span>数据执行员 · output result</span></div>
+                <div class="node-mini present"><b>present_result</b><span>结果讲解员 · output answer</span></div>
+              </div>
+            </div>
+            <div class="cap-chips"><button class="cap-chip" data-cap="C4"><b>C4</b>多角色节点协作</button><button class="cap-chip" data-cap="C5"><b>C5</b>受控 SQL 与结果解释</button></div>
+            <div class="result-rail">
+              <div class="result-box"><span>TERMINAL OUTPUT</span><b>answer → smart_query</b><em>truncated=true 必须显式说明</em></div>
+              <div class="result-box"><span>DURABLE TRACE</span><b>runs / run_nodes</b><em>status · actor · outputs · error</em></div>
+            </div>
+            <div class="cap-chips"><button class="cap-chip" data-cap="C6"><b>C6</b>运行记录与结果回投</button></div>
+          </div>
+        </div>
+        <div class="board-foot"><span>节点全部声明 <i>agent: smart_query</i>，不等于五个独立 Agent。</span><span>AUTHORITY: SOURCE + 10/10 DAG TESTS</span></div>
+      </div>
+    </section>
+
+    <aside class="panel inspector">
+      <div class="panel-head"><div class="panel-title"><span class="dot"></span>能力详情</div><span class="panel-sub" id="insKind">ENTRY</span></div>
+      <div class="ins-body">
+        <div class="ins-kicker"><span class="ins-no" id="insNo">C1</span><span class="ins-group" id="insGroup">入口与编排 · manager</span></div>
+        <h2 class="ins-title" id="insTitle"></h2>
+        <p class="ins-desc" id="insDesc"></p>
+        <div><div class="field-label">INPUT / OUTPUT</div><div class="io-grid"><div class="io-box"><span>INPUT</span><p id="insInput"></p></div><div class="io-box"><span>OUTPUT</span><p id="insOutput"></p></div></div></div>
+        <div><div class="field-label">VALUE PATH</div><div class="value-path" id="insPath"></div></div>
+        <div><div class="field-label">SOURCE EVIDENCE</div><div class="evidence" id="insEvidence"></div></div>
+        <div class="limit" id="insLimit"></div>
+        <div class="ins-actions">
+          <button class="btn amber" id="handoffBtn"><svg viewBox="0 0 24 24"><path d="M4 12h14M14 6l6 6-6 6"/></svg><span>把这次问数送入运行台</span></button>
+          <div class="handoff-note">第 2 章会恢复 Manager → smart_query → DAG 节点链路</div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="footer-rail"><span class="keys"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> 切换章节</span><span class="path">EVIDENCE SCOPE · agentops/agents · agentops/workflows · packages/agentops/{dag,db}</span></footer>
+</div>
+<script src="../runtime.js"></script>
+<script>
+(function(){
+  'use strict';
+  const caps = {
+    C1:{
+      kind:'ENTRY',group:'入口与编排 · manager',title:'识别意图，把问题变成可派发任务',
+      desc:'Manager 判断这是闲聊、直接问答还是需要业务执行。需要执行时，它选择白名单中的业务 Agent，并把目标、输入与期望产出写成<b>自包含 prompt</b>；子代理看不到原始会话。',
+      input:'用户原话、会话上下文、候选 Agent preset 的 id 与职责描述',
+      output:'subagent 参数：<code>{ agent_preset: "smart_query", prompt }</code>',
+      path:['判断是否需要调用业务 Agent','从候选白名单中选择 smart_query','生成不依赖上下文的完整任务说明'],
+      evidence:['agentops/agents/manager.yaml:15-33','packages/agentops/bundle/presets/agents.generated.patch.yml:107-149'],
+      limit:'<b>边界：</b>Manager 不指定 workflow，也不持有 sql_query、describe_database 等业务工具。'
+    },
+    C2:{
+      kind:'ENTRY',group:'入口与编排 · subagent',title:'异步委派，立即拿 subagentId',
+      desc:'委派不是同步函数调用。Manager 发起 subagent 后立即得到 <b>subagentId</b>，可以继续与用户交互；业务 Agent 完成后，结果自动回投 Manager 所在会话。',
+      input:'agent_preset、自包含 prompt、父会话身份',
+      output:'立即返回 <code>subagentId</code>；稍后产生完成结果与状态',
+      path:['Manager 发起 subagent 派发','调用立即返回，用户不被阻塞','完成结果自动回到 Manager，再汇总给用户'],
+      evidence:['agentops/agents/manager.yaml:26-33','packages/agentops/bundle/presets/agents.generated.patch.yml:138-146'],
+      limit:'<b>已知限制：</b>一次只允许派一层。Manager 不能把子代理的失败“自己重做”，也不能让业务 Agent 再转派另一个业务 Agent。'
+    },
+    C3:{
+      kind:'WORKFLOW',group:'工作流执行 · smart_query',title:'业务 Agent 拥有并钉定一条工作流',
+      desc:'smart_query 的 execution 是 workflow，声明的 workflow 是 smart-query。它收到问数任务后的第一动作必须是 dag_run；preset 又把工具绑定到这条工作流，因此模型不能自行切换。',
+      input:'<code>question</code> 用户原话；<code>database</code> 默认 <code>audit_reader</code>',
+      output:'<code>{ runId, status, nodes[], outputs }</code>',
+      path:['接收 Manager 的完整问数任务','调用已钉定的 dag_run','工作流结束后读取终结节点 answer 并组织回复'],
+      evidence:['agentops/agents/smart_query.yaml:18-40','packages/agentops/bundle/presets/agents.generated.patch.yml:376-384','packages/agentops/dag/src/dsh.ts:683-698'],
+      limit:'<b>固定边界：</b>即使调用方说“直接查”“不用走工作流”，也不能绕过 workflow；工作流失败时只能如实报告。'
+    },
+    C4:{
+      kind:'WORKFLOW',group:'工作流执行 · DAG nodes',title:'五个节点，五种业务角色',
+      desc:'smart-query 声明了 5 个 agent 节点，正常问数主路径执行 4 个。每个节点都被包装成一个 subagent，只拿到自身职责、输入和上游 JSON，并以所属 smart_query preset 执行。',
+      input:'question、database、上游节点 JSON 端口',
+      output:'intent、sql、result、answer 等严格 schema 输出',
+      path:['route_intent 分类意图','plan_sql 生成受控只读 SQL','run_sql 执行并交给 present_result 解释'],
+      evidence:['agentops/workflows/smart-query.yaml:20-139','packages/agentops/dag/src/dsh.ts:202-243'],
+      limit:'<b>范围澄清：</b>五个节点不是五个独立 Agent；它们共享 smart_query preset，靠 business_role 与 role_prompt 分工。'
+    },
+    C5:{
+      kind:'RESULT',group:'工作流执行 · data',title:'只读 SQL、截断口径与结果解释',
+      desc:'plan_sql 先查业务口径与真实字段，再生成 SELECT；run_sql 通过 sql_query 执行。SQL guard 负责单语句、只读、schema/table 白名单、屏蔽列与自动 LIMIT，present_result 再把 JSON 结果翻译成用户回答。',
+      input:'自然语言问题、schema 描述、上游 SQL、SQL 查询结果',
+      output:'结构化查询结果；最终 <code>answer</code>；截断时 <code>truncated=true</code>',
+      path:['基于真实 schema 生成一条 SELECT','经 guard 校验后只读执行','解释结果，并显式说明截断或零行'],
+      evidence:['packages/agentops/db/src/guard.ts:50-108','packages/agentops/db/src/tools.ts:34,56,99-117','agentops/workflows/smart-query.yaml:59-139'],
+      limit:'<b>截断分三层：</b>SQL 工具文本渲染最多 50 行；数据源默认 max_rows=1000；run_sql 业务提示还要求节点只保留前 50 行。不能笼统说“全局固定 50 行”。'
+    },
+    C6:{
+      kind:'RESULT',group:'结果追踪 · run store',title:'节点状态、输出与回投都可追踪',
+      desc:'DAG 在首个节点结算前写入 run 记录，并在每次节点结算后更新状态。记录包含输入、节点输出、时间、错误、actor、runId 与 sessionId；完成后 smart_query 将终结 answer 回投给 Manager 汇总。',
+      input:'工作流输入、节点状态、节点输出、actor 与归属信息',
+      output:'<code>runs</code> 与 <code>run_nodes</code> 持久记录；Manager 收到最终回答',
+      path:['dag_run 创建 runId 并落运行记录','节点逐一结算，状态与输出落库','结果回到 smart_query，再回到 Manager 汇总'],
+      evidence:['packages/agentops/dag/src/run-store.ts:13-40,189-243','packages/agentops/dag/src/engine.ts:140-199'],
+      limit:'<b>恢复边界：</b>进程崩溃可能遗留 running；重跑读取当前 YAML，不保存历史 revision；DAG 没有自动节点重试。'
+    }
+  };
+  const order = ['C1','C2','C3','C4','C5','C6'];
+  let selected = 'C1', tourTimer = 0, tourAt = 0;
+  const els = {
+    kind:document.getElementById('insKind'),group:document.getElementById('insGroup'),no:document.getElementById('insNo'),
+    title:document.getElementById('insTitle'),desc:document.getElementById('insDesc'),input:document.getElementById('insInput'),
+    output:document.getElementById('insOutput'),path:document.getElementById('insPath'),evidence:document.getElementById('insEvidence'),
+    limit:document.getElementById('insLimit')
+  };
+  function select(id){
+    const c = caps[id]; if(!c) return; selected = id;
+    els.kind.textContent = c.kind; els.group.textContent = c.group; els.no.textContent = id;
+    els.title.textContent = c.title; els.desc.innerHTML = c.desc; els.input.innerHTML = c.input; els.output.innerHTML = c.output;
+    els.path.innerHTML = c.path.map((s,i) => `<div class="value-step"><i>${i+1}</i><span><b>${s}</b></span></div>`).join('');
+    els.evidence.innerHTML = c.evidence.map(s => `<code>${s}</code>`).join('');
+    els.limit.innerHTML = c.limit;
+    document.querySelectorAll('.cap-chip').forEach(b => b.classList.toggle('active', b.dataset.cap === id));
+  }
+  document.querySelectorAll('.cap-chip').forEach(b => b.addEventListener('click', () => { stopTour(); select(b.dataset.cap); }));
+  function setFilter(kind){
+    const kindMap = { entry:'ENTRY', flow:'WORKFLOW', evidence:'RESULT' };
+    document.querySelectorAll('.filter').forEach(b => b.classList.toggle('on', b.dataset.filter === kind));
+    document.querySelectorAll('.cap-chip').forEach(b => {
+      const c = caps[b.dataset.cap]; const show = kind === 'all' || c.kind === kindMap[kind];
+      b.classList.toggle('dim', !show);
+    });
+  }
+  document.querySelectorAll('.filter').forEach(b => b.addEventListener('click', () => { stopTour(); setFilter(b.dataset.filter); }));
+  function stopTour(){ clearInterval(tourTimer); tourTimer = 0; document.getElementById('tourBtn').textContent = '逐步巡览'; }
+  document.getElementById('tourBtn').onclick = function(){
+    if(tourTimer){ stopTour(); return; }
+    setFilter('all'); tourAt = order.indexOf(selected); select(order[tourAt]);
+    this.textContent = '停止巡览';
+    tourTimer = setInterval(() => { tourAt = (tourAt + 1) % order.length; select(order[tourAt]); }, 1800);
+  };
+  document.getElementById('handoffBtn').onclick = function(){
+    stopTour();
+    VT.handoff('02', {
+      label:'smart_query · 一句话问数',
+      workflow:'smart-query',
+      run:'subagent pending',
+      detail:'Manager 已派发 smart_query；前往第 2 章查看 subagentId、runId 与五个节点角色。'
+    }, this);
+  };
+  const carry = VT.carry || VT.dec(VT.param('cw',''));
+  if(carry){
+    document.getElementById('carryMiniText').textContent = carry.label || carry.workflow || '上下文已装载';
+    document.getElementById('carryMini').classList.add('show');
+  }
+  select('C1');
+  setFilter('all');
+})();
+</script>
+</body>
+</html>

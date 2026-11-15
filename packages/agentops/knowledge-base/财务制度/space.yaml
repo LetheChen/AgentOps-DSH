@@ -1,0 +1,5 @@
+id: finance
+name: 财务制度
+description: 差旅、发票、采购与付款的报销口径、审批链路与凭证要求。
+visibility: shared
+readers: []

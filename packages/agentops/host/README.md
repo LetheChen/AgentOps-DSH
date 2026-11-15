@@ -1,0 +1,94 @@
+---
+description: "The AgentOps host routes: agent, schedule, archive, surface, session-replay, and tool-catalogue endpoints behind one plugin."
+kind: "package-reference"
+---
+
+# @agentops/dsh-host
+
+English | [中文](README.zh.md)
+
+## Summary
+
+This package is the read side of the Agent management screens. It scans the legacy `config/agents/*.yaml` directory, exposes schedules and archive metadata, publishes the surface inventory the client renders, and serves the legacy tool catalogue with its DSH migration targets. Directory-backed routes register only when the deployment supplies the matching directory or file, so an unconfigured profile serves no data rather than failing at request time.
+
+## Table of Contents
+
+- [Use this package](#use-this-package)
+- [Understand the implementation](#understand-the-implementation)
+- [Further Exploration](#further-exploration)
+- [Model Experience](#model-experience)
+- [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
+
+-----
+
+<a id="use-this-package"></a>
+## Use this package
+
+Use it when serving Agent management reads; writes go through the migration contracts package.
+
+The package serves these routes:
+
+| Route | Returns |
+|---|---|
+| `GET /api/agentops/agents` | The Agent catalogue read from the configured YAML directory |
+| `GET /api/agentops/schedules` | Scheduled runs and their recorded archive metadata |
+| `GET /api/agentops/archive` | Files the Agents produced |
+| `GET /api/agentops/surfaces` | The generative-UI surface inventory |
+| `GET /api/agentops/tools` | The legacy tool catalogue and each tool's DSH migration target |
+
+-----
+
+<a id="understand-the-implementation"></a>
+## Understand the implementation
+
+<details>
+<summary>Implementation internals — click to expand</summary>
+
+| File | Responsibility |
+|---|---|
+| `src/agents.ts` | Agent catalogue route over the legacy YAML directory |
+| `src/schedules.ts` | Schedule and archive reads |
+| `src/tool-catalog.ts` | Tool catalogue and DSH migration targets for the permission matrix |
+| `src/dsh.ts` | Plugin entry and route registration |
+
+The tool catalogue comes from `agentops/mappings/tool-map.yaml`, which lists each legacy tool's display name, description, allowed business domains, and approval requirement, plus the DSH plugin and tool that replaced it. A tool with no DSH equivalent carries a `note` saying why.
+
+</details>
+
+-----
+
+<a id="further-exploration"></a>
+## Further Exploration
+
+- [`../client/`](../client/README.md) — the panels that consume these routes
+
+-----
+
+<a id="model-experience"></a>
+## Model Experience
+
+None, as this package exposes routes and storage for the AgentOps screens without constructing model input.
+
+#### KV Cache effect
+
+None; this package neither constructs nor sends model requests.
+
+## Known Limitations and Deferred Work
+
+<a id="known-limitations-and-deferred-work"></a>
+
+- **Directory-backed routes need configuration** — `/agents`, `/schedules`, and `/archive` register only when `agentDir`, `schedulesFile`, and `archiveDir` are non-empty.
+- **Tool catalogue route needs configuration** — `/tools` registers only when `toolMapFile` (or `AGENTOPS_TOOL_MAP_FILE`) is non-empty.
+- **Malformed tool map serves an empty catalogue** — unreadable YAML reports an empty catalogue instead of a missing deployment, so the page shows no tools rather than claiming the deployment is absent.
+- **Read-only** — the package never writes agent YAML; saving needs the migration contracts path.
+- **Surface store is never closed** — the surface registry keeps its store for the process lifetime.
+
+<a id="dev-note"></a>
+### Dev Note
+
+<details>
+<summary>Working context for maintainers — click to expand</summary>
+
+None.
+
+</details>

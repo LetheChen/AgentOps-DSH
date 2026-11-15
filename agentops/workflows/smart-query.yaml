@@ -1,0 +1,139 @@
+# 4 节点纯 agent 工作流：所有取数经 sql_query 白名单校验，无 command 节点。
+# 由 smart_query Agent 通过钉定的 dag_run 启动；节点权限继承该 Agent。
+workflow_id: smart-query
+name: 智能问数（一次性查询工作流）
+version: 3
+description: |
+  一次性查询工作流：manager 派给 smart_query 后由其启动。
+  适用：审批数据统计 / 流程分析 / 状态查询 / 成本核算（只读 SELECT）。
+  不适用：写操作 / 多表 JOIN 复杂 BI / 跨域需求 / 通用问答。
+inputs:
+  - name: question
+    type: string
+    required: true
+    description: "用户自然语言问题（如\"本月审批通过率多少\"）"
+  - name: database
+    type: string
+    required: false
+    default: "audit_reader"
+    description: "数据源 key（须在 datasources.yml 白名单内）"
+nodes:
+  route_intent:
+    name: 意图分流
+    type: agent
+    agent: smart_query
+    business_role: 意图分类员
+    after: []
+    inputs: [question]
+    role_prompt: |
+      判断用户问题是否属于「数据查询 / 统计 / 报表 / 状态 / 审批」类。
+
+      判定规则：
+      - true：含"统计/查询/多少/几个/聚合/报表/状态/审批/驳回/通过率/分布/总数/平均"，或明显在问业务数据
+      - false：问候、闲聊、技术问答、写操作请求，或属于其他域（分析 / 审批操作 / 运维）
+      - 模糊时倾向 true，并在回答里写明把握度
+
+      只输出判定结果，不要写 SQL。
+    outputs:
+      intent:
+        - plan_sql
+        - refuse_intent
+
+  refuse_intent:
+    name: 拒绝非数据查询
+    type: agent
+    agent: smart_query
+    business_role: 接待员
+    after: [route_intent]
+    skip_if: "{{route_intent.intent}}"
+    inputs: [question]
+    role_prompt: |
+      这个问题不属于数据查询。用一到两句话说明本链路只回答业务数据类问题，
+      并指出应该走哪条路（趋势/归因 → 智能分析；创建或审批单据 → 智能审批；
+      服务器与日志运维 → 智能运维）。
+
+      不要查库，不要编造数据。
+    outputs:
+      answer: ""
+
+  plan_sql:
+    name: 生成 SQL
+    type: agent
+    agent: smart_query
+    business_role: SQL 工程师
+    after: [route_intent]
+    skip_if: "{{not route_intent.intent}}"
+    inputs: [question]
+    role_prompt: |
+      把问题变成一条只读 SELECT。
+
+      顺序（照做）：
+      1. 先调 knowledge_search 查业务口径（指标定义、时间口径、常见问法）：问题里出现「通过率 / 比率 / 多少人 / 最近一周」这类词时必查，命中就按它给的分子分母与时间字段写。
+      2. 再调 describe_database（database 取 {{database}}），拿到真实表与字段；字段名必须来自它的返回，禁止凭记忆猜。
+      3. 必要时调 skill(name="data-query") 取时间口径与常见失败处理。
+      4. 需要"本周/上周"等口径时，先在 SQL 里用 CURDATE()/NOW() 计算，不要假设今天日期。
+      5. 写一条 SELECT：带时间范围 + 聚合 + LIMIT（不超过 describe_database 返回的 max_rows）。
+      6. 表名写全限定（audit_example.<table>）；不要写别的库前缀，不要查 information_schema。
+      7. 表别名只在 FROM/JOIN 后声明，别处不要再造限定符。
+
+      分组查询的硬约束（库里开着 only_full_group_by，违反会直接执行失败）：
+      - SELECT 列表里每一项要么是 GROUP BY 中的列，要么整个包在聚合函数里，要么是常量。
+      - GROUP BY 用表达式时，SELECT 里必须**逐字用同一个表达式**：`GROUP BY DATE(receive_time)` 就配 `SELECT DATE(receive_time)`，
+        不要写成 `SELECT CAST(DATE(receive_time) AS CHAR)`——MySQL 不认这种函数依赖，会报 Expression #N ... only_full_group_by。
+      - 想避免逐字一致的麻烦，就把整条表达式包进聚合：`MIN(x)` / `ANY_VALUE(x)`。
+      - ORDER BY 里出现的列同样受这条约束。
+
+      字符串字面值用单引号。不要执行 SQL —— 执行由下一节点负责。
+    outputs:
+      sql:
+        - run_sql
+
+  run_sql:
+    name: 执行查询
+    type: agent
+    agent: smart_query
+    business_role: 数据执行员
+    after: [plan_sql]
+    inputs: [database, sql]
+    role_prompt: |
+      调用 sql_query 执行上游给的 SQL：
+      - database 取 {{database}}
+      - sql 取上游 plan_sql 的 sql 端口
+
+      查询成功后输出 result 端口，内容是 JSON：
+        {"ok": true, "columns": [...], "rows": [...], "row_count": N, "truncated": bool}
+      行数超过 50 时只保留前 50 行并把 truncated 置为 true。
+
+      查询失败时先判断错误类型：
+      - 可以自修（语法/分组/函数/类型问题，例如 only_full_group_by、Unknown column、Incorrect DATE value）：
+        按错误**最小改写** SQL 后再执行一次，只重试一次。改写不得改变业务口径，只修写法：
+        · only_full_group_by → SELECT 里的表达式与 GROUP BY 逐字一致，或把非分组列包进 ANY_VALUE()/MIN()
+        · Unknown column → 回 describe_database 确认字段名后再改
+      - 不能自修（权限、表白名单、连接失败、超时）：不要重试。
+
+      自修一次仍失败，或属于不可自修的错误，输出 result 端口：
+        {"ok": false, "error": "工具返回的错误原文", "attempts": 1, "sql": "最后执行的那条 SQL"}
+
+      不要改变业务口径来凑结果；不要编造数据。
+    outputs:
+      result:
+        - present_result
+
+  present_result:
+    name: 呈现结果
+    type: agent
+    agent: smart_query
+    business_role: 结果讲解员
+    after: [run_sql]
+    inputs: [question, result]
+    role_prompt: |
+      把 result 翻译成用户能看懂的回答（markdown）。
+
+      - ok=false：如实回显 error，建议检查字段/表名/时间范围，不要编造
+      - row_count=0：说明无匹配数据，提示可能的时间范围或筛选问题
+      - 有数据：1-2 句结论 + 关键数字（含对比）+ 数据来源与时间范围标注 + 表格
+      - truncated=true：注明结果集较大，已截断
+
+      不要下业务建议，不要承诺后续动作。
+    outputs:
+      answer: ""

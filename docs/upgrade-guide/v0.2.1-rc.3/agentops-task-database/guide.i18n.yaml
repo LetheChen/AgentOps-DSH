@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for guide.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/upgrade-guide/v0.2.1-rc.3/agentops-task-database/guide.md
+/:
+  en: e558b75932dbfc28
+  zh: 9864a71f07a3d5ec
+/agentops-task-database-and-surface:
+  en: 6a5f4aa7278fee83
+  zh: a55874f612b5448e
+/agentops-task-database-and-surface/change:
+  en: 4fa544bdcf9b7207
+  zh: 3d24c004a6ee0767
+/agentops-task-database-and-surface/migration:
+  en: 984a099f168536ce
+  zh: b3d47ded37021edc

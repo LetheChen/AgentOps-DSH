@@ -1,0 +1,440 @@
+/*
+ * Shared page shell for every AgentOps panel.
+ *
+ * Capability center and log collection are the visual baseline: one centered
+ * column, a raised page header, neutral surfaces, and a 16px content rhythm.
+ * Panels add their own content classes on top of this shell.
+ */
+
+.ao-page.agentops-surface.ao-page {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1760px;
+  min-width: 0;
+  margin: 0 auto;
+  padding: 24px clamp(18px, 3.2vw, 48px) 52px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  color: var(--color-text-primary);
+  background:
+    radial-gradient(circle at 78% -18%, color-mix(in srgb, var(--color-primary) 8%, transparent), transparent 38%),
+    var(--color-bg-base);
+}
+
+.ao-page *,
+.ao-page *::before,
+.ao-page *::after {
+  box-sizing: border-box;
+}
+
+.ao-page h1,
+.ao-page h2,
+.ao-page h3,
+.ao-page p {
+  margin: 0;
+}
+
+/* ── Page header ── */
+.ao-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+  padding: 22px 24px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(circle at 92% 8%, color-mix(in srgb, var(--color-primary) 12%, transparent), transparent 34%),
+    linear-gradient(135deg, color-mix(in srgb, var(--color-bg-surface) 94%, var(--color-primary)), var(--color-bg-surface));
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.ao-page-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.ao-page-title {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: clamp(24px, 2vw, 28px);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.ao-page-description {
+  max-width: 760px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.ao-page-actions {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.ao-count {
+  min-width: 0;
+  color: var(--color-text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow-wrap: anywhere;
+}
+
+/* ── Toolbar ── */
+.ao-toolbar {
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  padding: 8px;
+  border: 0.5px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-surface);
+}
+
+/* ── Tabs ── */
+.ao-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 2px;
+  border: 0.5px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-elevated);
+}
+
+.ao-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ao-tab[aria-selected='true'] {
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+}
+
+.ao-tab-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+}
+
+/* ── Cards ── */
+.ao-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 5px 16px rgba(0, 0, 0, 0.05);
+}
+
+/* ── Tables ── */
+.ao-table-wrap {
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+
+.ao-table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+}
+
+.ao-table th {
+  padding: 10px 12px;
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1.35;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 0.5px solid var(--color-border-subtle);
+}
+
+.ao-page .data-table th {
+  background: color-mix(in srgb, var(--color-bg-base) 74%, var(--color-bg-surface));
+}
+
+.ao-page .data-table td {
+  background: var(--color-bg-surface);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.ao-table td {
+  padding: 10px 12px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+  vertical-align: top;
+  border-bottom: 0.5px solid var(--color-border-subtle);
+}
+
+.ao-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+@media (hover: hover) {
+  .ao-tab:hover {
+    color: var(--color-text-primary);
+  }
+
+  .ao-table tbody tr:hover {
+    background: var(--color-bg-hover);
+  }
+
+  .ao-page .data-table tbody tr:hover td {
+    background: color-mix(in srgb, var(--color-bg-surface) 88%, var(--color-bg-hover));
+  }
+}
+
+/* ── States ── */
+.ao-state {
+  padding: 40px 20px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.ao-state-error {
+  color: var(--state-error);
+}
+
+.ao-state-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.ao-feedback {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 0.5px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.ao-feedback-warning {
+  color: var(--state-warning);
+  background: var(--state-warning-tint);
+  border-color: color-mix(in srgb, var(--state-warning) 45%, var(--color-border-subtle));
+}
+
+.ao-feedback-error {
+  color: var(--state-error);
+  background: var(--state-error-tint);
+  border-color: color-mix(in srgb, var(--state-error) 45%, var(--color-border-subtle));
+}
+
+.ao-feedback-success {
+  color: var(--state-success);
+  background: var(--state-success-tint);
+  border-color: color-mix(in srgb, var(--state-success) 45%, var(--color-border-subtle));
+}
+
+.ao-note {
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.ao-mono {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.ao-muted {
+  color: var(--color-text-tertiary);
+}
+
+.ao-primary-text {
+  color: var(--color-text-primary);
+  font-weight: 500;
+}
+
+/* ── Two-column split (list + detail) ── */
+.ao-split {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 16px;
+  min-width: 0;
+  align-items: start;
+}
+
+.ao-list {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-height: 640px;
+  overflow: auto;
+}
+
+.ao-list-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-bottom: 0.5px solid var(--color-border-subtle);
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ao-list-item[aria-current='true'] {
+  background: var(--color-primary-tint);
+}
+
+.ao-list-title {
+  color: var(--color-text-primary);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.ao-list-meta {
+  color: var(--color-text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+
+/* ── Card header ── */
+.ao-card-title {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 12px 14px;
+  border-bottom: 0.5px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+/* ── Loading skeleton ── */
+.ao-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+}
+
+.ao-skeleton-row {
+  display: block;
+  height: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-elevated);
+}
+
+.ao-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .ao-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ao-list {
+    max-height: 320px;
+  }
+}
+
+@media (max-width: 860px) {
+  .ao-page.agentops-surface.ao-page {
+    padding: 18px 14px 40px;
+  }
+}
+
+@media (max-width: 640px) {
+  .ao-page {
+    gap: 12px;
+  }
+
+  .ao-page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 18px;
+  }
+
+  .ao-page-heading {
+    flex: 0 0 auto;
+  }
+
+  .ao-page-actions {
+    justify-content: flex-start;
+  }
+
+  .ao-state {
+    padding: 32px 14px;
+  }
+
+  .ao-feedback {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (pointer: coarse) {
+  .ao-tab {
+    min-height: 36px;
+  }
+}

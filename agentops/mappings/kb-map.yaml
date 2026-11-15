@@ -1,0 +1,34 @@
+# yaml 里的 KB 键 → 旧域 → DSH space
+# DSH 侧的空间由 packages/agentops/knowledge-base/ 定义并同步（finance / hr / ops / weekly / smart_query）。
+# space: null 表示该键还没有对应空间，生成器不会把它写进 readableSpaces。
+version: 3
+spaces_available: [finance, hr, ops, weekly, smart_query, project_analysis]
+keys:
+  shared_kb:
+    domain: null
+    spaces: [finance, hr, ops, weekly, smart_query, project_analysis]
+    note: "通用知识：让管理与方案类 Agent 同时读取制度、手册、周报和问数口径"
+  smart_analysis_kb:
+    domain: smart_analysis
+    space: smart_query
+    note: "分析域共享问数口径与指标定义"
+  smart_query_kb:
+    domain: smart_query
+    space: smart_query
+    note: "问数口径：指标定义、时间口径、常见问法与能力边界"
+  smart_approval_kb:
+    domain: smart_approval
+    spaces: [finance, hr]
+    note: "审批政策来自财务制度与人事政策"
+  smart_form_kb:
+    domain: smart_form
+    spaces: [finance, hr]
+    note: "表单规则来自财务制度与人事政策"
+  smart_ops_kb:
+    domain: smart_ops
+    space: ops
+    note: "运维手册"
+  video_production:
+    domain: video_production
+    space: null
+    note: "旧域 video_production；暂无对应空间"

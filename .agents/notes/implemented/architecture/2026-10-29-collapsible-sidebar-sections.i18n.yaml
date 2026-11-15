@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-10-29-collapsible-sidebar-sections.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-10-29-collapsible-sidebar-sections.md
+/agent-note-collapsible-sidebar-panel-sections:
+  en: adc947a1b43a2c86
+  zh: a5ee9f1b0fbd1003
+/agent-note-collapsible-sidebar-panel-sections/problem:
+  en: b56f59caef2d0773
+  zh: aa2951d823bf2e65
+/agent-note-collapsible-sidebar-panel-sections/decision:
+  en: 0da9d047d5989a0c
+  zh: 3c2434d35ff15828
+/agent-note-collapsible-sidebar-panel-sections/alternatives-considered:
+  en: 205213b653313328
+  zh: e96d634afeb9722c
+/agent-note-collapsible-sidebar-panel-sections/consequences:
+  en: 47cecd3f642e0536
+  zh: 81b015572286a53f
+/agent-note-collapsible-sidebar-panel-sections/testing:
+  en: 3d3a5e8da3d7486c
+  zh: ae79f3e9b21403ce

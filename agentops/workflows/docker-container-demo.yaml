@@ -1,0 +1,104 @@
+workflow_id: docker-container-demo
+name: Docker Container Demo DAG
+version: 1
+description: |
+  Docker 容器生命周期 E2E：fetch 节点在 docker_container 中运行，
+  验证 provisioner 5 步启动（build mounts → build labels → build env →
+  create+start container → wait WS register）+ 4 步销毁（graceful stop →
+  kill（按需）→ remove → verify + sandbox 延迟清理标记）。
+
+
+# LEGACY（工作流归属模型，REVIEW-manager-dispatch-2026-11-03）
+# 保留为拓扑样例，不可执行：没有 Agent 声明它，也没有任何执行入口会启动它。
+legacy:
+  reason: inline-agent-permissions
+  detail: "节点用 inline_agent 自带 allowed_tools，与「节点继承所属 Agent 权限」冲突；DSH 解析期直接拒绝。"
+
+layout:
+  nodes:
+    fetch:
+      x: 105.23621428571431
+      y: -28.25764285714287
+    think:
+      x: 380
+      y: 84
+    report:
+      x: 687.8319285714286
+      y: 134.4724285714286
+inputs:
+  - name: topic
+    type: string
+    required: true
+    default: Docker Container Lifecycle Test
+nodes:
+  fetch:
+    name: 数据采集（docker 容器）
+    type: agent
+    business_role: 数据采集员
+    inline_agent:
+      harness: codex
+      model: minimax/MiniMax-M3
+      role_prompt: |
+        你是一个数据采集员，回复 fetch 节点的标准输出：
+        echo "{topic}"
+
+      allowed_tools: []
+      denied_tools: []
+    after: []
+    inputs:
+      - topic
+    outputs:
+      fetched:
+        to: "think.in:fetched"
+    runtime_placement: docker_container
+    config:
+      runtime_image: "agentops-worker:latest"
+    command_config: null
+    await_command_config: null
+    while_config: null
+  think:
+    name: 思考分析（本地进程）
+    type: agent
+    business_role: 分析专员
+    inline_agent:
+      harness: codex
+      model: minimax/MiniMax-M3
+      role_prompt: |
+        你是一个分析员，对 fetched 数据做一句总结。
+
+      allowed_tools: []
+      denied_tools: []
+    after: [fetch]
+    inputs:
+      - topic
+      - fetched
+    outputs:
+      thought:
+        to: "report.in:thought"
+    runtime_placement: in_process
+    command_config: null
+    await_command_config: null
+    while_config: null
+  report:
+    name: 输出报告（本地进程）
+    type: agent
+    business_role: 报告撰写员
+    inline_agent:
+      harness: codex
+      model: minimax/MiniMax-M3
+      role_prompt: |
+        你是一个报告员，对 thought 给出一句话总结。
+
+      allowed_tools: []
+      denied_tools: []
+    after: [think]
+    inputs:
+      - topic
+      - thought
+    outputs:
+      done:
+        to: ""
+    runtime_placement: in_process
+    command_config: null
+    await_command_config: null
+    while_config: null

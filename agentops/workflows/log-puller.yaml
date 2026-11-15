@@ -1,0 +1,76 @@
+workflow_id: log-puller
+name: 日志采集
+version: 2
+description: |
+  2 步 DAG 版日志采集：pull → summarize。
+  按「能力中心 → 日志采集」中的任务配置，从远程服务器 SFTP 采集日志到业务本地目录，
+  并按增量位点只处理新增内容。失败时如实报告，不编造采集结果。
+
+workspace:
+  root: "workspace/log-collection/{{run_id}}/"
+  structure:
+    reports: reports/
+layout:
+  nodes:
+    pull:
+      x: 80
+      y: 60
+    summarize:
+      x: 360
+      y: 60
+inputs:
+  - name: log_task_id
+    type: string
+    required: true
+    description: 日志采集任务 ID（对应「能力中心 → 日志采集」中的任务，如 oa_approval）
+nodes:
+  pull:
+    name: 采集日志
+    type: agent
+    agent: log_puller
+    business_role: 日志采集员
+    role_prompt: |
+      你是日志采集员，负责按任务配置从远程服务器采集日志到本地业务目录。
+
+      执行步骤（严格按顺序）：
+      1. 调用 pull_logs 工具，参数 log_task_id = {{log_task_id}}。
+      2. 读取返回 JSON 中的 files[].delta_start / delta_end / skipped / bytes。
+      3. 最终回复必须是一个 JSON 对象：{"pull_result": "<工具返回的完整 JSON 字符串>"}。
+      4. 不做日志内容分析（那是日志分析师的职责）。
+
+    harness: local_llm
+    after: []
+    timeout_seconds: 180
+    inputs:
+      - log_task_id
+    outputs:
+      pull_result:
+        to: "summarize.in:pull_result"
+    command_config: null
+    await_command_config: null
+    while_config: null
+  summarize:
+    name: 采集汇总
+    type: agent
+    agent: log_puller
+    business_role: 日志采集员
+    role_prompt: |
+      你是日志采集员，负责汇总本次采集结果。
+
+      执行步骤：
+      1. 从上游输出读取 pull_result。
+      2. 汇总：采集文件数、跳过文件数、新增字节数、增量区间、错误列表。
+      3. 调用 write 工具写入 `{{workspace.root}}reports/collection-report.md`。
+      4. 最终回复必须是一个 JSON 对象：{"report_path": "<文件路径>"}。
+
+    harness: local_llm
+    after: [pull]
+    timeout_seconds: 120
+    inputs:
+      - pull_result
+    outputs:
+      report_path:
+        to: ""
+    command_config: null
+    await_command_config: null
+    while_config: null

@@ -1,0 +1,5 @@
+id: hr
+name: 人事政策
+description: 请假、加班、调休与培训的员工政策口径。仅人事与本人主管可读。
+visibility: restricted
+readers: ['user:owner']

@@ -1,0 +1,37 @@
+workflow_id: parity-linear
+name: Parity Linear
+version: 1
+description: 对拍用：三节点线性链，全部 deterministic harness。
+inputs:
+  - name: topic
+    type: string
+    required: false
+    default: parity
+nodes:
+  fetch:
+    name: 采集
+    type: agent
+    agent: echo_agent
+    harness: deterministic
+    after: []
+    outputs:
+      fetched:
+        to: "think.in:fetched"
+  think:
+    name: 思考
+    type: agent
+    agent: echo_agent
+    harness: deterministic
+    after: [fetch]
+    outputs:
+      thought:
+        to: "report.in:thought"
+  report:
+    name: 报告
+    type: agent
+    agent: echo_agent
+    harness: deterministic
+    after: [think]
+    outputs:
+      done:
+        to: ""

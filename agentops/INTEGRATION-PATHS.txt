@@ -1,0 +1,25 @@
+# 集成型改动（INTEGRATION）
+
+把 AgentOps 接入 DSH workspace **必然**要改的 DSH 文件。它们不含 DSH 运行逻辑，属于构建/依赖声明。
+
+规则：只允许出现登记在案的文件；每次改动都要在 `DSH-CORE-CHANGES.md` 里补一行原因与上游 SHA。
+
+```
+tsconfig.base.json
+tsconfig.client.json
+tsconfig.host.json
+pnpm-lock.yaml
+```
+
+判断标准（新文件想进这个清单，先过这三问）：
+
+1. 它是"新增 workspace 包"造成的吗？（是 → 可以进来）
+2. 它改变 DSH 的运行时行为吗？（改 → 走 OWNED 方案或放弃）
+3. 能不能用 bundle / preset / 配置覆盖代替？（能 → 不要改文件）
+
+当前三项的门槛说明：
+
+- `tsconfig.client.json`：给 `./packages/agentops/client` 加一条 project reference（否则 client 半边的类型检查与构建不参与）。
+- `tsconfig.host.json`：8 个 `packages/agentops/*` 的 project reference。
+- `pnpm-lock.yaml`：新增 workspace 包后的依赖快照（`pnpm install` 自动生成）。
+- `tsconfig.base.json`：给 `@agentops/dsh-contracts`、`@agentops/dsh-workspace-layout`、`@agentops/dsh-workflow-compiler`、`@agentops/dsh-workflow-catalog` 补 source-plane 路径别名。

@@ -1,0 +1,43 @@
+.sc-page {
+}
+
+.sc-page > * { flex: 0 0 auto; }
+
+/* ── Filter Chips ── */
+.filter-chip {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  background: var(--color-bg-elevated);
+  color: var(--color-text-secondary);
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.filter-chip:hover { background: var(--color-bg-hover); color: var(--color-text-primary); }
+
+.filter-chip.active { background: var(--color-primary); color: #fff; }
+
+/* ── 状态点 pulse（用于运行中） ── */
+.status-dot-info {
+  animation: ag-pulse 2s ease-in-out infinite;
+}
+
+.kh-lint-issue-actions .btn-primary,
+.kh-lint-issue-actions .btn-secondary {
+  height: 30px;
+  font-size: 12px;
+  padding: 0 12px;
+}
+
+.ws-meta-value.font-mono,
+.ws-meta-row code.ws-meta-value {
+  font-family: var(--font-mono, 'JetBrains Mono', ui-monospace, monospace);
+  font-size: 11px;
+  background: var(--color-bg-elevated);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+}

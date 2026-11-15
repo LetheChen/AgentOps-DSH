@@ -1,0 +1,40 @@
+{
+  "name": "@agentops/dsh-knowledge",
+  "description": "AgentOps independent knowledge core: spaces, documents, versions, chunks, citations, lexical retrieval and SQLite persistence.",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "lib/types/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/types/index.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json",
+    "./tools": {
+      "types": "./lib/types/tools.d.ts",
+      "default": "./lib/types/tools.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.json",
+    "test": "node --import tsx --test tests/*.test.ts"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "yaml": "^2.9.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "workspace:~",
+    "@deepseek-ai/dsh-tools": "workspace:*"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "workspace:~",
+    "@deepseek-ai/dsh-tools": "workspace:*",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.2"
+  }
+}

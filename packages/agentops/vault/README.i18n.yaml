@@ -1,0 +1,37 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/agentops/vault/README.md
+/:
+  en: 86d1fc41e191d830
+  zh: 337a0fdd1beb6501
+/agentops-dsh-vault:
+  en: b602e55f397530ad
+  zh: a0ad8e77841b9c44
+/agentops-dsh-vault/summary:
+  en: 4f40858c9de54678
+  zh: 642a1e110791061d
+/agentops-dsh-vault/table-of-contents:
+  en: b563e4ec4727d0de
+  zh: 45ad74d8dcb4b58c
+/agentops-dsh-vault/use-this-package:
+  en: 253fc13ff645af9a
+  zh: 9f94e64820f80d46
+/agentops-dsh-vault/understand-the-implementation:
+  en: 8f6785880e69b233
+  zh: ac2afc8ce521b98d
+/agentops-dsh-vault/further-exploration:
+  en: b9cdfd1fb913bb42
+  zh: 738bacb83aba65b3
+/agentops-dsh-vault/model-experience:
+  en: 79a85237ce7a1196
+  zh: cfc08d267df81a62
+/agentops-dsh-vault/model-experience/kv-cache-effect:
+  en: bee21fa3819aaf26
+  zh: c8efbecad1688ea5
+/agentops-dsh-vault/known-limitations-and-deferred-work:
+  en: 34320299898fc9f2
+  zh: e1dcd55b3e21b514
+/agentops-dsh-vault/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 3bb0c20c93f16f98

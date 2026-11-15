@@ -1,0 +1,52 @@
+{
+  "name": "@agentops/dsh-db",
+  "description": "AgentOps data querying: read-only SQL over whitelisted schemas, with datasource credentials resolved from DSH.",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "lib/types/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/types/index.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json",
+    "./tools": {
+      "types": "./lib/types/tools.d.ts",
+      "default": "./lib/types/tools-mount.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.json",
+    "test": "node --import tsx --test tests/*.test.ts"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "js-yaml": "^4.1.0",
+    "mysql2": "^3.24.6",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "workspace:~",
+    "@deepseek-ai/dsh-client-connection": "workspace:*",
+    "@deepseek-ai/dsh-home-paths": "workspace:*",
+    "@deepseek-ai/dsh-tools": "workspace:*",
+    "@types/js-yaml": "^4.0.9",
+    "@types/pg": "^8.23.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.2",
+    "@agentops/dsh-capability": "workspace:*",
+    "@deepseek-ai/dsh-agent-preset-registry": "workspace:*"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "workspace:~",
+    "@deepseek-ai/dsh-client-connection": "workspace:*",
+    "@deepseek-ai/dsh-home-paths": "workspace:*",
+    "@deepseek-ai/dsh-tools": "workspace:*",
+    "@agentops/dsh-capability": "workspace:*",
+    "@deepseek-ai/dsh-agent-preset-registry": "workspace:*"
+  }
+}

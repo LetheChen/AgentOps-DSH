@@ -1,0 +1,46 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/agentops/workspace-layout/README.md
+/:
+  en: e26e700321869aff
+  zh: a1d4123ecfa6e715
+/agentops-dsh-workspace-layout:
+  en: c58ddfcebe0bfb0f
+  zh: b8a486820a1470e0
+/agentops-dsh-workspace-layout/summary:
+  en: b615776994ecc0cf
+  zh: 82aef2ad0fa86c43
+/agentops-dsh-workspace-layout/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: be08589a8d2e121d
+/agentops-dsh-workspace-layout/use-this-package:
+  en: 4e1c3b50fae8a8ea
+  zh: 8b68470b06c97d98
+/agentops-dsh-workspace-layout/use-this-package/when-to-choose-it:
+  en: 28ffd80abeb0a7a3
+  zh: da8ec77767e3d3b8
+/agentops-dsh-workspace-layout/use-this-package/minimal-configuration:
+  en: 5af868a051de41e9
+  zh: e76e181173e3c756
+/agentops-dsh-workspace-layout/use-this-package/resolve-one-artifact:
+  en: 642097d657f7fc35
+  zh: 87498c9244234d41
+/agentops-dsh-workspace-layout/understand-the-implementation:
+  en: 199bd9b998ad2f0b
+  zh: eaa5a402bf209171
+/agentops-dsh-workspace-layout/further-exploration:
+  en: 021b953a4407403f
+  zh: d64b7c5ef0c20b92
+/agentops-dsh-workspace-layout/model-experience:
+  en: 54b5845a82d92cfc
+  zh: ffd0e6a6c1265d99
+/agentops-dsh-workspace-layout/model-experience/kv-cache-effect:
+  en: bee21fa3819aaf26
+  zh: 4ff26d562e69e542
+/agentops-dsh-workspace-layout/known-limitations-and-deferred-work:
+  en: bbf0eaf4c72584af
+  zh: 7ba748b11bea0933
+/agentops-dsh-workspace-layout/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 3bb0c20c93f16f98

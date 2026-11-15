@@ -1,0 +1,18 @@
+# 自有路径白名单（OWNED）
+
+这些路径下的任何改动都属于 AgentOps 项目本身，**不算**对 DSH 核心的改动。
+
+判定规则：以 `/` 结尾 = 目录前缀匹配；否则整行精确匹配。
+
+```
+packages/agentops/
+agentops/
+```
+
+用途（三处共用同一份清单）：
+
+1. `agentops/scripts/check-owned-paths.mjs` 的分类判据；
+2. DSH 升级时的"允许冲突面"；
+3. 将来 `git subtree split --prefix=packages/agentops`（以及 `--prefix=agentops`）拆独立仓库的边界。
+
+新增自有路径 = 改这个文件 + 在 `DSH-CORE-CHANGES.md` 记一笔，别让检查脚本靠猜。

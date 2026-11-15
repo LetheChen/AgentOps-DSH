@@ -1,0 +1,19 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "lib/types"
+  },
+  "include": ["src"],
+  "references": [
+    { "path": "../contracts" },
+    { "path": "../../../vendor/cordis" },
+    { "path": "../../core/tools" },
+    { "path": "../../llm/llm" },
+    { "path": "../../util/home-paths" },
+    { "path": "../../util/brand" },
+    { "path": "../../api/session-controller/tsconfig.host.json" },
+    { "path": "../../skill/skill" },
+    { "path": "../../client/connection/tsconfig.host.json" }
+  ]
+}

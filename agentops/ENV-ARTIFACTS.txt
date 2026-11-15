@@ -1,0 +1,54 @@
+# 环境产物（ENV-ARTIFACT）
+
+上游仓库里有、但在 **Windows + 无符号链接权限** 的检出方式下无法原样保留的条目。
+内容（blob SHA）与上游**完全一致**，差异只在 git 记录的文件模式。
+
+规则：以 `/` 结尾 = 目录前缀匹配；否则整行精确匹配。
+
+## 一、symlink 被实体化（上游 mode 120000 → 本地 100644，14 个）
+
+```
+.agents/notes/implemented/CLAUDE.md
+.agents/skills/agent-experience/SKILL.md
+CLAUDE.md
+apps/cli/tests/profiles/acp/cordis.yml
+packages/CLAUDE.md
+snapshots/acp/escalation-approved/system-prompt.expected.md
+snapshots/acp/escalation-approved/tool-schemas.expected.json
+snapshots/acp/image-compaction/system-prompt.expected.md
+snapshots/sdk/account-provider-signout/system-prompt.expected.md
+snapshots/sdk/account-provider-signout/tool-schemas.expected.json
+snapshots/session/agent-instructions/workspace/AGENTS.md
+snapshots/session/agent-instructions/workspace/nested/AGENTS.md
+vendor/CLAUDE.md
+.claude/skills
+```
+
+> `.claude/skills` 上游是**指向目录的 symlink**，本地被展开成真实目录（42 个文件），因此其下的文件也全部归入本类：
+
+```
+.claude/skills/
+```
+
+## 二、可执行位丢失（上游 mode 100755 → 本地 100644，10 个）
+
+```
+.agents/skills/record-browser-gif/scripts/encode_gif.py
+apps/desktop/scripts/logged-notarytool.mjs
+apps/desktop/scripts/node-bin/node
+packages/experimental/webworker-packer/bin.js
+scripts/check-expected-filenames.sh
+scripts/check-vendor-manifest.sh
+scripts/prepare-ci-bubblewrap.sh
+scripts/wine-windows-gates.sh
+snapshots/session/cua-native/workspace/native-helper.mjs
+vendor/cordis/bin.js
+```
+
+## 这两类为什么不算"我们改了 DSH"
+
+- 已抽验 blob SHA 完全相同（例：`scripts/check-expected-filenames.sh` 两侧都是 `bf10e2e6…`）；
+- 只影响 DSH 自己的测试脚本与可执行入口，**不影响 AgentOps 的任何代码路径**；
+- 想彻底消除：在一台能创建符号链接的 Linux/macOS 上检出，或在 Windows 开启开发者模式后 `git config core.symlinks true && git checkout -- .`（会重写这些路径，需先确认无本地改动）。
+
+新增条目必须同样满足"blob 相同、只是模式差异"，否则请走 `DSH-CORE-CHANGES.md` 登记。

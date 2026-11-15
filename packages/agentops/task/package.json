@@ -1,0 +1,46 @@
+{
+  "name": "@agentops/dsh-task",
+  "description": "AgentOps task domain: 14-state lifecycle, 52 audited transitions, optimistic locking and stage/event history.",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "lib/types/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/types/index.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json",
+
+    "./tools-v1": {
+      "types": "./lib/types/tools-mount-v1.d.ts",
+      "default": "./lib/types/tools-mount-v1.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.json",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "contracts:check": "node --import tsx scripts/gen-contracts.ts --check",
+    "migrate:task": "node --import tsx scripts/migrate-task-db.ts"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.2",
+    "@deepseek-ai/cordis": "workspace:~",
+    "@deepseek-ai/dsh-api-session-controller": "workspace:*",
+    "@deepseek-ai/dsh-brand": "workspace:*",
+    "@deepseek-ai/dsh-tools": "workspace:*",
+    "@deepseek-ai/dsh-client-connection": "workspace:*"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "workspace:~",
+    "@deepseek-ai/dsh-api-session-controller": "workspace:*",
+    "@deepseek-ai/dsh-brand": "workspace:*",
+    "@deepseek-ai/dsh-tools": "workspace:*",
+    "@deepseek-ai/dsh-client-connection": "workspace:*"
+  }
+}

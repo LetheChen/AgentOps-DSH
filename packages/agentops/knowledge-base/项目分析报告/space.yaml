@@ -1,0 +1,5 @@
+id: project_analysis
+name: 项目分析报告
+description: 项目研究、GitHub 项目分析、技术选型与本地部署资料
+visibility: shared
+readers: []

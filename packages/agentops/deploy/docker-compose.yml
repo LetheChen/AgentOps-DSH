@@ -1,0 +1,40 @@
+# AgentOps on DSH: one host container.
+#
+#   docker compose -f packages/agentops/deploy/docker-compose.yml up -d
+#
+# The image is built from ./Dockerfile (repo root context).
+
+name: agentops
+
+services:
+  dsh:
+    build:
+      context: ../../..
+      dockerfile: packages/agentops/deploy/Dockerfile
+    image: agentops-dsh:local
+    command: ["node", "/app/packages/agentops/deploy/bootstrap.mjs"]
+    environment:
+      DSH_HOME: /data/dsh
+      AGENTOPS_KNOWLEDGE_DB: /data/dsh/agentops/knowledge.db
+      AGENTOPS_TASK_DB: /data/dsh/agentops/tasks.db
+      AGENTOPS_RUN_DB: /data/dsh/agentops/runs.db
+      AGENTOPS_SECURITY_DB: /data/dsh/agentops/security.db
+      AGENTOPS_SURFACE_DB: /data/dsh/agentops/surfaces.db
+      AGENTOPS_ARCHIVE_DIR: /data/agentops-outputs
+    ports:
+      - "${AGENTOPS_WEB_PORT:-3080}:3080"
+    volumes:
+      - agentops-data:/data/dsh
+      - ./agentops.patch.yml:/etc/agentops/agentops.patch.yml:ro
+      - ${AGENTOPS_ARCHIVE_HOST_DIR:-./agentops-outputs}:/data/agentops-outputs:ro
+    healthcheck:
+      # DSH web exposes no /health route: probe the listening port instead.
+      test: ["CMD", "node", "/app/packages/agentops/deploy/healthcheck.mjs", "tcp://127.0.0.1:3080"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+volumes:
+  agentops-data:

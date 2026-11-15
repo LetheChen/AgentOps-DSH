@@ -1,0 +1,37 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/agentops/deploy/README.md
+/:
+  en: 61161f36371815fb
+  zh: 81ae6842dca8b0be
+/agentops-deploy:
+  en: 4b181ea4a1ca4918
+  zh: a47f23c9c6400360
+/agentops-deploy/summary:
+  en: cb144268261a369c
+  zh: d351c3792acb8917
+/agentops-deploy/table-of-contents:
+  en: b563e4ec4727d0de
+  zh: 45ad74d8dcb4b58c
+/agentops-deploy/use-this-package:
+  en: 43cc8e0b310d5400
+  zh: 3ff0815ace181b32
+/agentops-deploy/understand-the-implementation:
+  en: 07f8473e640afdbf
+  zh: 84d10f3ec5679b86
+/agentops-deploy/further-exploration:
+  en: 19fcf0f89dd2dd07
+  zh: c9f2388181cb0a1b
+/agentops-deploy/model-experience:
+  en: 04da553b3851410e
+  zh: e48e891e31771738
+/agentops-deploy/model-experience/kv-cache-effect:
+  en: 00d886253778ea46
+  zh: eddd78d7a9f5851a
+/agentops-deploy/known-limitations-and-deferred-work:
+  en: 3882027c6f683331
+  zh: 469cbbb0598b848d
+/agentops-deploy/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 3bb0c20c93f16f98

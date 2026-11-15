@@ -1,0 +1,25 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/agentops/README.md
+/:
+  en: b79058da1330402d
+  zh: 97fa37668918b2f0
+/agentops-agentops-capabilities-ported-as-dsh-plugins:
+  en: 7d50823e13a439c5
+  zh: 9fa2566d99210cba
+/agentops-agentops-capabilities-ported-as-dsh-plugins/summary:
+  en: a422d6a11c642acf
+  zh: 57e6f92f4add219a
+/agentops-agentops-capabilities-ported-as-dsh-plugins/table-of-contents:
+  en: 1eb35b015a6c423f
+  zh: a8a3dceee2c9e943
+/agentops-agentops-capabilities-ported-as-dsh-plugins/packages:
+  en: 1890e2f7bcc9d073
+  zh: 841b0243cc0b1e22
+/agentops-agentops-capabilities-ported-as-dsh-plugins/related-documentation:
+  en: 2b93bfbdb388ed1c
+  zh: a2f0d826fd84434d
+/agentops-agentops-capabilities-ported-as-dsh-plugins/related-documentation/dev-note:
+  en: d9e459fafaf3914e
+  zh: de05df3ac7c32c6d

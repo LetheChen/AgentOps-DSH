@@ -1,0 +1,40 @@
+workflow_id: parity-parallel
+name: Parity Parallel
+version: 1
+description: 对拍用：一个扇出 + 聚合；用于观察旧引擎聚合竞态与新引擎显式依赖的差异。
+inputs:
+  - name: topic
+    type: string
+    required: false
+    default: parity
+nodes:
+  start:
+    name: 起点
+    type: agent
+    agent: echo_agent
+    harness: deterministic
+    after: []
+    outputs:
+      go:
+        to: [branch_a, branch_b]
+  branch_a:
+    name: 分支 A
+    type: agent
+    agent: echo_agent
+    harness: deterministic
+    after: [start]
+  branch_b:
+    name: 分支 B
+    type: agent
+    agent: echo_agent
+    harness: deterministic
+    after: [start]
+  join:
+    name: 聚合
+    type: parallel_branch
+    harness: deterministic
+    after: [start]
+    branches: [branch_a, branch_b]
+    outputs:
+      done:
+        to: ""

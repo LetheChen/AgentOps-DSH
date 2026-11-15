@@ -1,0 +1,78 @@
+# Deployment patch mounted into the container at /etc/agentops/agentops.patch.yml.
+#
+# Absolute paths, because this file is applied with `--patch` and the workspace
+# root inside the image is /app. The preset layer resolves plugins by package
+# name; deploy/bootstrap.mjs links the packages into the profile for that.
+
+- insert:
+    - id: agentops-system
+      name: '/app/packages/agentops/host/lib/index.js'
+      config:
+        agentDir: '/data/dsh/agentops/agents'
+        schedulesFile: '/data/dsh/agentops/schedules.yaml'
+        archiveDir: '/data/agentops-outputs'
+        toolMapFile: '/data/dsh/agentops/mappings/tool-map.yaml'
+        domainDir: '/data/dsh/agentops/domains'
+        actorDir: '/data/dsh/agentops/actors'
+
+    - id: agentops-knowledge
+      name: '/app/packages/agentops/knowledge/lib/index.js'
+      config:
+        readableSpaces: [finance, hr, ops, weekly, smart_query, project_analysis]
+        allowedImportRoots: []
+
+    - id: agentops-dag
+      name: '/app/packages/agentops/dag/lib/index.js'
+      config:
+        workflowDir: '/data/dsh/agentops/workflows'
+
+    - id: agentops-task
+      name: '/app/packages/agentops/task/lib/index.js'
+
+    - id: agentops-vault
+      name: '/app/packages/agentops/vault/lib/index.js'
+
+    - id: agentops-capability
+      name: /app/packages/agentops/capability/lib/index.js
+    - id: agentops-log-collection
+      name: '/app/packages/agentops/log-collection/lib/index.js'
+    - id: agentops-ui-capability
+      name: '/app/packages/agentops/ui-capability/lib/index.js'
+    - id: agentops-db
+      name: '/app/packages/agentops/db/lib/index.js'
+    - id: agentops-security
+      name: '/app/packages/agentops/security/lib/index.js'
+
+    - id: agentops-workflow-catalog
+      name: '/app/packages/agentops/workflow-catalog/lib/index.js'
+      config:
+        directory: '/data/dsh/agentops/workflows'
+
+    - id: agentops-client
+      name: '/app/packages/agentops/client/lib/index.js'
+
+    - id: preset-agentops
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: agentops
+        order: 20
+        plugins:
+          - id: agentops-system-tools
+            name: '@agentops/dsh-host/tools'
+          - id: agentops-knowledge-tools
+            name: '@agentops/dsh-knowledge/tools'
+            config:
+              readableSpaces: [finance, hr, ops, weekly, smart_query, project_analysis]
+              allowedImportRoots: []
+          - id: agentops-dag-tools
+            name: '@agentops/dsh-dag/tools'
+            config:
+              provider: spawn
+              concurrency: 4
+              workflowDir: /data/dsh/agentops/workflows
+          - id: agentops-task-tools
+            name: '@agentops/dsh-task/tools'
+          - id: agentops-security-tools
+            name: '@agentops/dsh-security/tools'
+          - id: agentops-db-tools
+            name: '@agentops/dsh-db/tools'

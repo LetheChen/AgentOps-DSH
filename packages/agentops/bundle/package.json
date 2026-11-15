@@ -1,0 +1,60 @@
+{
+  "name": "@agentops/dsh-bundle",
+  "description": "AgentOps distribution bundle: mounts the AgentOps host plugins over dsh-base and dsh-web-app.",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "cordis.patch.yml",
+    "presets/agentops-tools.patch.yml",
+    "presets/agents.generated.patch.yml"
+  ],
+  "license": "MIT",
+  "dsh": {
+    "manifestVersion": 1,
+    "bundle": {
+      "patch": [
+        "./cordis.patch.yml",
+        "./presets/agentops-tools.patch.yml",
+        "./presets/agents.generated.patch.yml"
+      ],
+      "listedByDefault": false
+    }
+  },
+  "scripts": {
+    "test": "node --import tsx --test tests/*.test.ts",
+    "backup": "node --import tsx scripts/backup.ts"
+  },
+  "peerDependencies": {
+    "@agentops/dsh-host": "workspace:*",
+    "@agentops/dsh-knowledge": "workspace:*",
+    "@agentops/dsh-dag": "workspace:*",
+    "@agentops/dsh-task": "workspace:*",
+    "@agentops/dsh-capability": "workspace:*",
+    "@agentops/dsh-ui-capability": "workspace:*",
+    "@agentops/dsh-client": "workspace:*",
+    "@agentops/dsh-security": "workspace:*",
+    "@agentops/dsh-workflow-catalog": "workspace:*",
+    "@agentops/dsh-log-collection": "workspace:*"
+  },
+  "devDependencies": {
+    "@agentops/dsh-host": "workspace:*",
+    "@agentops/dsh-knowledge": "workspace:*",
+    "@agentops/dsh-dag": "workspace:*",
+    "@agentops/dsh-task": "workspace:*",
+    "@agentops/dsh-capability": "workspace:*",
+    "@agentops/dsh-ui-capability": "workspace:*",
+    "@agentops/dsh-client": "workspace:*",
+    "js-yaml": "^4.3.2",
+    "@types/js-yaml": "^4.0.9",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.2",
+    "@agentops/dsh-security": "workspace:*",
+    "@agentops/dsh-workflow-catalog": "workspace:*",
+    "@agentops/dsh-log-collection": "workspace:*"
+  }
+}

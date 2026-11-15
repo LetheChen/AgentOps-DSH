@@ -1,0 +1,40 @@
+workflow_id: parity-skip
+name: Parity Skip
+version: 1
+description: |
+  对拍用：skip_if 命中。
+  旧引擎把 skip_if 命中当作"节点跳过、下游继续"；新引擎需要给出等价语义。
+inputs:
+  - name: topic
+    type: string
+    required: false
+    default: parity
+nodes:
+  prepare:
+    name: 准备
+    type: agent
+    agent: echo_agent
+    harness: deterministic
+    after: []
+    outputs:
+      ready:
+        to: [optional, finish]
+  optional:
+    name: 可选步骤
+    type: agent
+    agent: echo_agent
+    harness: deterministic
+    after: [prepare]
+    skip_if: "true"
+    outputs:
+      done:
+        to: [finish]
+  finish:
+    name: 收尾
+    type: agent
+    agent: echo_agent
+    harness: deterministic
+    after: [optional]
+    outputs:
+      done:
+        to: ""

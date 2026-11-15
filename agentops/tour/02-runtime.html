@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>02 · Manager → 智能问数 → 工作流 · AgentOps</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="styles.css">
+<style>
+  .runtime-page{height:100vh;overflow:hidden}
+  .rt-mast{align-items:flex-end}
+  .rt-side{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex:0 0 auto}
+  .rt-side .lede{max-width:660px}
+  .rt-controls{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+  .sim-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:5px;border:1px solid rgba(255,180,84,.35);background:rgba(255,180,84,.08);font:8.5px var(--mono);letter-spacing:.08em;color:var(--amber);white-space:nowrap}
+  .sim-badge::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber)}
+  .carry-chip{display:none;align-items:center;gap:6px;max-width:430px;padding:5px 9px;border-radius:7px;border:1px solid rgba(255,180,84,.32);background:rgba(255,180,84,.08);font:9px var(--mono);color:#ffcf8f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .carry-chip.show{display:flex}.carry-chip i{width:5px;height:5px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber);flex:0 0 auto}
+  .pipeline{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;flex:0 0 auto;border:1px solid var(--edge);border-radius:9px;overflow:hidden;background:var(--edge)}
+  .step{position:relative;display:flex;align-items:center;gap:8px;min-width:0;padding:8px 10px;background:rgba(8,13,17,.94);transition:background .2s}
+  .step::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:transparent;transition:.2s}
+  .step .num{display:grid;place-items:center;width:18px;height:18px;border-radius:50%;border:1px solid var(--edge);font:8px var(--mono);color:var(--dimmer);flex:0 0 auto;transition:.2s}
+  .step .txt{min-width:0;display:flex;flex-direction:column;gap:2px}.step b{font-size:9.5px;font-weight:520;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.step small{font:7.5px var(--mono);letter-spacing:.04em;color:var(--dimmer);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .step.active{background:rgba(57,215,255,.075)}.step.active::after{background:var(--cyan);box-shadow:0 0 12px rgba(57,215,255,.6)}.step.active .num{border-color:rgba(57,215,255,.5);color:var(--cyan)}.step.active b{color:var(--cyan)}
+  .step.done .num{border-color:rgba(87,224,139,.45);color:var(--green);background:rgba(87,224,139,.08)}.step.done b{color:#a8c9b6}
+  .step.error::after{background:var(--red);box-shadow:0 0 12px rgba(255,107,107,.5)}.step.error .num{border-color:rgba(255,107,107,.5);color:var(--red);background:rgba(255,107,107,.08)}.step.error b{color:var(--red)}
+  .step.blocked{opacity:.42}
+  .scenario-strip{display:flex;align-items:center;gap:7px;flex-wrap:wrap;flex:0 0 auto}
+  .scenario-strip .label{font:8.5px var(--mono);letter-spacing:.08em;color:var(--dimmer);margin-right:2px}
+  .scenario{display:flex;align-items:center;gap:7px;border:1px solid var(--edge);border-radius:7px;background:rgba(224,240,250,.035);padding:6px 9px;cursor:pointer;color:var(--dim);font-size:10px;transition:.16s}
+  .scenario small{font:8px var(--mono);color:var(--dimmer)}.scenario:hover,.scenario.active{border-color:rgba(57,215,255,.38);background:rgba(57,215,255,.075);color:var(--ink)}.scenario.active b{color:var(--cyan)}.scenario[data-scenario="limitation"].active{border-color:rgba(255,180,84,.4);background:rgba(255,180,84,.07)}.scenario[data-scenario="failure"].active{border-color:rgba(255,107,107,.36);background:rgba(255,107,107,.065)}
+  .scenario-note{font:8.5px var(--mono);color:var(--dimmer);margin-left:auto;max-width:520px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .runtime-main{display:grid;grid-template-columns:minmax(0,1.42fr) minmax(360px,.78fr);gap:13px;flex:1;min-height:0}
+  .stack-panel{display:flex;flex-direction:column;min-height:0}.stack-scroll{flex:1;min-height:0;overflow:auto;padding:12px 13px 14px;background:radial-gradient(circle at 50% 10%,rgba(57,215,255,.055),transparent 38%),linear-gradient(rgba(57,215,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(57,215,255,.018) 1px,transparent 1px);background-size:auto,24px 24px,24px 24px}
+  .actor-row{display:grid;grid-template-columns:minmax(0,.82fr) 35px minmax(0,1.08fr);align-items:center;gap:4px}
+  .actor-card{position:relative;min-width:0;text-align:left;border:1px solid var(--edge);border-radius:9px;background:rgba(10,15,19,.92);padding:9px 11px;cursor:pointer;transition:.18s;overflow:hidden}
+  .actor-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--accent,var(--cyan));opacity:.55}
+  .actor-card:hover,.actor-card.selected{border-color:rgba(57,215,255,.38);background:rgba(57,215,255,.05)}
+  .actor-card[data-state="running"]{border-color:rgba(255,180,84,.55);box-shadow:0 0 24px rgba(255,180,84,.08)}.actor-card[data-state="completed"]{border-color:rgba(87,224,139,.34)}.actor-card[data-state="failed"]{border-color:rgba(255,107,107,.58);box-shadow:0 0 24px rgba(255,107,107,.08)}
+  .actor-kicker{display:flex;align-items:center;justify-content:space-between;gap:8px}.actor-kicker span{font:7.5px var(--mono);letter-spacing:.08em;color:var(--dimmer)}.actor-kicker em{font:normal 7.5px var(--mono);color:var(--accent,var(--cyan))}
+  .actor-card b{display:block;margin-top:4px;font-size:11px;font-weight:550;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.actor-card p{margin-top:3px;font-size:8.5px;line-height:1.4;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.actor-card code{font:8px var(--mono);color:var(--dimmer)}
+  .actor-card.manager{--accent:var(--amber)}.actor-card.smart{--accent:var(--cyan);border-color:rgba(57,215,255,.22)}
+  .delegate-link{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:0;color:var(--dimmer)}.delegate-link i{font:normal 16px var(--mono);color:var(--amber);transition:.2s}.delegate-link span{font:6.5px var(--mono);letter-spacing:.06em;white-space:nowrap}.delegate-link.active i{color:var(--amber);text-shadow:0 0 12px rgba(255,180,84,.8)}
+  .handoff-band{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:7px 0 9px;padding:5px 9px;border:1px dashed rgba(255,180,84,.25);border-radius:6px;background:rgba(255,180,84,.045);font:8px var(--mono);color:rgba(255,207,143,.72);min-width:0}
+  .handoff-band span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.handoff-band b{font-weight:500;color:var(--amber)}
+  .bridge-row{display:grid;grid-template-columns:1fr 26px 1fr;align-items:center;gap:5px;margin-top:8px}.bridge-row .conn{display:grid;place-items:center;color:var(--dimmer);font:14px var(--mono);transition:.2s}.bridge-row .conn.active{color:var(--amber);text-shadow:0 0 10px rgba(255,180,84,.8)}.bridge-row .conn.done{color:var(--green)}
+  .depths{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;border:1px solid var(--edge);border-radius:6px;background:rgba(5,8,10,.42);font:8px var(--mono);color:var(--dimmer)}.depths b{font-weight:500;color:var(--dim)}.depths em{font-style:normal;color:var(--cyan)}.depths span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .workflow-boundary{margin-top:9px;border:1px dashed rgba(57,215,255,.25);border-radius:9px;background:rgba(5,10,13,.52);padding:10px}
+  .wf-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px}.wf-title{min-width:0}.wf-title b{display:block;font-size:11.5px;font-weight:560}.wf-title small{display:block;margin-top:3px;font:8px var(--mono);color:var(--dimmer);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .wf-id{text-align:right;font:8px var(--mono);color:var(--dim);min-width:0}.wf-id span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.wf-id b{color:var(--teal);font-weight:500}.wf-id em{font-style:normal;color:var(--dimmer)}
+  .node-flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:26px;position:relative}
+  .node-card{position:relative;min-width:0;min-height:92px;text-align:left;border:1px solid var(--edge);border-radius:8px;background:rgba(11,17,22,.94);padding:9px 10px;cursor:pointer;transition:.18s;overflow:visible}
+  .node-card:not(:last-child)::after{content:"→";position:absolute;right:-21px;top:50%;transform:translateY(-50%);font:12px var(--mono);color:var(--dimmer);transition:.18s}
+  .node-card:not(:last-child).flow-active::after{color:var(--cyan);text-shadow:0 0 10px rgba(57,215,255,.7)}
+  .node-card:hover,.node-card.selected{border-color:rgba(57,215,255,.46);background:rgba(57,215,255,.056)}
+  .node-top{display:flex;align-items:center;justify-content:space-between;gap:5px}.node-id{font:7.5px var(--mono);letter-spacing:.02em;color:var(--dimmer);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.node-state{font:6.5px var(--mono);letter-spacing:.05em;color:var(--dimmer);white-space:nowrap}
+  .node-card b{display:block;margin-top:4px;font-size:10px;font-weight:550;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.node-role{display:block;margin-top:3px;font:8px var(--mono);color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.node-foot{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:7px;font:7px var(--mono);color:var(--dimmer)}.node-foot code{font:7px var(--mono);color:var(--teal)}
+  .node-card[data-state="running"]{border-color:rgba(255,180,84,.65);background:rgba(255,180,84,.08);box-shadow:0 0 22px rgba(255,180,84,.1);animation:breathe 1.3s ease-in-out infinite}
+  .node-card[data-state="completed"]{border-color:rgba(87,224,139,.36);background:rgba(87,224,139,.045)}.node-card[data-state="completed"] .node-state{color:var(--green)}
+  .node-card[data-state="skip"]{border-color:rgba(255,180,84,.36);background:rgba(255,180,84,.045)}.node-card[data-state="skip"] .node-state{color:var(--amber)}
+  .node-card[data-state="failed"]{border-color:rgba(255,107,107,.55);background:rgba(255,107,107,.075)}.node-card[data-state="failed"] .node-state{color:var(--red)}.node-card[data-state="failed"]:not(:last-child)::after{color:var(--red)}
+  .node-card[data-state="skipped"]{opacity:.43;border-style:dashed}.node-card[data-state="skipped"] .node-state{color:var(--red)}
+  .refuse-branch{margin-top:10px;padding-top:9px;border-top:1px dashed rgba(255,180,84,.2);display:grid;grid-template-columns:minmax(0,1fr) 26px minmax(0,3fr);align-items:center;gap:5px}
+  .branch-label{font:7.5px/1.5 var(--mono);color:var(--dimmer)}.branch-label b{display:block;color:var(--amber);font-weight:500}.refuse-card{grid-column:3;max-width:calc((100% - 78px)/4);}
+  .refuse-card.node-card{min-height:70px;padding:8px 9px}.refuse-card.node-card::after{display:none}
+  .inline-warning{margin-top:9px;padding:7px 9px;border:1px solid rgba(255,180,84,.23);border-radius:6px;background:rgba(255,180,84,.055);font-size:8.5px;line-height:1.55;color:#b99c72}.inline-warning b{color:var(--amber);font-weight:550}.inline-warning code{font:8px var(--mono);color:#ffcf8f}
+  .observe-wrap{display:grid;grid-template-rows:auto minmax(0,1fr) 140px;gap:10px;min-height:0}
+  .observe-panel,.events-panel{display:flex;flex-direction:column;min-height:0}.observe-panel{min-height:0;overflow:hidden}
+  .metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--edge);border-bottom:1px solid var(--edge);flex:0 0 auto}.metric{background:rgba(8,13,17,.9);padding:8px 10px;min-width:0}.metric span{display:block;font:7px var(--mono);letter-spacing:.08em;color:var(--dimmer);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.metric b{display:block;margin-top:4px;font:12px var(--mono);font-weight:500;color:var(--cyan);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.metric:nth-child(2) b{color:var(--green)}.metric:nth-child(3) b{color:var(--amber)}.metric:nth-child(4) b{color:var(--violet)}
+  .inspector{flex:1;min-height:0;overflow:auto;padding:11px 12px}.inspector-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:9px}.inspector-head h2{font-size:12px;font-weight:560}.inspector-head small{display:block;margin-top:3px;font:8px var(--mono);color:var(--dimmer)}.state-pill{font:7px var(--mono);padding:3px 6px;border-radius:4px;border:1px solid var(--edge);color:var(--dim);white-space:nowrap}.state-pill.run{color:var(--amber);border-color:rgba(255,180,84,.34);background:rgba(255,180,84,.06)}.state-pill.ok{color:var(--green);border-color:rgba(87,224,139,.3);background:rgba(87,224,139,.05)}.state-pill.err{color:var(--red);border-color:rgba(255,107,107,.3);background:rgba(255,107,107,.05)}
+  .io-block{margin-top:8px}.io-label{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;font:7px var(--mono);letter-spacing:.08em;color:var(--dimmer)}.io-label b{color:var(--dim);font-weight:500}.io-label span{color:var(--teal)}
+  .io-block pre{max-height:112px;overflow:auto;border:1px solid var(--edge);border-radius:6px;background:rgba(2,5,7,.7);padding:8px;font:8.5px/1.55 var(--mono);color:#a9c4d1;white-space:pre-wrap;word-break:break-word;margin:0}
+  .evidence-list{display:flex;flex-direction:column;gap:4px;margin-top:9px}.evidence-list code{font:7.5px/1.45 var(--mono);color:var(--dimmer);border-left:1px solid rgba(57,215,255,.25);padding-left:6px;word-break:break-all}.contract{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:10px;padding-top:9px;border-top:1px solid var(--edge)}.contract div{padding:5px 6px;border:1px solid var(--edge);border-radius:5px;background:rgba(224,240,250,.025)}.contract span{display:block;font:6.5px var(--mono);color:var(--dimmer)}.contract b{display:block;margin-top:3px;font-size:7.5px;font-weight:500;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .events-list{flex:1;min-height:0;overflow:auto;padding:7px 9px;font:8px/1.55 var(--mono)}.event{display:grid;grid-template-columns:47px 56px minmax(0,1fr);gap:5px;padding:3px 0;border-bottom:1px solid rgba(224,240,250,.045);color:var(--dim)}.event:last-child{border-bottom:0}.event time{color:var(--dimmer)}.event .ev-type{color:var(--cyan);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.event.err .ev-type{color:var(--red)}.event.warn .ev-type{color:var(--amber)}.event.ok .ev-type{color:var(--green)}.event p{min-width:0;word-break:break-word}
+  .receipt-bar{display:none;align-items:center;gap:8px;padding:7px 10px;border-top:1px solid rgba(255,180,84,.2);background:rgba(255,180,84,.055);flex:0 0 auto}.receipt-bar.show{display:flex}.receipt-copy{min-width:0;flex:1}.receipt-copy b{display:block;font:8px var(--mono);color:var(--amber);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.receipt-copy span{display:block;margin-top:2px;font-size:8px;color:#b99c72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .footer-rail{min-height:18px}
+  @media(max-width:1180px){.runtime-main{grid-template-columns:minmax(0,1.25fr) minmax(330px,.85fr)}.node-flow{gap:21px}.scenario-note{display:none}.contract{grid-template-columns:1fr 1fr 1fr}}
+  @media(max-width:920px){.runtime-page{height:auto;min-height:100vh;overflow:visible}.runtime-main{grid-template-columns:1fr}.stack-panel{min-height:610px}.observe-wrap{grid-template-rows:auto 470px 150px}.rt-side{align-items:flex-start}.rt-controls{justify-content:flex-start}.pipeline{grid-template-columns:repeat(3,1fr)}.scenario-note{display:none}.footer-rail{flex-wrap:wrap}.footer-rail .keys{display:none}}
+  @media(max-width:620px){.runtime-page{padding:14px 10px 10px;gap:10px}.rt-mast{display:block}.rt-side{margin-top:10px}.rt-controls{gap:5px}.rt-controls .btn{font-size:9.5px;padding:6px 8px}.pipeline{grid-template-columns:repeat(2,1fr)}.step{padding:7px 8px}.step b{font-size:8.5px}.actor-row{grid-template-columns:minmax(0,1fr) 22px minmax(0,1fr)}.actor-card p{display:none}.node-flow{grid-template-columns:1fr;gap:20px}.node-card{min-height:76px}.node-card:not(:last-child)::after{content:"↓";right:50%;top:auto;bottom:-20px;transform:translateX(50%)}.refuse-branch{grid-template-columns:1fr;gap:7px;padding-top:8px}.refuse-card{grid-column:1;max-width:none}.metric-grid{grid-template-columns:repeat(2,1fr)}.observe-wrap{grid-template-rows:auto 480px 180px}.contract{grid-template-columns:1fr}.workflow-boundary{padding:8px}.wf-head{display:block}.wf-id{text-align:left;margin-top:6px}.event{grid-template-columns:42px 48px minmax(0,1fr)}.page{padding-left:10px;padding-right:10px}}
+</style>
+</head>
+<body>
+<div class="page runtime-page">
+  <header class="mast rt-mast">
+    <div class="mast-copy">
+      <div class="eyebrow"><i>CHAPTER 02</i><span>cross-agent runtime</span></div>
+      <h1>Manager 不取数，<br><em>它把任务交给一条被钉定的工作流</em></h1>
+    </div>
+    <div class="rt-side">
+      <p class="lede">一次问数实际跨了三层：<b>Manager</b> 用 <code>subagent</code> 派发；<b>smart_query</b> 在自己的轮次里调用 <code>dag_run</code>；DAG 再为每个业务角色启动一个<b>节点 subagent</b>。动画只演示协议与状态，不是生产实跑。</p>
+      <div class="carry-chip" id="carryChip"><i></i><span id="carryText"></span></div>
+      <div class="rt-controls">
+        <span class="sim-badge">TEACHING SIMULATION</span>
+        <button class="btn primary" id="runBtn">
+          <svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg>运行这次流程
+        </button>
+        <button class="btn small" id="stepBtn">单步</button>
+        <button class="btn small" id="resetBtn">重置</button>
+      </div>
+    </div>
+  </header>
+
+  <section class="pipeline" aria-label="跨 Agent 运行阶段">
+    <div class="step" data-step="0"><span class="num">1</span><span class="txt"><b>用户请求</b><small>manager · depth 0</small></span></div>
+    <div class="step" data-step="1"><span class="num">2</span><span class="txt"><b>派发 subagent</b><small>立即返回 subagentId</small></span></div>
+    <div class="step" data-step="2"><span class="num">3</span><span class="txt"><b>smart_query 接管</b><small>业务 Agent · depth 1</small></span></div>
+    <div class="step" data-step="3"><span class="num">4</span><span class="txt"><b>dag_run 运行 DAG</b><small>smart-query · pinned</small></span></div>
+    <div class="step" data-step="4"><span class="num">5</span><span class="txt"><b>结果逐层回投</b><small>answer → caller</small></span></div>
+    <div class="step" data-step="5"><span class="num">6</span><span class="txt"><b>Manager 回复</b><small>汇总 · 不替代执行</small></span></div>
+  </section>
+
+  <section class="scenario-strip" aria-label="教学场景">
+    <span class="label">SCENARIO</span>
+    <button class="scenario active" data-scenario="normal"><b>正常问数</b><small>refuse skip · 4 nodes</small></button>
+    <button class="scenario" data-scenario="limitation"><b>skip_if 限制</b><small>outputs.skipped ≠ blocked</small></button>
+    <button class="scenario" data-scenario="failure"><b>执行失败</b><small>failed · blocked downstream</small></button>
+    <span class="scenario-note" id="scenarioNote">正常路径实际执行 route_intent → plan_sql → run_sql → present_result</span>
+  </section>
+
+  <main class="runtime-main">
+    <section class="panel stack-panel">
+      <div class="panel-head">
+        <div class="panel-title"><span class="dot"></span>跨 Agent 执行栈 <span class="panel-sub">SUBAGENT → PINNED WORKFLOW → NODE SUBAGENTS</span></div>
+        <div class="graph-head-right"><span class="chip amber" id="dagChip">DAG IDLE</span><span class="chip" id="depthChip">DEPTH 0 → 1 → 2</span></div>
+      </div>
+
+      <div class="stack-scroll">
+        <div class="actor-row">
+          <button class="actor-card user selected" data-actor="user" id="userCard" style="--accent:var(--violet)">
+            <span class="actor-kicker"><span>USER REQUEST</span><em>输入</em></span>
+            <b>业务用户</b>
+            <p id="questionText">本月审批通过率是多少？</p>
+            <code>natural language</code>
+          </button>
+          <span class="delegate-link" id="userToManager"><i>→</i><span>请求</span></span>
+          <button class="actor-card manager" data-actor="manager" id="managerCard">
+            <span class="actor-kicker"><span>ENTRY AGENT</span><em>depth 0</em></span>
+            <b>Manager Agent</b>
+            <p>识别意图 · 分解任务 · 只负责派发和汇总</p>
+            <code>subagent / present_content</code>
+          </button>
+        </div>
+
+        <div class="handoff-band" id="handoffBand"><span>Manager 的 subagent 只返回句柄：<b id="subagentId">—</b></span><span id="subagentState">尚未派发</span></div>
+
+        <div class="bridge-row">
+          <button class="actor-card smart" data-actor="smart_query" id="smartCard">
+            <span class="actor-kicker"><span>DELEGATED AGENT</span><em>depth 1</em></span>
+            <b>智能问数 · smart_query</b>
+            <p>收到任务后在自身轮次启动 smart-query 工作流</p>
+            <code>execution: workflow</code>
+          </button>
+          <span class="conn" id="smartToDag">↓</span>
+          <div class="depths">
+            <span><b>权限继承</b> <em>smart_query preset</em></span>
+            <span><b>层级</b> Manager 0 → Agent 1 → Node 2</span>
+          </div>
+        </div>
+
+        <div class="workflow-boundary">
+          <div class="wf-head">
+            <div class="wf-title">
+              <b>smart-query · 固定工作流</b>
+              <small>5 个 agent 节点声明 · 所有节点强制复用 smart_query preset</small>
+            </div>
+            <div class="wf-id">
+              <span>runId <b id="runId">—</b></span>
+              <span>delivery <b>caller</b> · concurrency <b>4</b></span>
+            </div>
+          </div>
+
+          <div class="node-flow" id="nodeFlow">
+            <button class="node-card selected" data-node="route_intent" aria-label="查看 route_intent">
+              <span class="node-top"><span class="node-id">route_intent</span><span class="node-state">pending</span></span>
+              <b>意图分流</b><span class="node-role">意图分类员</span>
+              <span class="node-foot"><span>in · question</span><code>out · intent</code></span>
+            </button>
+            <button class="node-card" data-node="plan_sql" aria-label="查看 plan_sql">
+              <span class="node-top"><span class="node-id">plan_sql</span><span class="node-state">pending</span></span>
+              <b>生成 SQL</b><span class="node-role">SQL 工程师</span>
+              <span class="node-foot"><span>in · question</span><code>out · sql</code></span>
+            </button>
+            <button class="node-card" data-node="run_sql" aria-label="查看 run_sql">
+              <span class="node-top"><span class="node-id">run_sql</span><span class="node-state">pending</span></span>
+              <b>执行查询</b><span class="node-role">数据执行员</span>
+              <span class="node-foot"><span>in · database, sql</span><code>out · result</code></span>
+            </button>
+            <button class="node-card" data-node="present_result" aria-label="查看 present_result">
+              <span class="node-top"><span class="node-id">present_result</span><span class="node-state">pending</span></span>
+              <b>呈现结果</b><span class="node-role">结果讲解员</span>
+              <span class="node-foot"><span>in · question, result</span><code>out · answer</code></span>
+            </button>
+          </div>
+
+          <div class="refuse-branch">
+            <span class="branch-label"><b>intent=false</b>skip_if: route_intent.intent</span>
+            <span class="conn" style="justify-self:center;color:var(--amber)">↘</span>
+            <button class="node-card refuse-card" data-node="refuse_intent" aria-label="查看 refuse_intent">
+              <span class="node-top"><span class="node-id">refuse_intent</span><span class="node-state">pending</span></span>
+              <b>拒绝非数据查询</b><span class="node-role">接待员</span>
+              <span class="node-foot"><span>in · question</span><code>out · answer</code></span>
+            </button>
+          </div>
+
+          <div class="inline-warning" id="flowWarning"><b>正常路径：</b><code>refuse_intent</code> 的 <code>skip_if</code> 命中时，节点仍结算为 <code>completed</code>，并在 outputs 中记录 <code>{skipped:true, reason}</code>；其余四个角色继续执行。</div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="observe-wrap">
+      <section class="panel observe-panel">
+        <div class="panel-head">
+          <div class="panel-title"><span class="dot"></span>运行观察窗</div>
+          <span class="status" id="simStatus">SIM READY</span>
+        </div>
+        <div class="metric-grid">
+          <div class="metric"><span>SUBAGENT</span><b id="mSubagent">0 / 1</b></div>
+          <div class="metric"><span>NODE STATUS</span><b id="mNodes">0 / 5</b></div>
+          <div class="metric"><span>RUN</span><b id="mRun">IDLE</b></div>
+          <div class="metric"><span>SKIP / FAIL</span><b id="mFlags">0 / 0</b></div>
+        </div>
+        <div class="inspector" id="inspector">
+          <div class="inspector-head"><div><h2 id="insTitle">route_intent · 意图分类员</h2><small id="insSub">点击任一节点，查看真实输入/输出端口</small></div><span class="state-pill" id="insState">PENDING</span></div>
+          <div class="io-block"><div class="io-label"><b>INPUT PORTS</b><span>JSON</span></div><pre id="insInput">{}</pre></div>
+          <div class="io-block"><div class="io-label"><b>OUTPUT PORTS</b><span>JSON</span></div><pre id="insOutput">null</pre></div>
+          <div class="hint" id="insHint" style="margin-top:8px;font-size:8.5px;line-height:1.55;color:var(--dim)">route_intent 只判定是否为业务数据问题，不生成 SQL。</div>
+          <div class="evidence-list" id="insEvidence"><code>agentops/workflows/smart-query.yaml:27-47</code></div>
+          <div class="contract">
+            <div><span>EXECUTOR</span><b>one node = one subagent</b></div>
+            <div><span>OWNER</span><b>smart_query preset</b></div>
+            <div><span>DELIVERY</span><b>caller waits · DAG blocks</b></div>
+          </div>
+        </div>
+        <div class="receipt-bar" id="receiptBar">
+          <div class="receipt-copy"><b id="receiptTitle">回执尚不可用</b><span id="receiptDesc">运行结束后可把本次教学回执送入第 3 章</span></div>
+          <button class="btn amber small" id="handoffBtn" disabled>送入第 3 章</button>
+        </div>
+      </section>
+
+      <section class="panel events-panel">
+        <div class="panel-head"><div class="panel-title"><span class="dot"></span>事件流 <span class="panel-sub">TEACHING EVENTS</span></div><span class="panel-sub" id="eventCount">0 EVENTS</span></div>
+        <div class="events-list" id="events"><div class="event"><time>--:--:--</time><span class="ev-type">sim</span><p>等待运行。所有 ID、时间和输出均为教学模拟。</p></div></div>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="footer-rail">
+    <span class="keys"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> 章节 · <kbd>←</kbd><kbd>→</kbd> 切换 · <kbd>Home</kbd><kbd>End</kbd> 首尾</span>
+    <span class="path">source scope · agentops/agents · workflows/smart-query.yaml · packages/agentops/dag</span>
+  </footer>
+</div>
+<script src="../runtime.js"></script>
+<script src="runtime-02.js"></script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+{
+  "name": "@agentops/dsh-vault",
+  "description": "AgentOps credential vault: connection metadata in SQLite, secrets sealed with AES-256-GCM.",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "lib/types/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/types/index.js"
+    },
+    "./store": {
+      "types": "./lib/types/store.d.ts",
+      "default": "./lib/types/store.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.json",
+    "test": "node --import tsx --test tests/*.test.ts"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "mysql2": "^3.24.6"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.2",
+    "@deepseek-ai/cordis": "workspace:~",
+    "@deepseek-ai/dsh-client-connection": "workspace:*",
+    "@deepseek-ai/dsh-home-paths": "workspace:*"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "workspace:~",
+    "@deepseek-ai/dsh-client-connection": "workspace:*",
+    "@deepseek-ai/dsh-home-paths": "workspace:*"
+  }
+}

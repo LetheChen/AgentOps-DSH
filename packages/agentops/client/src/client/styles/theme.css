@@ -1,0 +1,264 @@
+.agentops-surface[data-theme="dark"],
+.agentops-theme-scope[data-theme="dark"] {
+/* ── Background surfaces ── */
+  --color-bg-base: #151517;
+  --color-bg-surface: #232324;
+  --color-bg-elevated: #2C2C2E;
+  --color-bg-hover: #353537;
+
+  /* ── Primary brand (blue) ── */
+  --color-primary: #6EA0FF;
+  --color-primary-hover: #86B0FF;
+  --color-primary-active: #5B8FEE;
+  --color-primary-tint: rgba(110, 160, 255, 0.14);
+  --color-primary-soft: #9BBDff;
+
+  /* ── Text ── */
+  --color-text-primary: #F4F4F5;
+  --color-text-secondary: #C7C8CC;
+  --color-text-tertiary: #93959B;
+  --color-text-on-primary: #151517;
+
+  /* ── Borders ── */
+  --color-border-subtle: rgba(255, 255, 255, 0.12);
+  --color-border-default: rgba(255, 255, 255, 0.18);
+  --color-border-strong: rgba(255, 255, 255, 0.26);
+
+  /* ── State colors ── */
+  --state-success: #10B981;
+  --state-success-tint: rgba(16, 185, 129, 0.12);
+  --state-warning: #FBBF24;
+  --state-warning-tint: rgba(251, 191, 36, 0.12);
+  --state-error: #EF4444;
+  --state-error-tint: rgba(239, 68, 68, 0.12);
+  --state-info: #3B82F6;
+  --state-info-tint: rgba(59, 130, 246, 0.12);
+
+  /* ── Radius ── */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+  --radius-full: 9999px;
+
+  /* ── Typography ── */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+
+  /* ── Shadows ── */
+  --shadow-floating: 0 1px 2px rgba(0, 0, 0, 0.20), 0 10px 28px rgba(0, 0, 0, 0.24);
+  --shadow-dropdown: 0 10px 28px rgba(0, 0, 0, 0.24);
+
+  --theme-chart-blue: #3B82F6;
+  --theme-chart-purple: #A855F7;
+  --theme-chart-green: #10B981;
+  --theme-chart-orange: #F97316;
+  --theme-chart-pink: #EC4899;
+  --theme-chart-grid: rgba(148, 163, 184, 0.14);
+  --theme-minimap-bg: linear-gradient(135deg, rgba(11, 15, 20, 0.92), rgba(15, 23, 42, 0.92));
+  --theme-minimap-mask: rgba(11, 15, 20, 0.55);
+  --theme-minimap-border: rgba(99, 102, 241, 0.25);
+  --theme-preview-dark: linear-gradient(135deg, #0B0F14 50%, #334155 50%);
+  --theme-preview-light: linear-gradient(135deg, #F3F5F9 50%, #CBD5E1 50%);
+  --theme-preview-warm: linear-gradient(135deg, #1F1E1B 50%, #38B5EC 50%);
+  --dag-status-completed: #5EE2AD;
+  --dag-status-running: #4FD8E8;
+  --dag-status-failed: #FCA5A5;
+  --dag-status-skipped: #FBC94B;
+  --dag-status-pending: #94B2D6;
+  --dag-status-ready: #93C5FD;
+  --dag-status-waiting: #A5B4FC;
+  --dag-status-cancelled: #94B2D6;
+}
+
+.agentops-surface[data-theme="light"],
+.agentops-theme-scope[data-theme="light"] {
+  --color-bg-base: #EEF2F7;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-elevated: #F5F7FA;
+  --color-bg-hover: #E8EDF4;
+
+  --color-primary: #2563EB;
+  --color-primary-hover: #1D4ED8;
+  --color-primary-active: #1E40AF;
+  --color-primary-tint: rgba(37, 99, 235, 0.10);
+  --color-primary-soft: #1D4ED8;
+
+  --color-text-primary: #111827;
+  --color-text-secondary: #4B5563;
+  --color-text-tertiary: #6B7280;
+  --color-text-on-primary: #FFFFFF;
+
+  --color-border-subtle: rgba(15, 23, 42, 0.14);
+  --color-border-default: rgba(15, 23, 42, 0.18);
+  --color-border-strong: rgba(15, 23, 42, 0.24);
+
+  --state-success: #15803D;
+  --state-success-tint: rgba(21, 128, 61, 0.10);
+  --state-warning: #B45309;
+  --state-warning-tint: rgba(180, 83, 9, 0.10);
+  --state-error: #DC2626;
+  --state-error-tint: rgba(220, 38, 38, 0.09);
+  --state-info: #2563EB;
+  --state-info-tint: rgba(37, 99, 235, 0.10);
+
+  --shadow-floating: 0 12px 32px rgba(15, 23, 42, 0.14), 0 2px 8px rgba(15, 23, 42, 0.06);
+  --shadow-dropdown: 0 8px 24px rgba(15, 23, 42, 0.14);
+
+  --theme-chart-blue: #2563EB;
+  --theme-chart-purple: #7C3AED;
+  --theme-chart-green: #15803D;
+  --theme-chart-orange: #C2410C;
+  --theme-chart-pink: #DB2777;
+  --theme-chart-grid: rgba(100, 116, 139, 0.16);
+  --theme-minimap-bg: linear-gradient(135deg, #FFFFFF, #EDF1F7);
+  --theme-minimap-mask: rgba(148, 163, 184, 0.20);
+  --theme-minimap-border: rgba(100, 116, 139, 0.24);
+  --theme-preview-dark: linear-gradient(135deg, #0B0F14 50%, #334155 50%);
+  --theme-preview-light: linear-gradient(135deg, #F3F5F9 50%, #CBD5E1 50%);
+  --theme-preview-warm: linear-gradient(135deg, #1F1E1B 50%, #38B5EC 50%);
+  --dag-status-completed: #15803D;
+  --dag-status-running: #0E7490;
+  --dag-status-failed: #DC2626;
+  --dag-status-skipped: #B45309;
+  --dag-status-pending: #64748B;
+  --dag-status-ready: #2563EB;
+  --dag-status-waiting: #7C3AED;
+  --dag-status-cancelled: #64748B;
+}
+
+.agentops-surface[data-theme="warm"],
+.agentops-theme-scope[data-theme="warm"] {
+--color-bg-base: #1F1E1B;
+  --color-bg-surface: #24231F;
+  --color-bg-elevated: #2D2C25;
+  --color-bg-hover: #39372F;
+
+  --color-primary: #38B5EC;
+  --color-primary-hover: #5BC5F2;
+  --color-primary-active: #249FD6;
+  --color-primary-tint: rgba(56, 181, 236, 0.13);
+  --color-primary-soft: #69C8EE;
+
+  --color-text-primary: #E7E3D7;
+  --color-text-secondary: #AAA69B;
+  --color-text-tertiary: #77736A;
+  --color-text-on-primary: #0B0F14;
+
+  --color-border-subtle: #35342D;
+  --color-border-default: #47443B;
+  --color-border-strong: #5A574C;
+
+  --state-success: #9DB977;
+  --state-success-tint: rgba(157, 185, 119, 0.13);
+  --state-warning: #D5A657;
+  --state-warning-tint: rgba(213, 166, 87, 0.13);
+  --state-error: #DF806F;
+  --state-error-tint: rgba(223, 128, 111, 0.13);
+  --state-info: #38B5EC;
+  --state-info-tint: rgba(56, 181, 236, 0.13);
+
+  --shadow-floating: 0 12px 32px rgba(0, 0, 0, 0.34), 0 2px 8px rgba(0, 0, 0, 0.18);
+  --shadow-dropdown: 0 8px 24px rgba(0, 0, 0, 0.34);
+
+  --theme-chart-blue: #38B5EC;
+  --theme-chart-purple: #AC78DF;
+  --theme-chart-green: #9DB977;
+  --theme-chart-orange: #D98964;
+  --theme-chart-pink: #C985A9;
+  --theme-chart-grid: rgba(170, 166, 155, 0.14);
+  --theme-minimap-bg: linear-gradient(135deg, #24231F, #2D2C25);
+  --theme-minimap-mask: rgba(31, 30, 27, 0.58);
+  --theme-minimap-border: rgba(56, 181, 236, 0.24);
+  --theme-preview-dark: linear-gradient(135deg, #0B0F14 50%, #334155 50%);
+  --theme-preview-light: linear-gradient(135deg, #F3F5F9 50%, #CBD5E1 50%);
+  --theme-preview-warm: linear-gradient(135deg, #1F1E1B 50%, #38B5EC 50%);
+  --dag-status-completed: #9DB977;
+  --dag-status-running: #38B5EC;
+  --dag-status-failed: #DF806F;
+  --dag-status-skipped: #D5A657;
+  --dag-status-pending: #AAA69B;
+  --dag-status-ready: #69C8EE;
+  --dag-status-waiting: #AC78DF;
+  --dag-status-cancelled: #77736A;
+}
+
+/*
+ * Host control tokens, remapped inside AgentOps scopes.
+ *
+ * The DSH primitives (Button, Input, Modal, Tooltip) read the design-platform
+ * alias tokens, which the shell theme resolves for the whole page. AgentOps
+ * paints its panels from its own palette, so without this remap a host button
+ * inside a panel keeps the shell tone and reads as light-on-dark.
+ */
+.agentops-surface,
+.agentops-theme-scope {
+  --dsw-alias-bg-base: var(--color-bg-base);
+  --dsw-alias-bg-layer-1: var(--color-bg-surface);
+  --dsw-alias-bg-layer-2: var(--color-bg-surface);
+  --dsw-alias-bg-layer-3: var(--color-bg-elevated);
+  --dsw-alias-bg-layer-4: var(--color-bg-elevated);
+  --dsw-alias-bg-module-platform: var(--color-bg-elevated);
+  --dsw-alias-bg-overlay: var(--color-bg-elevated);
+  --dsw-alias-bg-skeleton: var(--color-bg-elevated);
+
+  --dsw-alias-border-l1: var(--color-border-subtle);
+  --dsw-alias-border-l2: var(--color-border-subtle);
+  --dsw-alias-border-l2-darkmode-thin: var(--color-border-subtle);
+  --dsw-alias-border-l3: var(--color-border-default);
+  --dsw-alias-border-l4: var(--color-border-strong);
+
+  --dsw-alias-label-primary: var(--color-text-primary);
+  --dsw-alias-label-secondary: var(--color-text-secondary);
+  --dsw-alias-label-tertiary: var(--color-text-tertiary);
+  --dsw-alias-label-caption: var(--color-text-tertiary);
+  --dsw-alias-label-dimmed: var(--color-text-tertiary);
+  --dsw-alias-label-primary-foreground: var(--color-text-on-primary);
+  --dsw-alias-label-error: var(--state-error);
+  --dsw-alias-link: var(--color-primary-soft);
+  --dsw-alias-menu-icon: var(--color-text-secondary);
+
+  --dsw-alias-interactive-bg-hover: var(--color-bg-hover);
+  --dsw-alias-interactive-bg-active: var(--color-bg-hover);
+  --dsw-alias-interactive-bg-hover-solid: var(--color-bg-elevated);
+  --dsw-alias-interactive-bg-hover-danger: var(--state-error-tint);
+
+  --dsw-alias-brand-primary: var(--color-primary);
+  --dsw-alias-button-primary-fill: var(--color-text-primary);
+  --dsw-alias-button-primary-hover: color-mix(in srgb, var(--color-text-primary) 88%, var(--color-primary));
+  --dsw-alias-button-ghost-active-fill: var(--color-bg-elevated);
+  --dsw-alias-button-ghost-active-hover: var(--color-bg-hover);
+  --dsw-alias-button-ghost-active-border: var(--color-primary);
+  --dsw-alias-button-tool-bar-fill: var(--color-bg-elevated);
+  --dsw-alias-button-tool-bar-hover: var(--color-bg-hover);
+  --dsw-alias-button-elevated-fill: var(--color-bg-elevated);
+  --dsw-alias-button-floating-fill: var(--color-bg-elevated);
+  --dsw-alias-button-floating-hover: var(--color-bg-hover);
+  --dsw-alias-button-contrast-fill: var(--color-bg-elevated);
+
+  --dsw-alias-state-business-primary: var(--color-primary);
+  --dsw-alias-state-error-primary: var(--state-error);
+  --dsw-alias-state-success-primary: var(--state-success);
+  --dsw-alias-state-warn-primary: var(--state-warning);
+  --dsw-alias-state-warn-label: var(--state-warning);
+  --dsw-alias-state-idle-primary: var(--color-text-tertiary);
+
+  --dsw-alias-tooltip-bg: var(--color-bg-elevated);
+  --dsw-alias-tooltip-key-bg: var(--color-bg-hover);
+  --dsw-alias-toast-bg: var(--color-bg-elevated);
+  --dsw-alias-toast-label: var(--color-text-primary);
+  --dsw-alias-menu-group-header-fill: var(--color-bg-elevated);
+  --dsw-menu-surface-fill: var(--color-bg-elevated);
+
+  --dsw-radius-xs: var(--radius-sm);
+  --dsw-radius-sm: var(--radius-sm);
+  --dsw-radius-md: var(--radius-md);
+  --dsw-radius-lg: var(--radius-lg);
+  --dsw-radius-xl: var(--radius-lg);
+  --dsw-radius-panel: var(--radius-lg);
+  --dsw-elevation-soft: var(--shadow-dropdown);
+  --dsw-elevation-panel: var(--shadow-floating);
+  --dsw-elevation-prominent: var(--shadow-floating);
+  --dsw-elevation-stroke-color: var(--color-border-subtle);
+  --dsw-focus-ring-color: var(--color-primary-soft);
+  --dsw-focus-ring-width: 2px;
+}

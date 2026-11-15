@@ -1,0 +1,40 @@
+# Bilingual-pair consistency record for 2026-10-29-agentops-agent-management-migration.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/proposed/architecture/2026-10-29-agentops-agent-management-migration.md
+/agent-note-agentops-agent-workflow-and-collaboration-pages-migration:
+  en: e326f08d5887d870
+  zh: d42c13e45cbf0cc0
+/agent-note-agentops-agent-workflow-and-collaboration-pages-migration/problem:
+  en: 3a76572f69e519e7
+  zh: 7552d18b0937a389
+/agent-note-agentops-agent-workflow-and-collaboration-pages-migration/proposal:
+  en: 4b73dabdb432da5e
+  zh: a898954b6a37610b
+/agent-note-agentops-agent-workflow-and-collaboration-pages-migration/proposal/contracts-own-the-definition-model:
+  en: 26c734a89ea3ab38
+  zh: 26afb9c11c4f2612
+/agent-note-agentops-agent-workflow-and-collaboration-pages-migration/proposal/agents-and-workflow-nodes-stay-different-designs:
+  en: 05dcefdfa3822826
+  zh: d024f23ae4dbff74
+/agent-note-agentops-agent-workflow-and-collaboration-pages-migration/proposal/one-workspace-layout:
+  en: 1e68e1a4f22cbdd6
+  zh: 7f955cd1ff3b762c
+/agent-note-agentops-agent-workflow-and-collaboration-pages-migration/proposal/one-workflow-execution-path:
+  en: 40a75d9862badfee
+  zh: 3ecaf801ea97265b
+/agent-note-agentops-agent-workflow-and-collaboration-pages-migration/proposal/the-pages-write-through-the-catalogue:
+  en: ae9488d7747ed276
+  zh: 5e17fb6f26da6d55
+/agent-note-agentops-agent-workflow-and-collaboration-pages-migration/proposal/delivery-order:
+  en: e41c22ec891f6e76
+  zh: 189201e1a999adab
+/agent-note-agentops-agent-workflow-and-collaboration-pages-migration/alternatives-considered:
+  en: 12083d488b315f97
+  zh: 0ed5da9c607bcb38
+/agent-note-agentops-agent-workflow-and-collaboration-pages-migration/acceptance-criteria:
+  en: d85f58b0d0ab329c
+  zh: 015605358740f17a
+/agent-note-agentops-agent-workflow-and-collaboration-pages-migration/risks:
+  en: 8ce771a8bce9cd26
+  zh: 1479dd865eff7c4c
