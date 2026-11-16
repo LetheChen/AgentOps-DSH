@@ -4,6 +4,33 @@
 
 AgentOps-DSH 是基于 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 构建的开源 AgentOps 发行版，属于衍生项目，并非 DeepSeek AI 官方发布。AgentOps 包位于 [`packages/agentops/`](packages/agentops/)，部署资产位于 [`agentops/`](agentops/)。
 
+## 产品总览
+
+**AgentOps-DSH / SupAgent** 是一个开源的多智能体办公调度与治理工作台。用户只面对一个 Manager，由它把工作派发给知识、问数、OA、运维、日志、任务、编码、内容与调研 Agent。
+
+### 核心亮点
+
+- **一个入口，多 Agent 协作**：Manager 负责理解意图、拆解任务并派发给受限业务 Agent。
+- **可执行工作流**：支持手动运行、定时运行，也支持编写、校验并固化为可复用的 DAG YAML。
+- **办公能力集成**：知识库、数据库问数、OA、飞书、企业微信、SSH 日志采集与 Skill。
+- **治理与证据链**：凭证加密、连接器授权、运行日志、会话回放与控制面审计。
+- **插件化装配**：所有能力都以 DSH 插件包形式组合，而非堆进单一聊天上下文。
+
+### 快速开始
+
+```sh
+git clone https://github.com/LetheChen/AgentOps-DSH.git
+cd AgentOps-DSH
+pnpm install
+pnpm run build
+pnpm dsh web
+```
+
+容器部署见 [`packages/agentops/deploy/README.md`](packages/agentops/deploy/README.md)。
+
+### 当前状态
+
+已落地：Manager 派发、DAG 执行、知识库、能力中心、只读数据库问数、定时计划和可观测性。部分落地：任务中心、SSH 日志采集、OA/飞书集成。项目仍在迁移期，不应宣传为企业级零信任平台。
 DeepSeek Harness（`dsh`）是由 [DeepSeek AI](https://deepseek.com) 开发的开源 agent harness（智能体框架）。
 
 它构建于**一切皆插件**的架构之上，由 [Cordis](https://github.com/cordiverse/cordis) 驱动，其设计参见论文 [_A Programming Paradigm for Spatiotemporal Composability_](https://arxiv.org/abs/2608.25512)。

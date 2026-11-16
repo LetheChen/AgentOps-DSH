@@ -3,8 +3,20 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write README.md
 /agentops-dsh:
-  en: 8318bcd89c79514b
-  zh: d7db535064cdd3b1
+  en: a97b09fcc0a643d9
+  zh: e840b91668656c15
+/agentops-dsh/product-overview:
+  en: 397c98ae8cf639e2
+  zh: fa0a161ae9d1aca9
+/agentops-dsh/product-overview/highlights:
+  en: 620d9985deae9c6e
+  zh: 012628c0d16c83c8
+/agentops-dsh/product-overview/quick-start:
+  en: 8ff2b1fda43ef0ef
+  zh: df11ff835191e31f
+/agentops-dsh/product-overview/status:
+  en: 6312e43b29fc7fbe
+  zh: ac9b05e22b628fea
 /agentops-dsh/developer-preview:
   en: 4ef4d8a71ac143f0
   zh: 1bfc3149ba8e5543

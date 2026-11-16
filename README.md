@@ -4,6 +4,33 @@ English | [中文](README.zh.md)
 
 AgentOps-DSH is an open-source distribution of AgentOps built on [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). It is a derivative project and is not an official DeepSeek AI release. AgentOps packages live under [`packages/agentops/`](packages/agentops/), and deployment assets live under [`agentops/`](agentops/).
 
+## Product overview
+
+**AgentOps-DSH / SupAgent** is an open-source multi-agent office orchestration and governance workbench. One Manager entry point dispatches work to specialized agents for knowledge, data querying, OA, operations, logs, tasks, coding, content, and research.
+
+### Highlights
+
+- **One entry, many agents** — the Manager decomposes intent and delegates to constrained business agents.
+- **Executable workflows** — manually run, schedule, or author and validate reusable DAG YAML.
+- **Integrated office capabilities** — knowledge, database query, OA, Feishu, WeCom, SSH log collection, and skills.
+- **Governance and evidence** — encrypted credentials, scoped connectors, run logs, session replay, and control-plane audit.
+- **Plugin-native** — every capability is assembled as a DSH plugin package.
+
+### Quick start
+
+```sh
+git clone https://github.com/LetheChen/AgentOps-DSH.git
+cd AgentOps-DSH
+pnpm install
+pnpm run build
+pnpm dsh web
+```
+
+For container deployment, see [`packages/agentops/deploy/README.md`](packages/agentops/deploy/README.md).
+
+### Status
+
+Implemented: Manager dispatch, DAG execution, knowledge base, capability center, read-only database query, schedules, and observability. Partial: task center, SSH log collection, and OA/Feishu integrations. This project is under active migration and is not yet an enterprise zero-trust platform.
 DeepSeek Harness (`dsh`) is an open-source agent harness developed by [DeepSeek AI](https://deepseek.com).
 
 It is built on an **everything-is-a-plugin** architecture and powered by [Cordis](https://github.com/cordiverse/cordis), whose design is described in [_A Programming Paradigm for Spatiotemporal Composability_](https://arxiv.org/abs/2608.25512).
