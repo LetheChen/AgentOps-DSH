@@ -52,6 +52,12 @@ worktrees/
 .typert-*/
 native/system/test/bin/
 
+# Local tool artifacts and internal reports
+.playwright-cli/
+.workbuddy/
+assets/supagent-video-script-illustrations/
+reports/
+
 # Runtime databases, logs, and credentials
 *.db
 *.db-*
