@@ -48,7 +48,11 @@ export interface AgentPresetOption {
   hidden?: boolean
 }
 
-/** Whether the user-facing pickers should omit this preset. */
+/**
+ * Whether the user-facing pickers should omit this preset.
+ * @param preset - the roster entry to test.
+ * @returns true when the preset is marked hidden.
+ */
 export function isHiddenPreset(preset: { readonly hidden?: boolean }): boolean {
   return preset.hidden === true
 }
@@ -124,12 +128,13 @@ export async function beginRosterRead<S extends { status: string; error: string 
  * @returns one option per selectable preset, in roster order.
  */
 export function presetOptions(
-  presets: readonly { id: string; name?: string; description?: string; broken?: string }[],
+  presets: readonly { id: string; name?: string; description?: string; hidden?: boolean; broken?: string }[],
 ): AgentPresetOption[] {
   return presets.filter(preset => preset.broken === undefined).map(preset => ({
     id: preset.id,
     ...preset.name === undefined ? {} : { name: preset.name },
     ...preset.description === undefined ? {} : { description: preset.description },
+    ...preset.hidden === undefined ? {} : { hidden: preset.hidden },
   }))
 }
 

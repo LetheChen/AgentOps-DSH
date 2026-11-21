@@ -54,12 +54,15 @@ export {
 } from './dsh.ts'
 export type { KnowledgeConfig } from './dsh.ts'
 export {
+  FLAT_WIKI_SPACES,
   WIKI_PAGE_TYPE_LABELS,
   WIKI_SCHEMA_MARKDOWN,
   analyzeWikiDraft,
   classifyWikiPage,
   createWikiDraftRecord,
+  isFlatWikiSpace,
   renderWikiMarkdown,
+  suggestWikiSpace,
   wikiContentHash,
   wikiStatusFor,
 } from './wiki.ts'

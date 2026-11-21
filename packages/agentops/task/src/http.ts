@@ -303,6 +303,9 @@ export interface TaskHttpApiOptions {
   readonly listWorkspaces?: () => readonly { workspace_id: string; title: string; path: string }[]
 }
 
+/**
+ * Routes for the task center's HTTP surface.
+ */
 export class TaskHttpApi {
   readonly #service: TaskService
   readonly #db: DatabaseSync

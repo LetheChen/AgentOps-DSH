@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="dark">
-<title>02 · Manager → 智能问数 → 工作流 · AgentOps</title>
+<title>02 · SupAgent → 智能问数 → 工作流 · AgentOps</title>
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="styles.css">
 <style>
@@ -85,10 +85,10 @@
   <header class="mast rt-mast">
     <div class="mast-copy">
       <div class="eyebrow"><i>CHAPTER 02</i><span>cross-agent runtime</span></div>
-      <h1>Manager 不取数，<br><em>它把任务交给一条被钉定的工作流</em></h1>
+      <h1>SupAgent 不取数，<br><em>它把任务交给一条被钉定的工作流</em></h1>
     </div>
     <div class="rt-side">
-      <p class="lede">一次问数实际跨了三层：<b>Manager</b> 用 <code>subagent</code> 派发；<b>smart_query</b> 在自己的轮次里调用 <code>dag_run</code>；DAG 再为每个业务角色启动一个<b>节点 subagent</b>。动画只演示协议与状态，不是生产实跑。</p>
+      <p class="lede">一次问数实际跨了三层：<b>SupAgent</b> 用 <code>subagent</code> 派发；<b>smart_query</b> 在自己的轮次里调用 <code>dag_run</code>；DAG 再为每个业务角色启动一个<b>节点 subagent</b>。动画只演示协议与状态，不是生产实跑。</p>
       <div class="carry-chip" id="carryChip"><i></i><span id="carryText"></span></div>
       <div class="rt-controls">
         <span class="sim-badge">TEACHING SIMULATION</span>
@@ -107,7 +107,7 @@
     <div class="step" data-step="2"><span class="num">3</span><span class="txt"><b>smart_query 接管</b><small>业务 Agent · depth 1</small></span></div>
     <div class="step" data-step="3"><span class="num">4</span><span class="txt"><b>dag_run 运行 DAG</b><small>smart-query · pinned</small></span></div>
     <div class="step" data-step="4"><span class="num">5</span><span class="txt"><b>结果逐层回投</b><small>answer → caller</small></span></div>
-    <div class="step" data-step="5"><span class="num">6</span><span class="txt"><b>Manager 回复</b><small>汇总 · 不替代执行</small></span></div>
+    <div class="step" data-step="5"><span class="num">6</span><span class="txt"><b>SupAgent 回复</b><small>汇总 · 不替代执行</small></span></div>
   </section>
 
   <section class="scenario-strip" aria-label="教学场景">
@@ -133,16 +133,16 @@
             <p id="questionText">本月审批通过率是多少？</p>
             <code>natural language</code>
           </button>
-          <span class="delegate-link" id="userToManager"><i>→</i><span>请求</span></span>
+          <span class="delegate-link" id="userToSupAgent"><i>→</i><span>请求</span></span>
           <button class="actor-card manager" data-actor="manager" id="managerCard">
             <span class="actor-kicker"><span>ENTRY AGENT</span><em>depth 0</em></span>
-            <b>Manager Agent</b>
+            <b>SupAgent</b>
             <p>识别意图 · 分解任务 · 只负责派发和汇总</p>
             <code>subagent / present_content</code>
           </button>
         </div>
 
-        <div class="handoff-band" id="handoffBand"><span>Manager 的 subagent 只返回句柄：<b id="subagentId">—</b></span><span id="subagentState">尚未派发</span></div>
+        <div class="handoff-band" id="handoffBand"><span>SupAgent 的 subagent 只返回句柄：<b id="subagentId">—</b></span><span id="subagentState">尚未派发</span></div>
 
         <div class="bridge-row">
           <button class="actor-card smart" data-actor="smart_query" id="smartCard">
@@ -154,7 +154,7 @@
           <span class="conn" id="smartToDag">↓</span>
           <div class="depths">
             <span><b>权限继承</b> <em>smart_query preset</em></span>
-            <span><b>层级</b> Manager 0 → Agent 1 → Node 2</span>
+            <span><b>层级</b> SupAgent 0 → Agent 1 → Node 2</span>
           </div>
         </div>
 

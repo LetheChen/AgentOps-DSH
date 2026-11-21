@@ -23,7 +23,14 @@ export type LogCollectionRpcCall = (
 const BRIDGE = '/api/agentops/log-collection-rpc'
 const PREFIX = 'agentops/log-collection'
 
-/** Post one envelope to the log collection browser bridge. */
+/**
+ * Post one envelope to the log collection browser bridge.
+ * @param endpoint - the log collection router endpoint to invoke.
+ * @param method - the HTTP method the router applies.
+ * @param payload - the query and body fields to send with the request.
+ * @param signal - the abort signal for the request.
+ * @returns the result envelope the bridge reported.
+ */
 export async function postLogCollectionRpc(
   endpoint: string,
   method: string,
@@ -43,8 +50,81 @@ export async function postLogCollectionRpc(
   return await response.json() as LogCollectionRpcResult
 }
 
-/** Browser client backed by the log collection router. */
-export function createLogCollectionApi(call: LogCollectionRpcCall = postLogCollectionRpc) {
+/** Log collection operations the panel calls over the log collection router. */
+export interface LogCollectionApi {
+  /**
+   * List the collection tasks.
+   * @param signal - the abort signal for the request.
+   * @returns the result envelope from the log collection router.
+   */
+  list(signal?: AbortSignal): Promise<LogCollectionRpcResult>
+  /**
+   * Create a collection task.
+   * @param body - the task definition to store.
+   * @param signal - the abort signal for the request.
+   * @returns the result envelope from the log collection router.
+   */
+  create(body: unknown, signal?: AbortSignal): Promise<LogCollectionRpcResult>
+  /**
+   * Update a collection task.
+   * @param taskId - the task to update.
+   * @param body - the task definition to store.
+   * @param signal - the abort signal for the request.
+   * @returns the result envelope from the log collection router.
+   */
+  update(taskId: string, body: unknown, signal?: AbortSignal): Promise<LogCollectionRpcResult>
+  /**
+   * Delete a collection task.
+   * @param taskId - the task to delete.
+   * @param signal - the abort signal for the request.
+   * @returns the result envelope from the log collection router.
+   */
+  remove(taskId: string, signal?: AbortSignal): Promise<LogCollectionRpcResult>
+  /**
+   * List the Agent presets allowed to read a task.
+   * @param taskId - the task to read the access list of.
+   * @param signal - the abort signal for the request.
+   * @returns the result envelope from the log collection router.
+   */
+  listAcl(taskId: string, signal?: AbortSignal): Promise<LogCollectionRpcResult>
+  /**
+   * Replace the access list of a task.
+   * @param taskId - the task to authorize.
+   * @param body - the access list to store.
+   * @param signal - the abort signal for the request.
+   * @returns the result envelope from the log collection router.
+   */
+  grantAcl(taskId: string, body: unknown, signal?: AbortSignal): Promise<LogCollectionRpcResult>
+  /**
+   * Remove one Agent preset from the access list of a task.
+   * @param taskId - the task to revoke access to.
+   * @param agentPreset - the Agent preset to remove.
+   * @param signal - the abort signal for the request.
+   * @returns the result envelope from the log collection router.
+   */
+  revokeAcl(taskId: string, agentPreset: string, signal?: AbortSignal): Promise<LogCollectionRpcResult>
+  /**
+   * Run a collection task now.
+   * @param taskId - the task to run.
+   * @param signal - the abort signal for the request.
+   * @returns the result envelope from the log collection router.
+   */
+  runNow(taskId: string, signal?: AbortSignal): Promise<LogCollectionRpcResult>
+  /**
+   * List the recorded collection runs.
+   * @param taskId - the task to filter by; every task when absent.
+   * @param signal - the abort signal for the request.
+   * @returns the result envelope from the log collection router.
+   */
+  listRuns(taskId?: string, signal?: AbortSignal): Promise<LogCollectionRpcResult>
+}
+
+/**
+ * Build the browser client for the log collection router.
+ * @param call - the transport that reaches the log collection router.
+ * @returns the log collection API bound to that transport.
+ */
+export function createLogCollectionApi(call: LogCollectionRpcCall = postLogCollectionRpc): LogCollectionApi {
   return {
     list(signal?: AbortSignal) {
       return call(`${PREFIX}/tasks`, 'GET', {}, signal)

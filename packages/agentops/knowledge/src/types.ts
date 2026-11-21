@@ -16,6 +16,8 @@ export type ChunkId = string
 export interface KnowledgeSpace {
   id: SpaceId
   name: string
+  /** What business field the space covers and which work it supports. */
+  description: string
   /** Who may read the space; `user:<id>` entries scope it to one person. */
   visibility: 'shared' | 'restricted'
   /** Principals allowed to read a restricted space. Empty for shared. */
@@ -26,6 +28,10 @@ export interface KnowledgeSpace {
 export interface DocumentMeta {
   id: DocumentId
   spaceId: SpaceId
+  /** Slash-separated category path inside the space; empty means the root. */
+  categoryPath: string
+  /** Cross-cutting content tags used by retrieval and the memory graph. */
+  tags: readonly string[]
   title: string
   mime: string
   /** Content hash of the current version; duplicate detection uses this. */

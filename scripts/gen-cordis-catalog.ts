@@ -150,6 +150,9 @@ export const SERVICE_PAGE: Record<string, string> = {
   workspaceRegistry: 'workspace.md',
   workspaceLayout: 'agentops.md',
   workflowCatalog: 'agentops.md',
+  capabilityRuntime: 'agentops.md',
+  deployment: 'agentops.md',
+  logCollection: 'agentops.md',
   workspaceController: 'workspace.md',
   workspaceFiles: 'workspace.md',
   workspaceChanges: 'deliverables.md',
@@ -177,6 +180,8 @@ export const SERVICE_PAGE: Record<string, string> = {
  */
 export const SERVICE_WALK_EXEMPTIONS: Record<string, string> = {
   invocation: 'not a service: per-call accessor (RemoteInvocation | undefined) the Gateway derives for each Remote call — packages/api/gateway/README.md owns the contract',
+  capabilityRest: 'internal root-owned REST transport shared by every preset scope — packages/agentops/capability/README.md owns the capability surface',
+  capabilityTokens: 'internal root-owned token broker shared by the REST transport — packages/agentops/capability/README.md owns the capability surface',
   webTerminals: 'client-side terminal view models — packages/api/terminal-controller/README.md owns the API',
   appReady: 'not a service: launcher-provided successful-startup signal — packages/boot/cmdline/README.md owns the launcher contract',
   appExit: 'not a service: launcher-provided bounded process-exit callback — packages/boot/cmdline/README.md owns the launcher contract',
@@ -322,6 +327,8 @@ export const LINK_MAP: Readonly<Record<string, string>> = {
   ValidationResult: 'agentops.md',
   CompileOptions: 'agentops.md',
   CompileResult: 'agentops.md',
+  CapabilityRuntime: 'agentops.md',
+  CapabilityToolResolution: 'agentops.md',
   Reload: 'boot.md',
   ProfileReconciliation: 'boot.md',
   PluginInfo: 'boot.md',

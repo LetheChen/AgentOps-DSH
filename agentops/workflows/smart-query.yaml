@@ -1,7 +1,7 @@
 # 4 节点纯 agent 工作流：所有取数经 sql_query 白名单校验，无 command 节点。
 # 由 smart_query Agent 通过钉定的 dag_run 启动；节点权限继承该 Agent。
 workflow_id: smart-query
-name: 智能问数（一次性查询工作流）
+name: 智能问数
 version: 3
 description: |
   一次性查询工作流：manager 派给 smart_query 后由其启动。
@@ -14,9 +14,8 @@ inputs:
     description: "用户自然语言问题（如\"本月审批通过率多少\"）"
   - name: database
     type: string
-    required: false
-    default: "audit_reader"
-    description: "数据源 key（须在 datasources.yml 白名单内）"
+    required: true
+    description: "必须选择已授权数据源实例；不能默认 audit_reader，库名与表名以 describe_database 为准"
 nodes:
   route_intent:
     name: 意图分流
@@ -31,7 +30,7 @@ nodes:
       判定规则：
       - true：含"统计/查询/多少/几个/聚合/报表/状态/审批/驳回/通过率/分布/总数/平均"，或明显在问业务数据
       - false：问候、闲聊、技术问答、写操作请求，或属于其他域（分析 / 审批操作 / 运维）
-      - 模糊时倾向 true，并在回答里写明把握度
+      - 模糊时倾向 true，但最终只输出布尔值
 
       只输出判定结果，不要写 SQL。
     outputs:
@@ -73,7 +72,7 @@ nodes:
       3. 必要时调 skill(name="data-query") 取时间口径与常见失败处理。
       4. 需要"本周/上周"等口径时，先在 SQL 里用 CURDATE()/NOW() 计算，不要假设今天日期。
       5. 写一条 SELECT：带时间范围 + 聚合 + LIMIT（不超过 describe_database 返回的 max_rows）。
-      6. 表名写全限定（audit_example.<table>）；不要写别的库前缀，不要查 information_schema。
+      6. 表名写全限定，schema 和表名必须来自 describe_database 返回；不要写别的库前缀，不要查 information_schema。
       7. 表别名只在 FROM/JOIN 后声明，别处不要再造限定符。
 
       分组查询的硬约束（库里开着 only_full_group_by，违反会直接执行失败）：

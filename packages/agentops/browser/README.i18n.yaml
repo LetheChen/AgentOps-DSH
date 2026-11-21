@@ -1,0 +1,52 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/agentops/browser/README.md
+/:
+  en: f35ab3134be0d109
+  zh: e497a6efc4de46b6
+/agentops-dsh-browser:
+  en: 4f04f142df9e405b
+  zh: aa9712a26cc2c745
+/agentops-dsh-browser/summary:
+  en: 7743da67749376b4
+  zh: 732684bb6afca16f
+/agentops-dsh-browser/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: f0f7f88fe2f53b05
+/agentops-dsh-browser/use-this-package:
+  en: bbff250eba0f1b89
+  zh: 0a618f05cc88ee2b
+/agentops-dsh-browser/use-this-package/install-into-a-profile:
+  en: 9356f50a64a3ec0e
+  zh: ed580763a95a60b1
+/agentops-dsh-browser/use-this-package/what-you-get:
+  en: d69590e1d9f64a10
+  zh: 9482f8c133f59681
+/agentops-dsh-browser/understand-the-implementation:
+  en: 6ba8d7a8a7278f02
+  zh: 8e579fc75b1200df
+/agentops-dsh-browser/further-exploration:
+  en: 4ba8fb685488b1c0
+  zh: 0cf8996f37cb0167
+/agentops-dsh-browser/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/agentops-dsh-browser/model-experience/browser-tools-and-screenshots:
+  en: 1adc972910db543b
+  zh: 7a06e0d265f19499
+/agentops-dsh-browser/model-experience/browser-tools-and-screenshots/what-the-model-sees:
+  en: bb8a41f6b68cbb0d
+  zh: ac7a6b57f7a2a395
+/agentops-dsh-browser/model-experience/browser-tools-and-screenshots/token-effect:
+  en: babc869b0b0bf4cb
+  zh: 40a9c6dadb352100
+/agentops-dsh-browser/model-experience/browser-tools-and-screenshots/kv-cache-effect:
+  en: f617a28c37282fa4
+  zh: e53d3956183805a0
+/agentops-dsh-browser/known-limitations-and-deferred-work:
+  en: 36d2be39bc2c3056
+  zh: a6b39f7c1a5526e5
+/agentops-dsh-browser/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 8ec3e73528ddb1a6

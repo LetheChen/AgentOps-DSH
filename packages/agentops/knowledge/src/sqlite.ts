@@ -12,7 +12,7 @@ import { KnowledgeStore } from './store.js'
 import type { AddDocumentResult } from './store.js'
 import { searchChunks } from './search.js'
 import type { Chunk, DocumentMeta, DocumentVersion, KnowledgeSpace, SearchHit } from './types.js'
-import { DEFAULT_WIKI_CATEGORY } from './wiki.js'
+import { DEFAULT_WIKI_CATEGORY, FLAT_WIKI_SPACES } from './wiki.js'
 import type { WikiCategory, WikiConflict, WikiDraft, WikiOperation, WikiPage } from './wiki.js'
 
 const SCHEMA = `
@@ -21,6 +21,7 @@ PRAGMA foreign_keys = ON;
 CREATE TABLE IF NOT EXISTS spaces (
   id          TEXT PRIMARY KEY,
   name        TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
   visibility  TEXT NOT NULL CHECK (visibility IN ('shared','restricted')),
   readers     TEXT NOT NULL
 );
@@ -28,6 +29,8 @@ CREATE TABLE IF NOT EXISTS spaces (
 CREATE TABLE IF NOT EXISTS documents (
   id              TEXT PRIMARY KEY,
   space_id        TEXT NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
+  category_path   TEXT NOT NULL DEFAULT '',
+  tags_json       TEXT NOT NULL DEFAULT '[]',
   title           TEXT NOT NULL,
   mime            TEXT NOT NULL,
   content_hash    TEXT NOT NULL,
@@ -173,10 +176,12 @@ interface JobRow {
 
 interface JobDocRow { document_id: string | null; path: string; action: string; error: string | null }
 
-interface SpaceRow { id: string; name: string; visibility: string; readers: string }
+interface SpaceRow { id: string; name: string; description: string; visibility: string; readers: string }
 interface DocumentRow {
   id: string
   space_id: string
+  category_path: string
+  tags_json: string
   title: string
   mime: string
   content_hash: string
@@ -262,8 +267,13 @@ export class SqliteKnowledgeRepository {
   constructor(path: string) {
     this.#db = new DatabaseSync(path)
     this.#db.exec(SCHEMA)
+    this.#ensureColumn('spaces', 'description', "TEXT NOT NULL DEFAULT ''")
+    this.#ensureColumn('documents', 'category_path', "TEXT NOT NULL DEFAULT ''")
+    this.#ensureColumn('documents', 'tags_json', "TEXT NOT NULL DEFAULT '[]'")
     this.#ensureColumn('wiki_drafts', 'category_path', `TEXT NOT NULL DEFAULT '${DEFAULT_WIKI_CATEGORY}'`)
     this.#ensureColumn('wiki_pages', 'category_path', `TEXT NOT NULL DEFAULT '${DEFAULT_WIKI_CATEGORY}'`)
+    this.#migrateLegacyWeeklySpace()
+    this.#migrateBusinessAssetCategories()
     this.#db.exec(`
       INSERT OR IGNORE INTO wiki_categories(space_id, path, review_status, created_at, updated_at)
       SELECT space_id, category_path, 'auto', updated_at, updated_at FROM wiki_pages;
@@ -271,12 +281,71 @@ export class SqliteKnowledgeRepository {
       SELECT target_space_id, category_path, 'auto', updated_at, updated_at
       FROM wiki_drafts WHERE target_space_id IS NOT NULL;
     `)
+    this.#flattenFixedSpaces()
+  }
+
+  #flattenFixedSpaces(): void {
+    this.#db.exec('BEGIN')
+    try {
+      for (const spaceId of FLAT_WIKI_SPACES) {
+        this.#db.prepare("UPDATE documents SET category_path = '' WHERE space_id = ?").run(spaceId)
+        this.#db.prepare("UPDATE wiki_pages SET category_path = '' WHERE space_id = ?").run(spaceId)
+        this.#db.prepare("UPDATE wiki_drafts SET category_path = '' WHERE target_space_id = ?").run(spaceId)
+        this.#db.prepare('DELETE FROM wiki_categories WHERE space_id = ?').run(spaceId)
+      }
+      this.#db.exec('COMMIT')
+    } catch (error) {
+      this.#db.exec('ROLLBACK')
+      throw error
+    }
   }
 
   #ensureColumn(table: string, column: string, definition: string): void {
     const columns = this.#db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]
     if (!columns.some(item => item.name === column)) {
       this.#db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`)
+    }
+  }
+
+  #migrateLegacyWeeklySpace(): void {
+    const legacy = this.#db.prepare("SELECT id FROM spaces WHERE id = 'weekly'").get()
+    const replacement = this.#db.prepare("SELECT id FROM spaces WHERE id = 'content_creation'").get()
+    if (legacy === undefined || replacement !== undefined) return
+    this.#db.exec('BEGIN')
+    try {
+      this.#db.prepare(`
+        INSERT INTO spaces(id, name, description, visibility, readers)
+        SELECT 'content_creation', '内容创作',
+          '内置内容工作流的专业知识：视频模板、动效卡片、周报模板与内容规范。',
+          visibility, readers
+        FROM spaces WHERE id = 'weekly'
+      `).run()
+      this.#db.prepare("UPDATE documents SET space_id = 'content_creation' WHERE space_id = 'weekly'").run()
+      this.#db.prepare("UPDATE chunks SET space_id = 'content_creation' WHERE space_id = 'weekly'").run()
+      this.#db.prepare("UPDATE wiki_pages SET space_id = 'content_creation' WHERE space_id = 'weekly'").run()
+      this.#db.prepare("UPDATE wiki_drafts SET target_space_id = 'content_creation' WHERE target_space_id = 'weekly'").run()
+      this.#db.prepare("UPDATE wiki_categories SET space_id = 'content_creation' WHERE space_id = 'weekly'").run()
+      this.#db.prepare("DELETE FROM spaces WHERE id = 'weekly'").run()
+      this.#db.exec('COMMIT')
+    } catch (error) {
+      this.#db.exec('ROLLBACK')
+      throw error
+    }
+  }
+
+  /** Remove stale business-asset categories superseded by the per-business split. */
+  #migrateBusinessAssetCategories(): void {
+    const legacy = ['业务口径', '数据目录', '查询方法', '能力边界']
+    this.#db.exec('BEGIN')
+    try {
+      for (const path of legacy) {
+        this.#db.prepare("DELETE FROM wiki_categories WHERE space_id = 'smart_query' AND path = ?").run(path)
+        this.#db.prepare("DELETE FROM wiki_categories WHERE space_id = 'smart_query' AND path LIKE ?").run(`${path}/%`)
+      }
+      this.#db.exec('COMMIT')
+    } catch (error) {
+      this.#db.exec('ROLLBACK')
+      throw error
     }
   }
 
@@ -295,6 +364,7 @@ export class SqliteKnowledgeRepository {
       store.addSpace({
         id: row.id,
         name: row.name,
+        description: row.description,
         visibility: row.visibility === 'restricted' ? 'restricted' : 'shared',
         readers: parseReaders(row.readers),
       })
@@ -342,6 +412,8 @@ export class SqliteKnowledgeRepository {
         meta: {
           id: doc.id,
           spaceId: doc.space_id,
+          categoryPath: doc.category_path,
+          tags: parseStringArray(doc.tags_json),
           title: doc.title,
           mime: doc.mime,
           contentHash: doc.content_hash,
@@ -362,10 +434,11 @@ export class SqliteKnowledgeRepository {
    */
   saveSpace(space: KnowledgeSpace): void {
     this.#db.prepare(`
-      INSERT INTO spaces(id, name, visibility, readers) VALUES (?, ?, ?, ?)
+      INSERT INTO spaces(id, name, description, visibility, readers) VALUES (?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
-        name = excluded.name, visibility = excluded.visibility, readers = excluded.readers
-    `).run(space.id, space.name, space.visibility, JSON.stringify(space.readers))
+        name = excluded.name, description = excluded.description,
+        visibility = excluded.visibility, readers = excluded.readers
+    `).run(space.id, space.name, space.description, space.visibility, JSON.stringify(space.readers))
   }
 
   /**
@@ -377,13 +450,15 @@ export class SqliteKnowledgeRepository {
     this.#db.exec('BEGIN')
     try {
       this.#db.prepare(`
-        INSERT INTO documents(id, space_id, title, mime, content_hash, current_version, status, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO documents(id, space_id, category_path, tags_json, title, mime, content_hash, current_version, status, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
-          space_id = excluded.space_id, title = excluded.title, mime = excluded.mime,
+          space_id = excluded.space_id, category_path = excluded.category_path,
+          tags_json = excluded.tags_json,
+          title = excluded.title, mime = excluded.mime,
           content_hash = excluded.content_hash, current_version = excluded.current_version,
           status = excluded.status, updated_at = excluded.updated_at
-      `).run(meta.id, meta.spaceId, meta.title, meta.mime, meta.contentHash, meta.currentVersion, meta.status, meta.updatedAt)
+      `).run(meta.id, meta.spaceId, meta.categoryPath, JSON.stringify(meta.tags), meta.title, meta.mime, meta.contentHash, meta.currentVersion, meta.status, meta.updatedAt)
 
       this.#db.prepare(`
         INSERT INTO document_versions(document_id, version, checksum, parser, chunk_count)
@@ -408,6 +483,20 @@ export class SqliteKnowledgeRepository {
       this.#db.exec('ROLLBACK')
       throw error
     }
+  }
+
+  /**
+   * Change a document's category without creating a content version.
+   * @param documentId - document to move.
+   * @param categoryPath - category path inside its space; empty means the root.
+   * @param tags - replacement tag list; omitted leaves the stored tags unchanged.
+   * @returns whether a document was updated.
+   */
+  updateDocumentMetadata(documentId: string, categoryPath: string, tags?: readonly string[]): boolean {
+    const result = tags === undefined
+      ? this.#db.prepare('UPDATE documents SET category_path = ? WHERE id = ?').run(categoryPath, documentId)
+      : this.#db.prepare('UPDATE documents SET category_path = ?, tags_json = ? WHERE id = ?').run(categoryPath, JSON.stringify(tags), documentId)
+    return result.changes > 0
   }
 
   /**
@@ -467,6 +556,8 @@ export class SqliteKnowledgeRepository {
       .map(row => ({
         id: row.id,
         spaceId: row.space_id,
+        categoryPath: row.category_path,
+        tags: parseStringArray(row.tags_json),
         title: row.title,
         mime: row.mime,
         contentHash: row.content_hash,
@@ -724,7 +815,7 @@ function draftFromRow(row: WikiDraftRow): WikiDraft {
     pageType: pageType(row.page_type),
     status: draftStatus(row.status),
     targetSpaceId: row.target_space_id,
-    categoryPath: row.category_path || DEFAULT_WIKI_CATEGORY,
+    categoryPath: row.category_path,
     conflicts: parseConflicts(row.conflicts_json),
     contentHash: row.content_hash,
     publishedDocumentId: row.published_document_id,
@@ -739,7 +830,7 @@ function pageFromRow(row: WikiPageRow): WikiPage {
     draftId: row.draft_id,
     documentId: row.document_id,
     spaceId: row.space_id,
-    categoryPath: row.category_path || DEFAULT_WIKI_CATEGORY,
+    categoryPath: row.category_path,
     title: row.title,
     pageType: pageType(row.page_type),
     summary: row.summary,

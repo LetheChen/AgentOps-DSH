@@ -39,7 +39,10 @@
     "@agentops/dsh-client": "workspace:*",
     "@agentops/dsh-security": "workspace:*",
     "@agentops/dsh-workflow-catalog": "workspace:*",
-    "@agentops/dsh-log-collection": "workspace:*"
+    "@agentops/dsh-db": "workspace:*",
+    "@agentops/dsh-vault": "workspace:*",
+    "@agentops/dsh-log-collection": "workspace:*",
+    "@agentops/dsh-deployment": "workspace:*"
   },
   "devDependencies": {
     "@agentops/dsh-host": "workspace:*",
@@ -55,6 +58,9 @@
     "typescript": "^5.9.2",
     "@agentops/dsh-security": "workspace:*",
     "@agentops/dsh-workflow-catalog": "workspace:*",
-    "@agentops/dsh-log-collection": "workspace:*"
+    "@agentops/dsh-db": "workspace:*",
+    "@agentops/dsh-vault": "workspace:*",
+    "@agentops/dsh-log-collection": "workspace:*",
+    "@agentops/dsh-deployment": "workspace:*"
   }
 }

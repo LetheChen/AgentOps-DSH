@@ -4,6 +4,8 @@ import { readFileSync, readdirSync } from 'node:fs'
 
 import { load } from 'js-yaml'
 
+import { loadCordisYaml } from '../../scripts/cordis-yaml.ts'
+
 import { buildPreset, renderPatch, EXTERNAL_PLUGIN_TOOLS, KNOWN_TOOLS } from '../scripts/gen-agent-presets.ts'
 import type { AgentYaml } from '../scripts/gen-agent-presets.ts'
 
@@ -94,10 +96,12 @@ test('映射到未知的自有插件 → 立即抛错', () => {
   assert.throws(() => buildPreset(agent(), bad, kbMap), /未知插件/)
 })
 
-test('KNOWN_TOOLS 覆盖八个自有插件', () => {
+test('KNOWN_TOOLS 覆盖十一个自有插件', () => {
   assert.deepEqual(Object.keys(KNOWN_TOOLS).sort(), [
-    '@agentops/dsh-capability/tools', '@agentops/dsh-dag/tools', '@agentops/dsh-db/tools',
-    '@agentops/dsh-host/tools', '@agentops/dsh-knowledge/tools', '@agentops/dsh-log-collection/tools',
+    '@agentops/dsh-capability/feishu-tools', '@agentops/dsh-capability/oa-tools',
+    '@agentops/dsh-capability/tools', '@agentops/dsh-dag/tools',
+    '@agentops/dsh-db/tools', '@agentops/dsh-deployment/tools', '@agentops/dsh-host/tools',
+    '@agentops/dsh-knowledge/tools', '@agentops/dsh-log-collection/tools',
     '@agentops/dsh-security/tools', '@agentops/dsh-task/tools-v1',
   ])
 })
@@ -142,8 +146,8 @@ test('渲染物是合法 YAML，且不含未替换的模板表达式', () => {
   assert.match(text, /description: "用于验证预设元数据。"/)
   assert.doesNotMatch(text, /\$\{/)
   assert.doesNotMatch(text, /\bindex\b/)
-  assert.equal(load(text)[0].insert[0].config.hidden, true)
-  assert.doesNotThrow(() => load(text))
+  assert.equal(loadCordisYaml(text)[0].insert[0].config.hidden, true)
+  assert.doesNotThrow(() => loadCordisYaml(text))
 })
 
 test('全部作者面 Agent 都是合法 YAML，且每个都能生成 preset', () => {
@@ -151,7 +155,8 @@ test('全部作者面 Agent 都是合法 YAML，且每个都能生成 preset', (
   const files = readdirSync(agentsDir).filter(name => name.endsWith('.yaml')).sort()
   const agents = files.map(name => load(readFileSync(new URL(name, agentsDir), 'utf8')) as AgentYaml)
   assert.deepEqual(agents.map(item => item.agent_id).sort(), [
-    'coding_agent', 'log_analyst', 'log_puller', 'manager', 'multi-agent-report', 'oa_assistant',
+    'build_operator', 'coding_agent', 'deploy_operator', 'log_analyst', 'log_puller', 'manager',
+    'multi-agent-report', 'oa_assistant',
     'proposal_planner', 'quality_inspector', 'smart_analysis', 'smart_approval', 'smart_form',
     'smart_ops', 'smart_query', 'task_conductor', 'task_decomposer', 'task_dispatcher',
     'task_inbox', 'task_monitor', 'task_planner', 'video_creator', 'weekly-reporter',
@@ -163,7 +168,7 @@ test('全部作者面 Agent 都是合法 YAML，且每个都能生成 preset', (
   for (const item of agents) {
     assert.match(text, new RegExp(`id: preset-agent-${item.agent_id.replaceAll('-', '\\-')}`))
   }
-  const parsed = load(text)
+  const parsed = loadCordisYaml(text)
   for (const item of agents) {
     const preset = parsed[0].insert.find(row => row.config.id === item.agent_id)
     assert.equal(preset.config.hidden === true, item.agent_id !== 'manager')

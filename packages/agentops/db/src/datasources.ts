@@ -62,7 +62,7 @@ export function parseDatasources(source: string): DatasourceConfig[] {
 
   const rows = parsed?.datasources ?? []
   return rows.map((row) => {
-    const key = String(row.key ?? '').trim()
+    const key = typeof row.key === 'string' ? row.key.trim() : ''
     if (key === '') throw new Error('datasource 缺少 key')
     const driver = row.driver === 'mysql'
       ? 'mysql'
@@ -71,11 +71,12 @@ export function parseDatasources(source: string): DatasourceConfig[] {
         : 'sqlite'
     return {
       key,
-      label: String(row.label ?? key),
+      label: typeof row.label === 'string' && row.label.trim() !== '' ? row.label.trim() : key,
       driver,
       dsnEnv: typeof row.dsn_env === 'string' ? row.dsn_env : null,
       credentialId: typeof row.credential_id === 'string' ? row.credential_id : null,
       whitelist: {
+        driver,
         schemas: Array.isArray(row.schemas) ? row.schemas.map(String) : EMPTY_WHITELIST.schemas,
         tables: (row.tables ?? {}) as Record<string, readonly string[]>,
         deniedColumns: Array.isArray(row.denied_columns) ? row.denied_columns.map(String) : [],

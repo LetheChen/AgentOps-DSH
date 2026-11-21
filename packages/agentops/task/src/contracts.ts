@@ -7,8 +7,9 @@
  * `scripts/gen-contracts.ts` do, so a drift in any of those sets fails a check
  * instead of being discovered during data migration.
  *
- * Sources: `TASK-MANAGEMENT-MIGRATION-DESIGN.md` §4.2, §4.3, §5.1, §5.4, §5.5,
- * §6.1. Counts in `counts` are derived, never typed by hand.
+ * The table set, index set, revision triggers, lifecycle edges and route list
+ * are derived from the shipped schema and route definitions. Counts in `counts`
+ * are derived, never typed by hand.
  *
  * @module @agentops/dsh-task/contracts
  */
@@ -194,7 +195,10 @@ export const BUSINESS_TRIGGER_NAMES = [
   'decisions_freeze_approval_fields',
 ] as const
 
-/** Trigger names for append-only UPDATE/DELETE rejection. */
+/**
+ * Trigger names for append-only UPDATE/DELETE rejection.
+ * @returns the update and delete trigger name of every append-only table.
+ */
 export function appendOnlyTriggerNames(): string[] {
   const names: string[] = []
   for (const table of APPEND_ONLY_TABLES) {

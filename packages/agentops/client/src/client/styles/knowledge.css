@@ -19,8 +19,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  height: 100%;
-  overflow: auto;
+  min-height: 0;
   padding: 4px;
 }
 
@@ -70,11 +69,19 @@
 
 .kh-domain-create .kh-error { flex-basis: 100%; }
 
-/* ── 2x2 网格 ── */
+/* ── 宽屏三列，窄屏逐级降列 ── */
 .kh-domains-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
+}
+
+@media (max-width: 1280px) {
+  .kh-domains-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 760px) {
+  .kh-domains-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* ── Domain 卡片 ── */
@@ -1225,11 +1232,15 @@
   display: flex;
   align-items: center;
   gap: 2px;
+  overflow-x: auto;
   border-bottom: 1px solid var(--color-border-subtle);
   flex-shrink: 0;
+  scrollbar-width: none;
 }
+.kh-tabs::-webkit-scrollbar { display: none; }
 
 .kh-tab {
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -1270,9 +1281,12 @@
 .kh-content {
   flex: 1;
   min-height: 0;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 /* ── Vault 左右分栏布局 ── */
@@ -1401,6 +1415,10 @@
   padding: 0;
 }
 
+.kh-tree-list .kh-tree-list {
+  margin-left: 12px;
+}
+
 .kh-tree-node {
   user-select: none;
 }
@@ -1481,6 +1499,15 @@
   text-overflow: ellipsis;
   flex: 1;
   min-width: 0;
+}
+
+.kh-tree-count {
+  flex-shrink: 0;
+  min-width: 18px;
+  color: var(--color-text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-align: right;
 }
 
 .kh-tree-empty {
@@ -1737,6 +1764,20 @@
   word-break: break-word;
 }
 
+.kh-ask-result {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 6px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.kh-ask-result:first-child { padding-top: 0; }
+.kh-ask-result:last-child { padding-bottom: 0; border-bottom: 0; }
+.kh-ask-markdown { min-width: 0; }
+.kh-ask-markdown > div[data-markdown-variant='compact'] { color: var(--color-text-primary); }
+
 .kh-ask-cite-marker {
   display: inline-flex;
   align-items: center;
@@ -1827,26 +1868,26 @@
 .kh-ask-citation-snippet {
   margin-top: 8px;
   padding: 8px 10px;
-  font-size: 12px;
-  line-height: 1.6;
-  color: var(--color-text-secondary);
   background: var(--color-bg-hover);
   border-radius: var(--radius-sm);
   border-left: 3px solid var(--color-border-default);
 }
 
+.kh-ask-citation-snippet > div[data-markdown-variant='compact'] { color: var(--color-text-secondary); }
+
 /* ── LLM Wiki workbench ── */
-.kh-wiki { display: flex; flex-direction: column; gap: 16px; }
+.kh-wiki { display: flex; flex-direction: column; gap: 14px; }
 .kh-wiki-load-error { display: flex; align-items: flex-start; gap: 10px; }
 .kh-wiki-load-error .kh-error { flex: 1; margin: 0; }
-.kh-wiki-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-.kh-wiki-stats > div { display: flex; min-width: 0; flex-direction: column; gap: 4px; padding: 14px; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-lg); background: var(--color-bg-surface); box-shadow: 0 1px 2px rgba(0, 0, 0, .08), 0 5px 16px rgba(0, 0, 0, .05); }
-.kh-wiki-stats strong { color: var(--color-text-primary); font-size: 24px; font-weight: 500; line-height: 1; }
+.kh-wiki-overview { display: grid; gap: 10px; }
+.kh-wiki-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.kh-wiki-stats > div { display: flex; min-width: 0; align-items: baseline; gap: 8px; padding: 10px 12px; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-md); background: var(--color-bg-surface); }
+.kh-wiki-stats strong { color: var(--color-text-primary); font-size: 20px; font-weight: 500; line-height: 1; }
 .kh-wiki-stats span { color: var(--color-text-tertiary); font-size: 11px; }
-.kh-wiki-flow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 12px; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-lg); background: var(--color-bg-base); }
-.kh-wiki-flow > div { display: flex; min-width: 0; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: var(--radius-md); background: var(--color-bg-surface); }
-.kh-wiki-flow b { color: var(--color-primary-soft); font-size: 11px; letter-spacing: .04em; }
-.kh-wiki-flow span { color: var(--color-text-secondary); font-size: 11px; line-height: 1.5; }
+.kh-wiki-rule-strip { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: 6px; padding: 9px 12px; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-md); background: var(--color-bg-base); color: var(--color-text-tertiary); font-size: 11px; }
+.kh-wiki-rule-strip > span { margin-right: 4px; color: var(--color-text-secondary); }
+.kh-wiki-rule-strip b { color: var(--color-primary-soft); font-weight: 500; }
+.kh-wiki-rule-strip i { color: var(--color-text-tertiary); font-style: normal; }
 .kh-wiki-upload-card { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 16px; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-lg); background: var(--color-bg-surface); }
 .kh-wiki-upload-copy { min-width: 0; }
 .kh-wiki-upload-copy h3 { margin: 0; color: var(--color-text-primary); font-size: 14px; font-weight: 500; }
@@ -1859,14 +1900,15 @@
 .kh-wiki-auto-publish { display: inline-flex; align-items: center; gap: 6px; color: var(--color-text-secondary); font-size: 11px; white-space: nowrap; }
 .kh-wiki-auto-publish input { width: 15px; height: 15px; margin: 0; }
 .kh-wiki-notice { padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--state-success) 35%, var(--color-border-subtle)); border-radius: var(--radius-md); background: var(--state-success-tint); color: var(--state-success); }
-.kh-wiki-grid { display: grid; grid-template-columns: minmax(240px, .72fr) minmax(360px, 1.5fr) minmax(250px, .78fr); gap: 12px; align-items: start; }
+.kh-wiki-grid { display: grid; grid-template-columns: minmax(260px, .7fr) minmax(0, 1.7fr); gap: 12px; align-items: stretch; }
 .kh-wiki-inbox, .kh-wiki-detail, .kh-wiki-side > section { min-width: 0; padding: 16px; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-lg); background: var(--color-bg-surface); box-shadow: 0 1px 2px rgba(0, 0, 0, .08), 0 5px 16px rgba(0, 0, 0, .05); }
-.kh-wiki-side { display: grid; gap: 12px; min-width: 0; }
+.kh-wiki-inbox { display: flex; flex-direction: column; }
+.kh-wiki-side { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; min-width: 0; }
 .kh-wiki-section-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
 .kh-wiki-section-head h3 { margin: 0; color: var(--color-text-primary); font-size: 14px; font-weight: 500; }
 .kh-wiki-section-head p { margin: 3px 0 0; color: var(--color-text-tertiary); font-size: 11px; line-height: 1.4; }
-.kh-wiki-draft-list { display: grid; gap: 6px; }
-.kh-wiki-draft { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 8px; padding: 10px; border: 1px solid transparent; border-radius: var(--radius-md); background: var(--color-bg-base); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.kh-wiki-draft-list { display: flex; flex: 1; flex-direction: column; align-items: stretch; gap: 6px; }
+.kh-wiki-draft { display: flex; width: 100%; min-height: 58px; flex: none; align-items: center; justify-content: space-between; gap: 8px; padding: 10px; border: 1px solid transparent; border-radius: var(--radius-md); background: var(--color-bg-base); color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .kh-wiki-draft > span { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
 .kh-wiki-draft b { color: var(--color-text-primary); font-size: 12px; font-weight: 500; overflow-wrap: anywhere; }
 .kh-wiki-draft small { color: var(--color-text-tertiary); font-size: 10px; }
@@ -1886,7 +1928,10 @@
 .kh-wiki-conflict.is-warn b { color: var(--state-warning); }
 .kh-wiki-conflict.is-info b, .kh-wiki-conflict.is-ok b { color: var(--color-primary-soft); }
 .kh-wiki-conflict.is-ok { border-color: color-mix(in srgb, var(--state-success) 32%, var(--color-border-subtle)); background: var(--state-success-tint); color: var(--state-success); }
-.kh-wiki-preview { max-height: 300px; margin: 0 0 12px; overflow: auto; padding: 12px; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-md); background: var(--color-bg-base); color: var(--color-text-secondary); font: 11px/1.6 var(--font-mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+.kh-wiki-preview { max-height: 300px; margin: 0 0 8px; overflow: hidden; padding: 12px; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-md); background: var(--color-bg-base); color: var(--color-text-primary); }
+.kh-wiki-preview > div[data-markdown-variant='compact'] { color: var(--color-text-primary); }
+.kh-wiki-preview.is-expanded { max-height: none; overflow: visible; }
+.kh-wiki-preview-toggle { margin: 0 0 12px; }
 .kh-wiki-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .kh-wiki-actions select { min-height: 32px; padding: 0 10px; border: 1px solid var(--color-border-default); border-radius: var(--radius-md); background: var(--color-bg-base); color: var(--color-text-primary); font: inherit; font-size: 12px; }
 .kh-wiki-category-list { display: grid; gap: 6px; }
@@ -1906,12 +1951,12 @@
   .kh-wiki-draft:hover { background: var(--color-bg-elevated); }
 }
 @media (max-width: 1180px) {
-  .kh-wiki-grid { grid-template-columns: minmax(220px, .8fr) minmax(0, 1.5fr); }
-  .kh-wiki-side { grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kh-wiki-grid { grid-template-columns: minmax(240px, .8fr) minmax(0, 1.5fr); }
+  .kh-wiki-side { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 760px) {
-  .kh-wiki-stats, .kh-wiki-flow, .kh-wiki-grid, .kh-wiki-side { grid-template-columns: 1fr; }
-  .kh-wiki-side { display: grid; grid-column: auto; }
+  .kh-wiki-stats, .kh-wiki-grid, .kh-wiki-side { grid-template-columns: 1fr; }
+  .kh-wiki-side { grid-column: auto; }
   .kh-wiki-upload-card { align-items: stretch; flex-direction: column; }
   .kh-wiki-upload-actions { justify-content: flex-start; }
 }

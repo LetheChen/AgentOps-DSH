@@ -1,0 +1,61 @@
+# Bilingual-pair consistency record for 2026-11-19-automated-build-deploy-capability.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/proposed/architecture/2026-11-19-automated-build-deploy-capability.md
+/agent-note-automated-build-and-deployment-capability:
+  en: 79c34876fa03d142
+  zh: 479a199d1b08151e
+/agent-note-automated-build-and-deployment-capability/problem:
+  en: e6bfb37840ac0391
+  zh: 47cd42c04ad6c48f
+/agent-note-automated-build-and-deployment-capability/proposal:
+  en: 693d33970caa87f0
+  zh: ae0b97ec9a5c2213
+/agent-note-automated-build-and-deployment-capability/proposal/separate-artifact-production-from-production-deployment:
+  en: 514aa81643eff72e
+  zh: 84893cf9a150c5af
+/agent-note-automated-build-and-deployment-capability/proposal/capability-instances-and-access:
+  en: 9fc8d9d8b7ad827f
+  zh: 29ea428c607fc5eb
+/agent-note-automated-build-and-deployment-capability/proposal/persistence:
+  en: 0c93020a0db57641
+  zh: 4338bad306ede8f8
+/agent-note-automated-build-and-deployment-capability/proposal/tool-surface:
+  en: 26fb76b5fe6d39c4
+  zh: dd08abaaf28ee92d
+/agent-note-automated-build-and-deployment-capability/proposal/versioned-instance-contract:
+  en: 3601ec9d6fb98d9f
+  zh: 90f09f896465b85b
+/agent-note-automated-build-and-deployment-capability/proposal/remote-execution:
+  en: 338fe8289c2fa0a8
+  zh: 3246a81e6f2ea7a3
+/agent-note-automated-build-and-deployment-capability/proposal/release-script-ownership:
+  en: 6d53d423ec77eed9
+  zh: b07c5afab093325d
+/agent-note-automated-build-and-deployment-capability/proposal/release-identity-and-integrity:
+  en: e4e5feff2d012c6a
+  zh: 9624e79b4837b142
+/agent-note-automated-build-and-deployment-capability/proposal/latest-runtime-tag-and-image-id-rollback:
+  en: 778c4a1ce634fdb5
+  zh: 1c7d9c4721de7b34
+/agent-note-automated-build-and-deployment-capability/proposal/migration-backup-and-unknown-outcomes:
+  en: 08b2d5cf133a72df
+  zh: 0292a339dbeeda54
+/agent-note-automated-build-and-deployment-capability/proposal/health-evidence:
+  en: e57e0e319903b155
+  zh: 3993d01e79a3517c
+/agent-note-automated-build-and-deployment-capability/proposal/skill-and-presets:
+  en: 03b7a8ec19aa6dc8
+  zh: 9023411d00a4af17
+/agent-note-automated-build-and-deployment-capability/proposal/workflow-entry-conditions:
+  en: 509db3d5a35286b6
+  zh: c577a922cbb93dd4
+/agent-note-automated-build-and-deployment-capability/alternatives-considered:
+  en: b132430f3357bed2
+  zh: bbd4ded089d35cbb
+/agent-note-automated-build-and-deployment-capability/acceptance-criteria:
+  en: d33c5abf3dbccafd
+  zh: db8b7ce34ad77f77
+/agent-note-automated-build-and-deployment-capability/risks:
+  en: 57eceb7224042d1b
+  zh: 4ef4853b74e54ded

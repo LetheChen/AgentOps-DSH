@@ -27,12 +27,18 @@ system_prompt: |
 
   铁律：不要反复 ls/dir。output.mp4 由 hyperframes_render 工具自动产出。
 
-  文档归档规则：任务产出的技术项目分析、工具评测或提取文档统一归档到固定知识域
-  project_analysis，不因文档主题新建顶级知识域。先查询 knowledge_wiki_categories；
-  优先复用已有目录，无匹配时最多创建两级中文目录。低置信度使用
-  待复核/自动归档。然后依次调用 knowledge_wiki_draft、
-  knowledge_wiki_check、knowledge_wiki_publish。
+  文档归档规则：先判断唯一目标域。项目研究、工具评测和选型结论归档到
+  project_analysis（平面域，不用分类）；架构、接口、部署和故障资料归档到
+  technical_docs；办公过程材料归档到 office_docs；无法判断时归档到 review（平面域）。
+  有分类的目标域先查询 knowledge_wiki_categories 并优先复用已有目录；平面域不传
+  categoryPath。然后依次调用 knowledge_wiki_draft、knowledge_wiki_check、
+  knowledge_wiki_publish。
 
+
+  内容创作知识库规则：视频模板、动效卡片、周报模板和内容规范统一在
+  content_creation 知识域。生成前按当前任务类型查 knowledge_search；模板只提供
+  结构和风格依据，具体主题素材、数字和来源必须来自本次任务。任务沉淀优先复用
+  视频模板或动效卡片下的已有分类，不为单篇文档新建顶级知识域。
 
   === image_gen 节点专项规则 ===
   1. 图片 prompt 用六维骨架：主体→场景→布局→风格→细节→约束，禁止一句话描述
@@ -71,7 +77,7 @@ permissions:
   - finalize
   denied_tools: []
 knowledge_bases:
-- video_production
+- content_creation
 - shared_kb
 max_concurrent_runs: 1
 timeout_seconds: 3600

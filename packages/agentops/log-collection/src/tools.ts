@@ -136,7 +136,7 @@ export function createLogReadDeltaTool(reader: LogDeltaReader, auth: PullLogsToo
         },
       },
       render: (_args, value) => {
-        if (value.error !== undefined) return [{ type: 'text', text: `读取增量失败：${String(value.error)}` }]
+        if (value.error !== undefined) return [{ type: 'text', text: `读取增量失败：${value.error}` }]
         const files = (Array.isArray(value.files) ? value.files : []) as {
           remotePath?: string
           deltaStart?: number
@@ -176,7 +176,12 @@ export function createLogReadDeltaTool(reader: LogDeltaReader, auth: PullLogsToo
   })
 }
 
-/** Register `log_read_delta` on a Cordis context. */
+/**
+ * Register `log_read_delta` on a Cordis context.
+ * @param ctx - the context owning the tool registry.
+ * @param reader - reader for the unanalyzed log window.
+ * @param auth - tenant and preset bound by plugin composition.
+ */
 export function mountLogReadDeltaTool(ctx: Context, reader: LogDeltaReader, auth: PullLogsToolContext): void {
   ctx.tools.register(createLogReadDeltaTool(reader, auth))
 }
@@ -205,8 +210,8 @@ export function createLogListTasksTool(store: import('./store.ts').LogCollection
       },
       render: (_args, value) => { const tasks = (Array.isArray(value.tasks) ? value.tasks : []) as { log_task_id?: string; name?: string; enabled?: boolean }[]; return [{ type: 'text', text: tasks.length === 0 ? '没有可用的日志采集任务' : '可用日志采集任务：\n' + tasks.map(t => `- ${t.log_task_id}（${t.name ?? ''}，${t.enabled === false ? '停用' : '启用'}）`).join('\n') }] },
     },
-    async execute() {
-      return {
+    execute() {
+      return Promise.resolve({
         tasks: store.list(auth.tenantKey).map(task => ({
           log_task_id: task.taskId,
           name: task.name,
@@ -214,12 +219,17 @@ export function createLogListTasksTool(store: import('./store.ts').LogCollection
           ssh_instance_id: task.sshInstanceId,
           remote_paths: task.remotePaths,
         })) as never,
-      }
+      })
     },
   })
 }
 
-/** Register `log_list_tasks` on a Cordis context. */
+/**
+ * Register `log_list_tasks` on a Cordis context.
+ * @param ctx - the context owning the tool registry.
+ * @param store - task registry to list tasks from.
+ * @param auth - tenant bound by plugin composition.
+ */
 export function mountLogListTasksTool(ctx: Context, store: import('./store.ts').LogCollectionStore, auth: { readonly tenantKey: string }): void {
   ctx.tools.register(createLogListTasksTool(store, auth))
 }

@@ -17,18 +17,18 @@ function store(): CapabilityStore {
   return new CapabilityStore(':memory:', key)
 }
 
-test('seeds the ten capability definitions', () => {
+void test('seeds the built-in capability definitions', () => {
   const subject = store()
   try {
     const rows = subject.listCapabilities()
-    assert.equal(rows.length, 10)
+    assert.equal(rows.length, 11)
     assert.deepEqual(new Set(rows.map(row => row.capabilityId)), new Set(BUILTIN_CAPABILITIES.map(row => row.capabilityId)))
   } finally {
     subject.close()
   }
 })
 
-test('reopening refreshes built-in definitions without touching deployment data', () => {
+void test('reopening refreshes built-in definitions without touching deployment data', () => {
   const path = `${process.cwd()}/.capability-sync-${process.pid}.db`
   const first = new CapabilityStore(path, key)
   try {
@@ -43,6 +43,7 @@ test('reopening refreshes built-in definitions without touching deployment data'
   const raw = new DatabaseSync(path)
   try {
     raw.prepare("UPDATE capability_definitions SET config_schema = '[]' WHERE capability_id = 'database'").run()
+    raw.prepare("INSERT INTO capability_definitions(capability_id, name, category, provider, description, transports, config_schema, risk_level, authorization_capability_id, supports_instances, credential_required, created_at, updated_at) VALUES ('retired', 'Retired', 'infrastructure', 'test', '', '[]', '[]', 'low', 'retired', 0, 0, 'now', 'now')").run()
   } finally {
     raw.close()
   }
@@ -54,13 +55,14 @@ test('reopening refreshes built-in definitions without touching deployment data'
     assert.equal(reopened.getInstance('db_a')?.name, 'Keep me')
     assert.equal(reopened.listBindings('manager').length, 1)
     assert.equal(reopened.resolveRuntime('manager', 'database').secret, 'keep')
+    assert.equal(reopened.getCapability('retired'), null)
   } finally {
     reopened.close()
     unlinkSync(path)
   }
 })
 
-test('creates an instance with a sealed credential and safe projection', () => {
+void test('creates an instance with a sealed credential and safe projection', () => {
   const subject = store()
   try {
     const row = subject.saveInstance({
@@ -81,7 +83,7 @@ test('creates an instance with a sealed credential and safe projection', () => {
   }
 })
 
-test('update without a secret leaves the old cipher intact', () => {
+void test('update without a secret leaves the old cipher intact', () => {
   const subject = store()
   try {
     subject.saveInstance({
@@ -102,7 +104,7 @@ test('update without a secret leaves the old cipher intact', () => {
   }
 })
 
-test('a failed binding replacement rolls back all rows', () => {
+void test('a failed binding replacement rolls back all rows', () => {
   const subject = store()
   try {
     subject.saveInstance({
@@ -120,7 +122,7 @@ test('a failed binding replacement rolls back all rows', () => {
   }
 })
 
-test('binding a database instance without an allowed table is rejected', () => {
+void test('binding a database instance without an allowed table is rejected', () => {
   const subject = store()
   try {
     subject.saveInstance({
@@ -136,7 +138,7 @@ test('binding a database instance without an allowed table is rejected', () => {
   }
 })
 
-test('capability runtime list returns only enabled authorized instances', () => {
+void test('capability runtime list returns only enabled authorized instances', () => {
   const subject = store()
   try {
     subject.saveInstance({
@@ -159,7 +161,7 @@ test('capability runtime list returns only enabled authorized instances', () => 
   }
 })
 
-test('binding configuration state distinguishes never configured from explicit empty', () => {
+void test('binding configuration state distinguishes never configured from explicit empty', () => {
   const subject = store()
   try {
     assert.equal(subject.hasBindings('manager'), false)
@@ -171,7 +173,7 @@ test('binding configuration state distinguishes never configured from explicit e
   }
 })
 
-test('runtime resolution fails closed for missing and ambiguous bindings', () => {
+void test('runtime resolution fails closed for missing and ambiguous bindings', () => {
   const subject = store()
   try {
     assert.throws(
@@ -200,7 +202,7 @@ test('runtime resolution fails closed for missing and ambiguous bindings', () =>
   }
 })
 
-test('one transaction writes instance, credential, audit and outbox', () => {
+void test('one transaction writes instance, credential, audit and outbox', () => {
   const subject = store()
   try {
     subject.saveInstance({
@@ -217,23 +219,23 @@ test('one transaction writes instance, credential, audit and outbox', () => {
 })
 
 
-test('browser instance resolves without a credential', () => {
+void test('credential-free capability instance resolves without a secret', () => {
   const subject = store()
   try {
     subject.saveInstance({
-      instanceId: 'playwright', capabilityId: 'browser', name: 'Chrome',
-      config: { allowed_hosts: ['example.com'], headless: true },
+      instanceId: 'build', capabilityId: 'artifact-build', name: 'Build',
+      config: {},
     })
-    subject.replaceBindings('manager', [{ capabilityId: 'browser', instanceId: 'playwright', enabled: true }])
-    const runtime = subject.resolveRuntime('manager', 'browser')
-    assert.equal(runtime.instanceId, 'playwright')
+    subject.replaceBindings('manager', [{ capabilityId: 'artifact-build', instanceId: 'build', enabled: true }])
+    const runtime = subject.resolveRuntime('manager', 'artifact-build')
+    assert.equal(runtime.instanceId, 'build')
     assert.equal(runtime.secret, null)
   } finally {
     subject.close()
   }
 })
 
-test('corrupt ciphertext is reported as decrypt failure, never as missing', () => {
+void test('corrupt ciphertext is reported as decrypt failure, never as missing', () => {
   const path = `${process.cwd()}/.capability-corrupt-${process.pid}.db`
   const subject = new CapabilityStore(path, key)
   try {
@@ -263,7 +265,7 @@ test('corrupt ciphertext is reported as decrypt failure, never as missing', () =
   }
 })
 
-test('imports legacy vault connections into connector instances with their ids', () => {
+void test('imports legacy vault connections into connector instances with their ids', () => {
   const subject = store()
   try {
     const imported = subject.importLegacyConnections([

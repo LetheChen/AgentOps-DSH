@@ -163,7 +163,7 @@ export type CandidateStatus =
   | 'deferred'
   | 'merged'
 
-/** Accepted provenance classes for a Candidate. */
+/** Accepted source classes for a Candidate. */
 export type CandidateSourceType = 'manual' | 'idea' | 'agent' | 'connector' | 'external' | 'legacy_task'
 
 /** One Candidate as returned by the service. */
@@ -1412,12 +1412,20 @@ export class TaskService {
     this.#allowedSourceSystems = new Set(options.allowedSourceSystems ?? DEFAULT_SOURCE_SYSTEMS)
   }
 
-  /** Read one project and its execution workspace. */
+  /**
+   * Read one project and its execution workspace.
+   * @param projectId - the project to read.
+   * @returns the project record.
+   */
   getProject(projectId: string): ProjectRecord {
     return toProject(this.#loadProject(projectId))
   }
 
-  /** Resolve the project workspace and active execution scope for one task. */
+  /**
+   * Resolve the project workspace and active execution scope for one task.
+   * @param taskId - the task whose execution scope is requested.
+   * @returns the task's execution context.
+   */
   getTaskExecutionContext(taskId: string): TaskExecutionContext {
     return this.#assertExecutionReady(taskId)
   }
@@ -1432,7 +1440,7 @@ export class TaskService {
     const now = this.#now()
     const type = input.type ?? 'code'
     const workspaceId = input.workspaceId?.trim() ?? ''
-    const localPath = input.localPath?.trim() === undefined || input.localPath?.trim() === ''
+    const localPath = input.localPath?.trim() === undefined || input.localPath.trim() === ''
       ? null
       : canonicalProjectLocalPath(input.localPath.trim())
     const githubUrl = input.githubUrl?.trim() ?? ''
@@ -1475,7 +1483,7 @@ export class TaskService {
       throw new TaskServiceError('user_approval_required', 'only a user may rebind a project workspace', {}, 403)
     }
     const workspaceId = input.workspaceId?.trim() ?? ''
-    const localPath = input.localPath?.trim() === undefined || input.localPath?.trim() === ''
+    const localPath = input.localPath?.trim() === undefined || input.localPath.trim() === ''
       ? null
       : canonicalProjectLocalPath(input.localPath.trim())
     if ((workspaceId === '' && localPath === null) || (workspaceId !== '' && localPath !== null)) {
@@ -2210,7 +2218,7 @@ export class TaskService {
             409,
           )
         }
-        if ((input.evidence?.length ?? 0) === 0) {
+        if (input.evidence.length === 0) {
           throw new TaskServiceError(
             'decision_validation_failed',
             'implement requires at least one evidence item',
@@ -2873,7 +2881,7 @@ export class TaskService {
       }
     }
     const reportId = `rep_${this.#newId()}`
-    let shouldAdvance = false
+    let submittedStatus: string | undefined
     this.#transaction(() => {
       const task = this.#loadTask(input.taskId)
       this.#checkVersion(task, input.ifVersion)
@@ -2903,10 +2911,10 @@ export class TaskService {
       if (activeRun !== undefined) {
         this.#db.prepare("UPDATE task_runs SET status = 'succeeded' WHERE link_id = ?").run(activeRun.link_id)
       }
-      shouldAdvance = task.status === 'in_progress'
+      submittedStatus = task.status
       this.#touch(input.taskId, 'report_submitted', input.actor, { reportId })
     })
-    if (shouldAdvance) {
+    if (submittedStatus === 'in_progress') {
       try {
         this.advance({
           taskId: input.taskId,
@@ -3157,7 +3165,11 @@ export class TaskService {
     return lease
   }
 
-  /** List every lease for one task, newest first. */
+  /**
+   * List every lease for one task, newest first.
+   * @param taskId - the task whose leases are listed.
+   * @returns the task's leases, newest acquisition first.
+   */
   listLeases(taskId: string): LeaseRecord[] {
     return (this.#db.prepare('SELECT * FROM task_leases WHERE task_id = ? ORDER BY acquired_at DESC').all(taskId) as unknown as LeaseRow[])
       .map(toLease)

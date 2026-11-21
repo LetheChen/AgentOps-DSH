@@ -1,0 +1,43 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/agentops/ui-capability/README.md
+/:
+  en: 89db6e0a189ef9a1
+  zh: 74064ddd802663ac
+/agentops-dsh-ui-capability:
+  en: 5014df815ad71957
+  zh: 086b5c0fd5431c81
+/agentops-dsh-ui-capability/summary:
+  en: 7a8e4b401c3203b0
+  zh: bc6bbc1cf8905eb4
+/agentops-dsh-ui-capability/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 70cecffc6351dc62
+/agentops-dsh-ui-capability/use-this-package:
+  en: a88a0d48baf4a251
+  zh: 86d9ff03175c1aa6
+/agentops-dsh-ui-capability/use-this-package/when-to-choose-it:
+  en: cc8fa5ff8fa57833
+  zh: a619011731a4014f
+/agentops-dsh-ui-capability/use-this-package/minimal-configuration:
+  en: e001601f2f9779b1
+  zh: 077d3703b8c82774
+/agentops-dsh-ui-capability/understand-the-implementation:
+  en: cf85e61c44f682c4
+  zh: 6348bd6fc225bc3b
+/agentops-dsh-ui-capability/further-exploration:
+  en: eee729a19802231f
+  zh: 4663998d08c4e162
+/agentops-dsh-ui-capability/model-experience:
+  en: 6ce392c0dfaa7394
+  zh: 06ace234b604880a
+/agentops-dsh-ui-capability/model-experience/kv-cache-effect:
+  en: bee21fa3819aaf26
+  zh: 3d510e1ab477c1e1
+/agentops-dsh-ui-capability/known-limitations-and-deferred-work:
+  en: a8b7ee16935e1d29
+  zh: c8bed9270c71541d
+/agentops-dsh-ui-capability/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 8ec3e73528ddb1a6

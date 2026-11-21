@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-11-16-business-domain-knowledge-categories.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-11-16-business-domain-knowledge-categories.md
+/agent-note-business-domain-knowledge-spaces-and-automatic-routing:
+  en: 0cbef7443a8625e7
+  zh: e51067a7e6ebe0ca
+/agent-note-business-domain-knowledge-spaces-and-automatic-routing/problem:
+  en: 1def5eb3a993f969
+  zh: 7f6904c1839029bf
+/agent-note-business-domain-knowledge-spaces-and-automatic-routing/decision:
+  en: be4c13cc48ad1e50
+  zh: e791020d2b40250a
+/agent-note-business-domain-knowledge-spaces-and-automatic-routing/alternatives-considered:
+  en: 3f11532ddad4b107
+  zh: c0929863653274ad
+/agent-note-business-domain-knowledge-spaces-and-automatic-routing/consequences:
+  en: d3c6e6a113b0b9ab
+  zh: 34b67dca3a810100
+/agent-note-business-domain-knowledge-spaces-and-automatic-routing/testing:
+  en: 00e29397260b454f
+  zh: 306e64c62c01b674

@@ -1297,6 +1297,15 @@ importers:
         specifier: workspace:*
         version: link:../../interaction/user-approval
 
+  packages/agentops/browser:
+    devDependencies:
+      '@deepseek-ai/dsh-browser-use':
+        specifier: workspace:*
+        version: link:../../browser-use/browser-use
+      '@deepseek-ai/dsh-experimental-browser-use-chrome-devtools-mcp':
+        specifier: workspace:*
+        version: link:../../experimental/browser-use-chrome-devtools-mcp
+
   packages/agentops/bundle:
     devDependencies:
       '@agentops/dsh-capability':
@@ -1308,6 +1317,12 @@ importers:
       '@agentops/dsh-dag':
         specifier: workspace:*
         version: link:../dag
+      '@agentops/dsh-db':
+        specifier: workspace:*
+        version: link:../db
+      '@agentops/dsh-deployment':
+        specifier: workspace:*
+        version: link:../deployment
       '@agentops/dsh-host':
         specifier: workspace:*
         version: link:../host
@@ -1326,6 +1341,9 @@ importers:
       '@agentops/dsh-ui-capability':
         specifier: workspace:*
         version: link:../ui-capability
+      '@agentops/dsh-vault':
+        specifier: workspace:*
+        version: link:../vault
       '@agentops/dsh-workflow-catalog':
         specifier: workspace:*
         version: link:../workflow-catalog
@@ -1393,6 +1411,9 @@ importers:
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
+      d3-force-3d:
+        specifier: 3.0.6
+        version: 3.0.6
       lucide-react:
         specifier: ^1.61.0
         version: 1.61.0(@types/react@18.3.31)(react@18.3.1)
@@ -1541,6 +1562,9 @@ importers:
       '@agentops/dsh-capability':
         specifier: workspace:*
         version: link:../capability
+      '@agentops/dsh-vault':
+        specifier: workspace:*
+        version: link:../vault
       '@deepseek-ai/cordis':
         specifier: workspace:~
         version: link:../../../vendor/cordis
@@ -1562,6 +1586,49 @@ importers:
       '@types/pg':
         specifier: ^8.23.1
         version: 8.23.1
+      tsx:
+        specifier: ^4.20.6
+        version: 4.23.13
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+
+  packages/agentops/deployment:
+    dependencies:
+      '@agentops/dsh-capability':
+        specifier: workspace:*
+        version: link:../capability
+      '@deepseek-ai/dsh-home-paths':
+        specifier: workspace:*
+        version: link:../../util/home-paths
+      '@deepseek-ai/dsh-subprocess':
+        specifier: workspace:*
+        version: link:../../subprocess/subprocess
+      '@deepseek-ai/dsh-tools':
+        specifier: workspace:*
+        version: link:../../core/tools
+      '@deepseek-ai/dsh-user-approval':
+        specifier: workspace:*
+        version: link:../../interaction/user-approval
+      '@deepseek-ai/dsh-util-values':
+        specifier: workspace:*
+        version: link:../../util/values
+      ssh2:
+        specifier: ^1.17.0
+        version: 1.17.0
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:~
+        version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-agent-preset-registry':
+        specifier: workspace:*
+        version: link:../../preset/agent-preset-registry
+      '@types/node':
+        specifier: ^24.5.2
+        version: 24.13.3
+      '@types/ssh2':
+        specifier: ^1.15.6
+        version: 1.15.6
       tsx:
         specifier: ^4.20.6
         version: 4.23.13
@@ -22465,6 +22532,9 @@ packages:
     resolution: {integrity: sha512-IH5tgjV4jE/GhHkRV0HiVYPDtvfjHQlQfJHs0usq7M30XcSBvOotpmH1IgkcXsO/5gEQZD43B//fc7SRT5S+xw==}
     engines: {node: '>=12'}
 
+  d3-binarytree@1.0.2:
+    resolution: {integrity: sha512-cElUNH+sHu95L04m92pG73t2MEJXKu+GeKUN1TJkFsu93E5W8E9Sc3kHEGJKgenGvj19m6upSn2EunvMgMD2Yw==}
+
   d3-brush@3.0.0:
     resolution: {integrity: sha512-ALnjWlVYkXsVIGlOsuWH1+3udkYFI48Ljihfnh8FZPF2QS9o+PzGLBslO0PjzVoHLZ2KCVgAM8NVkXPJB2aNnQ==}
     engines: {node: '>=12'}
@@ -22506,6 +22576,10 @@ packages:
     resolution: {integrity: sha512-kpkQIM20n3oLVBKGg6oHrUchHM3xODkTzjMoj7aWQFq5QEM+R6E4WkzT5+tojDY7yjez8KgCBRoj4aEr99Fdqw==}
     engines: {node: '>=12'}
 
+  d3-force-3d@3.0.6:
+    resolution: {integrity: sha512-4tsKHUPLOVkyfEffZo1v6sFHvGFwAIIjt/W8IThbp08DYAsXZck+2pSHEG5W1+gQgEvFLdZkYvmJAbRM2EzMnA==}
+    engines: {node: '>=12'}
+
   d3-force@3.0.0:
     resolution: {integrity: sha512-zxV/SsA+U4yte8051P4ECydjD/S+qeYtnaIyAs9tgHCqfguma/aAQDjo85A9Z6EKhBirHRJHXIgJUlffT4wdLg==}
     engines: {node: '>=12'}
@@ -22525,6 +22599,9 @@ packages:
   d3-interpolate@3.0.1:
     resolution: {integrity: sha512-3bYs1rOD33uo8aqJfKP3JWPAibgw8Zm2+L9vBKEHJ2Rg+viTR7o5Mmv5mZcieN+FRYaAOWX5SJATX6k1PWz72g==}
     engines: {node: '>=12'}
+
+  d3-octree@1.1.0:
+    resolution: {integrity: sha512-F8gPlqpP+HwRPMO/8uOu5wjH110+6q4cgJvgJT6vlpy3BEaDIKlTZrgHKZSp/i1InRpVfh4puY/kvL6MxK930A==}
 
   d3-path@1.0.9:
     resolution: {integrity: sha512-VLaYcn81dtHVTjEHd8B+pbe9yHWpXKZUC87PzoFmsFrJqgFwDe/qxfp5MlfsfM1V5E/iVt0MmEbWQ7FVIXh/bg==}
@@ -30350,6 +30427,8 @@ snapshots:
 
   d3-axis@3.0.0: {}
 
+  d3-binarytree@1.0.2: {}
+
   d3-brush@3.0.0:
     dependencies:
       d3-dispatch: 3.0.1
@@ -30391,6 +30470,14 @@ snapshots:
     dependencies:
       d3-dsv: 3.0.1
 
+  d3-force-3d@3.0.6:
+    dependencies:
+      d3-binarytree: 1.0.2
+      d3-dispatch: 3.0.1
+      d3-octree: 1.1.0
+      d3-quadtree: 3.0.1
+      d3-timer: 3.0.1
+
   d3-force@3.0.0:
     dependencies:
       d3-dispatch: 3.0.1
@@ -30408,6 +30495,8 @@ snapshots:
   d3-interpolate@3.0.1:
     dependencies:
       d3-color: 3.1.0
+
+  d3-octree@1.1.0: {}
 
   d3-path@1.0.9: {}
 

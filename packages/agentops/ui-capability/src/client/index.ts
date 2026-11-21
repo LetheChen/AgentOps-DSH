@@ -15,6 +15,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
 import { CapabilityPanel } from './panel.tsx'
 import { LogCollectionTab } from './log-collection-panel.tsx'
+import { DeploymentPanel } from './deployment-panel.tsx'
 import { CapabilityAuditPanel } from './audit-panel.tsx'
 import './style.css'
 
@@ -24,6 +25,9 @@ const MAIN_PANEL_ID = CAPABILITY_PANEL_ID as MainPanelId
 
 /** Independent second-level panel for the log collection task registry. */
 const LOG_PANEL_ID = 'agentops-logs' as MainPanelId
+
+/** Independent business deployment configuration panel. */
+const DEPLOYMENT_PANEL_ID = 'agentops-deployments' as MainPanelId
 
 /** Independent operations panel for capability control-plane audit records. */
 const AUDIT_PANEL_ID = 'agentops-capability-audit' as MainPanelId
@@ -84,6 +88,12 @@ export function apply(ctx: ClientContext): void {
     key: LOG_PANEL_ID,
     inject: () => ({}),
   }, LogCollectionTab))
+
+  ctx.slots.inject('main', () => ctx.slots.register({
+    name: 'main',
+    key: DEPLOYMENT_PANEL_ID,
+    inject: () => ({}),
+  }, DeploymentPanel))
 
   ctx.slots.inject('main', () => ctx.slots.register({
     name: 'main',

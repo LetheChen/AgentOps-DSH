@@ -15,6 +15,7 @@ import {
   WIKI_SCHEMA_MARKDOWN,
   analyzeWikiDraft,
   createWikiDraftRecord,
+  isFlatWikiSpace,
   normalizeWikiCategoryPath,
   renderWikiMarkdown,
   wikiStatusFor,
@@ -150,13 +151,15 @@ export class WikiService {
     if (draft.status !== 'ready') {
       throw new WikiServiceError('draft_conflicted', '草稿仍有阻断项，不能发布 Wiki', 409)
     }
-    const category = normalizeWikiCategoryPath(categoryPath ?? draft.categoryPath) ?? DEFAULT_WIKI_CATEGORY
+    const requestedCategory = isFlatWikiSpace(targetSpaceId) ? '' : (categoryPath ?? draft.categoryPath)
+    const category = normalizeWikiCategoryPath(requestedCategory) ?? DEFAULT_WIKI_CATEGORY
     this.ensureCategory(targetSpaceId, category, now)
     const markdown = renderWikiMarkdown({ ...draft, categoryPath: category })
     const documentId = `wiki_${draft.id}`
     this.knowledge.addDocument({
       id: documentId,
       spaceId: targetSpaceId,
+      categoryPath: category,
       title: draft.title,
       mime: 'text/markdown',
       text: markdown,
@@ -254,10 +257,11 @@ export class WikiService {
           spaceName: spaces.get(document.spaceId) ?? document.spaceId,
           title: document.title,
           summary: this.knowledge.chunksOf(document.id)[0]?.text.slice(0, 240) ?? document.title,
+          tags: document.tags,
           updatedAt: document.updatedAt,
           version: document.currentVersion,
           pageType: page?.pageType ?? 'document',
-          categoryPath: page?.categoryPath ?? draft?.categoryPath ?? DEFAULT_WIKI_CATEGORY,
+          categoryPath: page?.categoryPath ?? document.categoryPath,
           sourceTaskId: draft?.sourceTaskId ?? null,
           wikiPageId: page?.id ?? null,
           status: page?.status ?? document.status,
@@ -282,7 +286,7 @@ export class WikiService {
    */
   reviewCategory(spaceId: string, path: string): WikiCategory {
     const normalized = normalizeWikiCategoryPath(path)
-    if (normalized === null) throw new WikiServiceError('invalid_category', '分类路径无效', 400)
+    if (normalized === null || normalized === '') throw new WikiServiceError('invalid_category', '分类路径无效', 400)
     const current = this.repository.getWikiCategory(spaceId, normalized)
     if (current === undefined) throw new WikiServiceError('category_not_found', `分类不存在：${normalized}`, 404)
     const now = new Date().toISOString()
@@ -292,14 +296,14 @@ export class WikiService {
     return reviewed
   }
 
-  private ensureCategory(spaceId: string, path: string, now: string): WikiCategory {
+  private ensureCategory(spaceId: string, path: string, now: string): void {
     if (!this.knowledge.listSpaces().some(space => space.id === spaceId)) {
       throw new WikiServiceError('space_not_found', `知识空间不存在：${spaceId}`, 404)
     }
     const normalized = normalizeWikiCategoryPath(path) ?? DEFAULT_WIKI_CATEGORY
-    const existing = this.repository.getWikiCategory(spaceId, normalized)
-    if (existing !== undefined) return existing
-    const category: WikiCategory = {
+    if (normalized === '') return
+    if (this.repository.getWikiCategory(spaceId, normalized) !== undefined) return
+    this.repository.saveWikiCategory({
       spaceId,
       path: normalized,
       reviewStatus: 'auto',
@@ -307,10 +311,8 @@ export class WikiService {
       draftCount: 0,
       createdAt: now,
       updatedAt: now,
-    }
-    this.repository.saveWikiCategory(category)
+    })
     this.append('category.create', null, null, { spaceId, categoryPath: normalized, source: 'agent' }, now)
-    return category
   }
 
   private categorySnapshot(drafts: readonly WikiDraft[], pages: readonly WikiPage[]): WikiCategory[] {
@@ -325,11 +327,13 @@ ${path}`
         spaceId, path, reviewStatus: 'auto', documentCount: 0, draftCount: 0, createdAt: now, updatedAt: now,
       })
     }
-    for (const draft of drafts) if (draft.targetSpaceId !== null) ensure(draft.targetSpaceId, draft.categoryPath)
-    for (const page of pages) ensure(page.spaceId, page.categoryPath)
+    const documents = this.knowledge.listDocuments()
+    for (const document of documents) if (document.categoryPath !== '') ensure(document.spaceId, document.categoryPath)
+    for (const draft of drafts) if (draft.targetSpaceId !== null && draft.categoryPath !== '') ensure(draft.targetSpaceId, draft.categoryPath)
+    for (const page of pages) if (page.categoryPath !== '') ensure(page.spaceId, page.categoryPath)
     return [...categories.values()].map(category => ({
       ...category,
-      documentCount: pages.filter(page => page.spaceId === category.spaceId && page.categoryPath === category.path).length,
+      documentCount: documents.filter(document => document.spaceId === category.spaceId && document.categoryPath === category.path).length,
       draftCount: drafts.filter(draft => draft.targetSpaceId === category.spaceId && draft.categoryPath === category.path).length,
     })).sort((left, right) => left.spaceId.localeCompare(right.spaceId) || left.path.localeCompare(right.path))
   }

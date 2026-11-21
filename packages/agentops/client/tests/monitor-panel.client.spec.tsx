@@ -63,7 +63,7 @@ const agentsPayload = {
     },
     {
       id: 'manager',
-      name: 'Manager Agent',
+      name: 'SupAgent',
       domain: 'manager',
       harness: 'local_llm',
       execution_backend: 'auto',
@@ -117,7 +117,7 @@ describe('monitoring center', () => {
         return jsonResponse({ total: totals[status as keyof typeof totals], runs: [] })
       }
       if (url.pathname === '/api/agentops/task-rpc') {
-        const body = JSON.parse(String(init?.body ?? '{}')) as { endpoint?: string }
+        const body = JSON.parse(typeof init?.body === 'string' ? init.body : '{}') as { endpoint?: string }
         if (body.endpoint === 'agentops/tasks/activities') {
           return jsonResponse({
             ok: true,
@@ -141,10 +141,12 @@ describe('monitoring center', () => {
     render(<MonitorPanel />)
 
     expect(await screen.findByText('智能审核巡检')).toBeTruthy()
-    expect(screen.getByText('DSH 原生')).toBeTruthy()
-    expect(screen.getByText('DSH 自动')).toBeTruthy()
+    expect(screen.getByTitle(/DSH 原生/)).toBeTruthy()
+    expect(screen.getByTitle(/DSH 自动/)).toBeTruthy()
     expect(screen.queryByText('local_llm')).toBeNull()
-    expect(screen.getAllByText('总运行').length).toBeGreaterThanOrEqual(2)
+    expect(screen.queryByText('总运行')).toBeNull()
+    expect(screen.queryByText(/累计/)).toBeNull()
+    expect(screen.getAllByText('完成')).toHaveLength(1)
     expect(await screen.findByText('1 个运行中')).toBeTruthy()
     expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/api/agentops/agents'), expect.anything())
   })

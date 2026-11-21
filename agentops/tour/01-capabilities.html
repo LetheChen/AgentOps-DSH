@@ -43,17 +43,17 @@
       <h1>一句话问数，<br><em>穿过三层协作</em></h1>
     </div>
     <div class="cap-side">
-      <p class="lede">这不是“一个 Agent 自己查库”。Manager 只做识别与派发，<b>smart_query</b> 拥有并启动固定工作流，工作流再把五类业务角色交给 DAG 节点 subagent。点击能力卡查看输入、输出与源码证据。</p>
+      <p class="lede">这不是“一个 Agent 自己查库”。SupAgent 只做识别与派发，<b>smart_query</b> 拥有并启动固定工作流，工作流再把五类业务角色交给 DAG 节点 subagent。点击能力卡查看输入、输出与源码证据。</p>
       <div class="carry-mini" id="carryMini"><i></i><span id="carryMiniText"></span></div>
       <div class="btn-row"><span class="chip green">SOURCE-GROUNDED</span><span class="chip amber">TEACHING VIEW</span></div>
     </div>
   </header>
 
   <section class="stat-strip" aria-label="协作概览">
-    <div class="stat"><b>3 <small>LAYERS</small></b><span>Manager → Agent → DAG node</span></div>
+    <div class="stat"><b>3 <small>LAYERS</small></b><span>SupAgent → Agent → DAG node</span></div>
     <div class="stat"><b>5 <small>ROLES</small></b><span>意图分类 / 接待 / SQL / 执行 / 讲解</span></div>
     <div class="stat"><b>1 <small>PINNED FLOW</small></b><span>smart-query 由 preset 绑定</span></div>
-    <div class="stat"><b>0 <small>BIZ TOOLS</small></b><span>Manager 不持有 sql_query</span></div>
+    <div class="stat"><b>0 <small>BIZ TOOLS</small></b><span>SupAgent 不持有 sql_query</span></div>
   </section>
 
   <main class="cap-main">
@@ -72,9 +72,9 @@
       </div>
       <div class="board">
         <div class="layer">
-          <div class="layer-label"><b>LAYER 0</b><em>USER ↔ MANAGER</em><span>entry / dispatch</span></div>
+          <div class="layer-label"><b>LAYER 0</b><em>USER ↔ SUPAGENT</em><span>entry / dispatch</span></div>
           <div class="layer-card manager">
-            <div class="layer-title"><b>Manager Agent</b><small>local_llm · MiniMax-M3 · max 1 run</small></div>
+            <div class="layer-title"><b>SupAgent</b><small>local_llm · MiniMax-M3 · max 1 run</small></div>
             <p class="layer-note">判断请求是否需要业务执行；需要时生成自包含任务，通过 <code>subagent</code> 派发。它不知道 smart_query 内部跑哪条 workflow。</p>
             <div class="cap-chips">
               <button class="cap-chip" data-cap="C1"><b>C1</b>意图识别与任务分解</button>
@@ -129,7 +129,7 @@
         <div class="limit" id="insLimit"></div>
         <div class="ins-actions">
           <button class="btn amber" id="handoffBtn"><svg viewBox="0 0 24 24"><path d="M4 12h14M14 6l6 6-6 6"/></svg><span>把这次问数送入运行台</span></button>
-          <div class="handoff-note">第 2 章会恢复 Manager → smart_query → DAG 节点链路</div>
+          <div class="handoff-note">第 2 章会恢复 SupAgent → smart_query → DAG 节点链路</div>
         </div>
       </div>
     </aside>
@@ -144,28 +144,28 @@
   const caps = {
     C1:{
       kind:'ENTRY',group:'入口与编排 · manager',title:'识别意图，把问题变成可派发任务',
-      desc:'Manager 判断这是闲聊、直接问答还是需要业务执行。需要执行时，它选择白名单中的业务 Agent，并把目标、输入与期望产出写成<b>自包含 prompt</b>；子代理看不到原始会话。',
+      desc:'SupAgent 判断这是闲聊、直接问答还是需要业务执行。需要执行时，它选择白名单中的业务 Agent，并把目标、输入与期望产出写成<b>自包含 prompt</b>；子代理看不到原始会话。',
       input:'用户原话、会话上下文、候选 Agent preset 的 id 与职责描述',
       output:'subagent 参数：<code>{ agent_preset: "smart_query", prompt }</code>',
       path:['判断是否需要调用业务 Agent','从候选白名单中选择 smart_query','生成不依赖上下文的完整任务说明'],
       evidence:['agentops/agents/manager.yaml:15-33','packages/agentops/bundle/presets/agents.generated.patch.yml:107-149'],
-      limit:'<b>边界：</b>Manager 不指定 workflow，也不持有 sql_query、describe_database 等业务工具。'
+      limit:'<b>边界：</b>SupAgent 不指定 workflow，也不持有 sql_query、describe_database 等业务工具。'
     },
     C2:{
       kind:'ENTRY',group:'入口与编排 · subagent',title:'异步委派，立即拿 subagentId',
-      desc:'委派不是同步函数调用。Manager 发起 subagent 后立即得到 <b>subagentId</b>，可以继续与用户交互；业务 Agent 完成后，结果自动回投 Manager 所在会话。',
+      desc:'委派不是同步函数调用。SupAgent 发起 subagent 后立即得到 <b>subagentId</b>，可以继续与用户交互；业务 Agent 完成后，结果自动回投 SupAgent 所在会话。',
       input:'agent_preset、自包含 prompt、父会话身份',
       output:'立即返回 <code>subagentId</code>；稍后产生完成结果与状态',
-      path:['Manager 发起 subagent 派发','调用立即返回，用户不被阻塞','完成结果自动回到 Manager，再汇总给用户'],
+      path:['SupAgent 发起 subagent 派发','调用立即返回，用户不被阻塞','完成结果自动回到 SupAgent，再汇总给用户'],
       evidence:['agentops/agents/manager.yaml:26-33','packages/agentops/bundle/presets/agents.generated.patch.yml:138-146'],
-      limit:'<b>已知限制：</b>一次只允许派一层。Manager 不能把子代理的失败“自己重做”，也不能让业务 Agent 再转派另一个业务 Agent。'
+      limit:'<b>已知限制：</b>一次只允许派一层。SupAgent 不能把子代理的失败“自己重做”，也不能让业务 Agent 再转派另一个业务 Agent。'
     },
     C3:{
       kind:'WORKFLOW',group:'工作流执行 · smart_query',title:'业务 Agent 拥有并钉定一条工作流',
       desc:'smart_query 的 execution 是 workflow，声明的 workflow 是 smart-query。它收到问数任务后的第一动作必须是 dag_run；preset 又把工具绑定到这条工作流，因此模型不能自行切换。',
       input:'<code>question</code> 用户原话；<code>database</code> 默认 <code>audit_reader</code>',
       output:'<code>{ runId, status, nodes[], outputs }</code>',
-      path:['接收 Manager 的完整问数任务','调用已钉定的 dag_run','工作流结束后读取终结节点 answer 并组织回复'],
+      path:['接收 SupAgent 的完整问数任务','调用已钉定的 dag_run','工作流结束后读取终结节点 answer 并组织回复'],
       evidence:['agentops/agents/smart_query.yaml:18-40','packages/agentops/bundle/presets/agents.generated.patch.yml:376-384','packages/agentops/dag/src/dsh.ts:683-698'],
       limit:'<b>固定边界：</b>即使调用方说“直接查”“不用走工作流”，也不能绕过 workflow；工作流失败时只能如实报告。'
     },
@@ -189,10 +189,10 @@
     },
     C6:{
       kind:'RESULT',group:'结果追踪 · run store',title:'节点状态、输出与回投都可追踪',
-      desc:'DAG 在首个节点结算前写入 run 记录，并在每次节点结算后更新状态。记录包含输入、节点输出、时间、错误、actor、runId 与 sessionId；完成后 smart_query 将终结 answer 回投给 Manager 汇总。',
+      desc:'DAG 在首个节点结算前写入 run 记录，并在每次节点结算后更新状态。记录包含输入、节点输出、时间、错误、actor、runId 与 sessionId；完成后 smart_query 将终结 answer 回投给 SupAgent 汇总。',
       input:'工作流输入、节点状态、节点输出、actor 与归属信息',
-      output:'<code>runs</code> 与 <code>run_nodes</code> 持久记录；Manager 收到最终回答',
-      path:['dag_run 创建 runId 并落运行记录','节点逐一结算，状态与输出落库','结果回到 smart_query，再回到 Manager 汇总'],
+      output:'<code>runs</code> 与 <code>run_nodes</code> 持久记录；SupAgent 收到最终回答',
+      path:['dag_run 创建 runId 并落运行记录','节点逐一结算，状态与输出落库','结果回到 smart_query，再回到 SupAgent 汇总'],
       evidence:['packages/agentops/dag/src/run-store.ts:13-40,189-243','packages/agentops/dag/src/engine.ts:140-199'],
       limit:'<b>恢复边界：</b>进程崩溃可能遗留 running；重跑读取当前 YAML，不保存历史 revision；DAG 没有自动节点重试。'
     }
@@ -237,7 +237,7 @@
       label:'smart_query · 一句话问数',
       workflow:'smart-query',
       run:'subagent pending',
-      detail:'Manager 已派发 smart_query；前往第 2 章查看 subagentId、runId 与五个节点角色。'
+      detail:'SupAgent 已派发 smart_query；前往第 2 章查看 subagentId、runId 与五个节点角色。'
     }, this);
   };
   const carry = VT.carry || VT.dec(VT.param('cw',''));

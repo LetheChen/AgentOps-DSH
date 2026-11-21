@@ -41,7 +41,7 @@
     - id: agentops-knowledge
       name: '@agentops/dsh-knowledge'
       config:
-        readableSpaces: [finance, hr, ops, weekly, smart_query, project_analysis]
+        readableSpaces: [finance, hr, ops, office_docs, project_analysis, technical_docs, learning, smart_query, content_creation, review]
         allowedImportRoots: []
 
     # M3 — DAG engine: validate legacy YAML and run it with one subagent per node.
@@ -73,6 +73,8 @@
 
     - id: agentops-log-collection
       name: '@agentops/dsh-log-collection'
+    - id: agentops-deployment
+      name: '@agentops/dsh-deployment'
     - id: agentops-ui-capability
       name: '@agentops/dsh-ui-capability'
     - id: agentops-db
@@ -93,16 +95,19 @@
 
     # Manager is the user-facing dispatch entry; internal AgentOps presets stay
     # resolvable for workflows and subagents but are omitted from mode pickers.
-    - id: agent-preset-registry
-      name: '@deepseek-ai/dsh-agent-preset-registry'
-      config:
-        default: manager
 
-# AgentOps skills live in the package; register the directory so every session
-# (regardless of cwd) sees them.
+# web-app already inserts the preset registry with `standard`. Override that row
+# instead of inserting a second registry with the same id.
+- id: agent-preset-registry
+  name: '@deepseek-ai/dsh-agent-preset-registry'
+  config:
+    default: manager
+
+# The deployment seed copies package skills into this runtime directory. Presets
+# mount their own skill provider, so their generated rows repeat the same root
+# and disabled list rather than inheriting this row.
 - id: skill-filesystem
   config:
     customSkillDirs:
-      - /app/packages/agentops/skills
       - !!js dshHomePath('agentops', 'skills')
     disabledSkillsFile: !!js dshHomePath('agentops', 'skills-disabled.json')

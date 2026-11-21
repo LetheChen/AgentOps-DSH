@@ -13,7 +13,7 @@ import type { SessionSummary } from '@deepseek-ai/dsh-api-session-controller/cli
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import {
   AGENT_PRESET_SETTINGS_NS, AgentPresetSettingsController,
-  writeDefaultPreset,
+  presetOptions, writeDefaultPreset,
 } from '../src/client/settings-store.ts'
 
 /** The roster store over a scripted context. */
@@ -82,6 +82,18 @@ function fakeApi(
     ...options.failList === undefined ? {} : { failList: options.failList },
   })
 }
+
+describe('presetOptions', () => {
+  it('preserves hidden so user-facing pickers can filter internal presets', () => {
+    expect(presetOptions([
+      { id: 'manager', name: 'Manager Agent', isDefault: true },
+      { id: 'log_puller', hidden: true },
+    ] as never)).toEqual([
+      { id: 'manager', name: 'Manager Agent' },
+      { id: 'log_puller', hidden: true },
+    ])
+  })
+})
 
 describe('the agent-preset roster store', () => {
   it('derives the display options from one roster call', async () => {

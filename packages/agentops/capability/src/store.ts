@@ -232,6 +232,7 @@ export class CapabilityStore {
    * Existing capability rows win; missing rows are created with the source id.
    * The caller supplies plaintext passwords only for this in-process import.
    * @param connections - browser-safe connection metadata plus optional plaintext secret.
+   * @param actor - authenticated owner id used in audit.
    * @returns number of newly created instances.
    */
   importLegacyConnections(
@@ -448,6 +449,7 @@ export class CapabilityStore {
       config: parseJsonObject(row.config_json),
       accessPolicy: parseJsonObject(row.access_policy_json),
       secret,
+      credentialGeneration: row.credential_updated_at ?? row.updated_at,
     }
   }
 
@@ -456,6 +458,7 @@ export class CapabilityStore {
    * @param instanceId - probed instance.
    * @param ok - probe outcome.
    * @param error - failure detail, if any.
+   * @param actor - authenticated owner id used in audit.
    * @returns the updated browser-safe instance, or null.
    */
   recordTest(instanceId: string, ok: boolean, error: string | null, actor: string = 'owner'): IntegrationInstanceView | null {
@@ -529,6 +532,7 @@ export class CapabilityStore {
    * replaceBindings persists an audit row even for an empty set, so this is
    * the explicit fail-closed signal rather than presence of a binding row.
    * @param agentPreset - preset whose configuration state is read.
+   * @returns whether the preset has ever been configured in the capability center.
    */
   hasBindings(agentPreset: string): boolean {
     const row = this.#db.prepare(
@@ -633,6 +637,7 @@ export class CapabilityStore {
       config: parseJsonObject(row.config_json),
       accessPolicy: parseJsonObject(row.access_policy_json),
       secret,
+      credentialGeneration: row.credential_updated_at ?? row.updated_at,
     }
   }
 
@@ -675,6 +680,11 @@ export class CapabilityStore {
       'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     )
     this.#transaction(() => {
+      const builtIn = new Set(BUILTIN_CAPABILITIES.map(item => item.capabilityId))
+      const remove = this.#db.prepare('DELETE FROM capability_definitions WHERE capability_id = ?')
+      for (const capabilityId of existing) {
+        if (!builtIn.has(capabilityId)) remove.run(capabilityId)
+      }
       for (const item of BUILTIN_CAPABILITIES) {
         const transports = JSON.stringify(item.transports)
         const schema = JSON.stringify(item.configSchema)

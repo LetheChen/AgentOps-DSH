@@ -1,0 +1,14 @@
+# Optional AgentOps profile layer for DSH native browser use.
+#
+# Keep this separate from @agentops/dsh-bundle so AgentOps plugins can be
+# distributed without depending on one concrete experimental browser provider.
+# The provider is process-wide and registers one MCP server per live Agent.
+
+- insert:
+    - id: dsh-browser-use
+      name: '@deepseek-ai/dsh-browser-use'
+    - id: dsh-browser-chrome-devtools-mcp
+      name: '@deepseek-ai/dsh-experimental-browser-use-chrome-devtools-mcp'
+      config:
+        mode: launch
+        headless: true

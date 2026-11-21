@@ -2,7 +2,7 @@
  * Unified AgentOps task center.
  *
  * This panel restores the legacy task-center information architecture on top of
- * the DSH task service: one project context, stage cards, six views, task detail
+ * the DSH task service: one project context, stage cards, five views, task detail
  * and the blog-style report surface.
  *
  * @module @agentops/dsh-client/task-center-panel
@@ -18,7 +18,6 @@ import {
   Plus,
   RefreshCw,
   Search,
-  Sparkles,
 } from 'lucide-react'
 import {
   useCallback,
@@ -31,7 +30,6 @@ import {
 } from 'react'
 
 import { TaskDetail } from './panel.tsx'
-import { MemoryNebulaPanel } from './memory-nebula-panel.tsx'
 import type { DecisionMemory } from './memory-nebula-model.ts'
 import {
   RISK_LABELS,
@@ -61,7 +59,6 @@ const VIEWS: readonly { key: TaskCenterView; label: string; icon: typeof BarChar
   { key: 'board', label: '看板', icon: Columns3 },
   { key: 'list', label: '列表', icon: List },
   { key: 'gantt', label: '甘特图', icon: CalendarDays },
-  { key: 'nebula', label: '记忆星云', icon: Sparkles },
   { key: 'report', label: '任务报告', icon: FileText },
 ]
 
@@ -334,9 +331,6 @@ export function TaskCenterPanel(): ReactElement {
         ) : null}
         {view === 'gantt' ? (
           <GanttView tasks={visibleTasks} onOpen={setSelectedTaskId} />
-        ) : null}
-        {view === 'nebula' ? (
-          <MemoryNebulaPanel projectId={projectId} tasks={tasks} onOpenTask={setSelectedTaskId} />
         ) : null}
         {view === 'report' ? (
           <ReportView

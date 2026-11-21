@@ -32,15 +32,14 @@ Construct `LogCollectionStore` with an open SQLite database and an absolute loca
 <a id="understand-the-implementation"></a>
 ## Understand the implementation
 
-`src/schema.ts` creates the versioned task and ACL tables. `src/store.ts` owns task creation, lookup, revisioned update, soft delete, ACL grants and authorization. The local directory is always `<root>/<tenant>/<task-id>` and is checked for containment.
+`src/schema.ts` creates the versioned task and ACL tables. `src/store.ts` owns task creation, lookup, revisioned update, soft delete, ACL grants and authorization. `PullLogsService` verifies the pinned SSH host key before reading credential material. `src/transport.ts` performs read-only SFTP transfers and publishes each local file through a temporary file, fsync and atomic rename. The local directory is always `<root>/<tenant>/<task-id>` and is checked for containment.
 
 -----
 
 <a id="further-exploration"></a>
 ## Further Exploration
 
-- The full migration design is in `agentops/LOG-COLLECTION-MIGRATION-DESIGN-v9.md`.
-- The minimal implementation scope is in `agentops/LOG-COLLECTION-MVP-SCOPE.md`.
+- `src/schema.ts` and `src/store.ts` are the implementation of the versioned task and ACL contract.
 
 -----
 

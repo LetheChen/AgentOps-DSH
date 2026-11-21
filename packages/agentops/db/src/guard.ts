@@ -18,6 +18,8 @@ export interface DatasourceWhitelist {
   readonly maxRows: number
   /** Query timeout in seconds. */
   readonly timeoutSeconds: number
+  /** Driver of the resolved datasource; only SQLite allows whitelisted bare table names. */
+  readonly driver?: 'sqlite' | 'mysql' | 'postgres'
 }
 
 /** Outcome of the read-only SQL check. */
@@ -78,6 +80,8 @@ export function guardSql(sql: string, whitelist: DatasourceWhitelist): GuardResu
   // perfectly ordinary `FROM audit_records r WHERE r.status = …` reads as
   // "schema r is not whitelisted".
   const localNames = collectLocalNames(bare)
+  const unqualified = rejectUnqualifiedTableReference(bare, localNames, whitelist)
+  if (unqualified !== undefined) return { ok: false, sql: trimmed, reason: unqualified }
   // The qualifier must start like an identifier: `100.0` is a decimal literal,
   // not a schema-qualified table, and rejecting it blocks ordinary arithmetic.
   for (const match of bare.matchAll(/\b([a-z_][a-z0-9_]*)\.[a-z0-9_]+/gi)) {
@@ -141,6 +145,48 @@ function collectLocalNames(bare: string): Set<string> {
     if (!CLAUSE_KEYWORDS.has(alias)) names.add(alias)
   }
   return names
+}
+
+/**
+ * Reject a bare table name in a FROM/JOIN target.
+ *
+ * A bare name can resolve to any table in the connected database's default
+ * schema, so it must not bypass the schema-qualified table allowlist. CTE
+ * names and derived-table aliases are local names and are allowed to remain
+ * unqualified because they do not resolve to a database table.
+ *
+ * @param bare - statement text with literals and comments removed.
+ * @param localNames - names introduced by the statement itself.
+ * @returns the rejection reason, or undefined when all targets are qualified.
+ */
+function rejectUnqualifiedTableReference(
+  bare: string,
+  localNames: ReadonlySet<string>,
+  whitelist: DatasourceWhitelist,
+): string | undefined {
+  const pattern = /\b(?:from|join)\s+(`[^`]*`|"[^"]*"|'[^']*'|[a-z_][a-z0-9_]*(?:\.[a-z0-9_]+)?)/gi
+  for (const match of bare.matchAll(pattern)) {
+    const target = (match[1] ?? '').replace(/^[`"']+|[`"']+$/g, '').toLowerCase()
+    if (target.includes('.')) continue
+    if (target === 'dual' || localNames.has(target)) continue
+    if (isWhitelistedSqliteTable(target, whitelist)) continue
+    return `表名必须带 schema 限定：${match[1]}`
+  }
+  return undefined
+}
+
+/**
+ * Whether a bare SQLite table name is in the single authorized schema allowlist.
+ *
+ * @param table - lower-cased table name without quotes.
+ * @param whitelist - datasource policy.
+ * @returns whether the table is authorized.
+ */
+function isWhitelistedSqliteTable(table: string, whitelist: DatasourceWhitelist): boolean {
+  if (whitelist.driver !== 'sqlite' || whitelist.schemas.length !== 1) return false
+  const schema = whitelist.schemas[0]
+  if (schema === undefined) return false
+  return whitelist.tables[schema]?.some(allowed => allowed.toLowerCase() === table) ?? false
 }
 
 /** Words that follow a table reference but are never aliases. */

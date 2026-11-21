@@ -9,8 +9,8 @@ const NOW = '2026-10-25T00:00:00+08:00'
 
 function service(): KnowledgeService {
   const svc = KnowledgeService.open(new SqliteKnowledgeRepository(':memory:'))
-  svc.addSpace({ id: 'finance', name: '财务', visibility: 'shared', readers: [] })
-  svc.addSpace({ id: 'secret', name: '机密', visibility: 'restricted', readers: ['user:owner'] })
+  svc.addSpace({ id: 'finance', name: '财务', description: '', visibility: 'shared', readers: [] })
+  svc.addSpace({ id: 'secret', name: '机密', description: '', visibility: 'restricted', readers: ['user:owner'] })
   svc.addDocument({
     id: 'doc-travel', spaceId: 'finance', title: '差旅报销办法', mime: 'text/markdown',
     parser: 'md@1', contentHash: 'h1', now: NOW,
@@ -54,7 +54,7 @@ void test('askKnowledge：limit 生效', () => {
 
 void test('askKnowledge：启用部署后，新建 shared 知识域自动可读，restricted 仍需显式授权', () => {
   const svc = service()
-  svc.addSpace({ id: 'project', name: '项目分析', visibility: 'shared', readers: [] })
+  svc.addSpace({ id: 'project', name: '项目分析', description: '', visibility: 'shared', readers: [] })
   svc.addDocument({
     id: 'doc-project', spaceId: 'project', title: 'Strata 技术资料', mime: 'text/markdown',
     parser: 'md@1', contentHash: 'h3', now: NOW,

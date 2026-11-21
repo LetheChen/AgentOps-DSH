@@ -7,7 +7,7 @@
 # mapped: 插件包 + 工具名（运行期真实存在）；null = 尚未迁移，页面标「未迁移」。
 # 用法：生成器据此产出 preset 行的 only 列表；`mapped: null` 的条目一律不写进 only。
 version: 3
-agents: [coding_agent, log_analyst, log_puller, manager, multi-agent-report, oa_assistant, proposal_planner, quality_inspector, smart_analysis, smart_approval, smart_form, smart_ops, smart_query, task_conductor, task_decomposer, task_dispatcher, task_monitor, task_planner, video_creator, weekly-reporter]
+agents: [build_operator, coding_agent, deploy_operator, log_analyst, log_puller, manager, multi-agent-report, oa_assistant, proposal_planner, quality_inspector, smart_analysis, smart_approval, smart_form, smart_ops, smart_query, task_conductor, task_decomposer, task_dispatcher, task_inbox, task_monitor, task_planner, video_creator, weekly-reporter]
 tools:
   subagent:
     display_name: "派发子任务"
@@ -35,7 +35,7 @@ tools:
     note: ""
   aggregate:
     display_name: "结果聚合"
-    description: "Manager 聚合各子任务结果"
+    description: "SupAgent 聚合各子任务结果"
     allowed_domains: [manager]
     requires_human_approval: false
     mapped: null
@@ -73,7 +73,7 @@ tools:
     used_by: [manager]
   classify_intent:
     display_name: "意图识别"
-    description: "Manager 识别用户意图（编排 vs 直接对话）"
+    description: "SupAgent 识别用户意图（编排 vs 直接对话）"
     allowed_domains: [manager]
     requires_human_approval: false
     mapped: null
@@ -112,7 +112,7 @@ tools:
     used_by: [manager]
   dispatch:
     display_name: "任务派发"
-    description: "Manager 将子任务派发给业务域 Agent"
+    description: "SupAgent 将子任务派发给业务域 Agent"
     allowed_domains: [manager]
     requires_human_approval: false
     mapped: null
@@ -168,7 +168,7 @@ tools:
     note: "无（DSH 表单域未迁移）"
   get_run_supervision:
     display_name: "查看子任务进度"
-    description: "查看某个子任务的执行状态和节点进度。Manager Agent 用来监督子 agent 执行情况。 返回 Run 状态 + 各节点状态（running/completed/failed/skipped）+ 关键里程碑。 当用户问\"任务跑到哪了\"或\"进度怎么样\"时调用此工具。"
+    description: "查看某个子任务的执行状态和节点进度。SupAgent 用来监督子 agent 执行情况。 返回 Run 状态 + 各节点状态（running/completed/failed/skipped）+ 关键里程碑。 当用户问\"任务跑到哪了\"或\"进度怎么样\"时调用此工具。"
     allowed_domains: [manager]
     requires_human_approval: false
     mapped: null
@@ -216,7 +216,7 @@ tools:
     note: "无（DSH 无失败运行查询工具）"
   list_session_runs:
     display_name: "列出当前会话的所有子任务"
-    description: "列出当前会话（Session）关联的所有子任务。Manager Agent 用来查看自己调度过的所有任务。 不传 session_id 时自动用当前活跃 run_id 作为 session_id。 当用户问\"我有哪些任务在跑\"或\"这次会话做了什么\"时调用此工具。"
+    description: "列出当前会话（Session）关联的所有子任务。SupAgent 用来查看自己调度过的所有任务。 不传 session_id 时自动用当前活跃 run_id 作为 session_id。 当用户问\"我有哪些任务在跑\"或\"这次会话做了什么\"时调用此工具。"
     allowed_domains: [manager]
     requires_human_approval: false
     mapped: null
@@ -284,15 +284,15 @@ tools:
     requires_human_approval: false
     mapped: null
     used_by: [manager, oa_assistant]
-    note: "无（OA 域未迁移）"
+    note: "无（单据表单读取接口未接入：CAP4 表单接口路径随部署而异，需先确认实例的表单读取端点）"
   oa_affair_query:
     display_name: "OA 事项查询"
-    description: "查询致远 OA 事项列表（待办/已办/已发/待发/跟踪/督办 6 类事项盒通用），按时间范围 + 业务范围 + 业务类型过滤，查询对象自动锁定为当前登录用户本人（人员编码由平台身份绑定，不接受传入）。默认只查协同（collaboration）业务；公文（edoc）不在默认范围，用户明确要查公文/收文时才传 apps=edoc。返回事项标题、发起时间、状态、object_id。注意：OA 不返回总数；不提供审批意见与当前办理人。"
+    description: "查询致远 OA 协同事项列表。box：pending 待办（默认）/ done 已办。按发起时间区间与业务范围关键词过滤；查询对象锁定为 OA 实例绑定的身份（人员编码来自实例配置或 token 绑定，不接受入参）。只查协同事项，不含公文。返回事项标题、发起时间、状态、单据编号 object_id 与 OA 深链。注意：OA 不返回总数；不提供审批意见与当前办理人。"
     allowed_domains: [oa_query, manager]
     requires_human_approval: false
-    mapped: null
+    mapped: { plugin: "@agentops/dsh-capability/oa-tools", tool: "oa_affair_query" }
     used_by: [manager, oa_assistant]
-    note: "无（OA 域未迁移）"
+    note: "已接入：走能力中心的通用 token 认证 + 通用 REST 传输"
   oa_form_extract:
     display_name: "OA 表单提炼"
     description: "按审核视角提炼单据原料——归一化主表字段、明细子表、附件清单与下载。查询范围锁定为当前登录用户本人（不接受人员编码入参）。不做任何审核判断。"
@@ -300,7 +300,7 @@ tools:
     requires_human_approval: false
     mapped: null
     used_by: [oa_assistant]
-    note: "无（OA 域未迁移）"
+    note: "无（单据表单读取接口未接入：CAP4 表单接口路径随部署而异，需先确认实例的表单读取端点）"
   obsidian_vault:
     display_name: "Obsidian Vault 访问"
     description: "Obsidian Vault 旧路径只读兼容工具。仅当 OBSIDIAN_VAULT_ROOT 指向项目根内专用子目录时可读。 支持文件列举、读取、关键词搜索、tag 搜索、增量扫描和路径校验。 write_file 已永久禁用，始终返回 vault_write_disabled。 未启用时统一返回 vault_disabled，项目内知识沉淀不依赖本工具。"
@@ -311,7 +311,7 @@ tools:
     note: "无（Obsidian 集成未迁移）"
   plan_tasks:
     display_name: "任务分解"
-    description: "Manager 将任务拆解为多步骤计划"
+    description: "SupAgent 将任务拆解为多步骤计划"
     allowed_domains: [manager]
     requires_human_approval: false
     mapped: null
@@ -324,6 +324,41 @@ tools:
     requires_human_approval: false
     mapped: { plugin: "@agentops/dsh-host/tools", tool: "present_content" }
     used_by: [manager, oa_assistant, smart_analysis, smart_query]
+  artifact_build:
+    display_name: "本地构建产物"
+    description: "按已授权的 artifact-build 实例执行本地构建、校验输出并写 release manifest；不持有生产 SSH 凭证。"
+    allowed_domains: [smart_ops]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-deployment/tools", tool: "artifact_build" }
+    used_by: [build_operator]
+  deployment_plan:
+    display_name: "生产部署预检"
+    description: "只读校验部署实例、artifact manifest、SSH host key 与远端前置条件，不改变生产。"
+    allowed_domains: [smart_ops]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-deployment/tools", tool: "deployment_plan" }
+    used_by: [deploy_operator]
+  deployment_release:
+    display_name: "生产部署发布"
+    description: "审批后备份当前运行镜像、上传并校验 artifact、执行发布命令并检查健康。"
+    allowed_domains: [smart_ops]
+    requires_human_approval: true
+    mapped: { plugin: "@agentops/dsh-deployment/tools", tool: "deployment_release" }
+    used_by: [deploy_operator]
+  deployment_status:
+    display_name: "生产部署状态"
+    description: "读取发布 journal、当前镜像与上一个健康备份。"
+    allowed_domains: [smart_ops]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-deployment/tools", tool: "deployment_status" }
+    used_by: [deploy_operator]
+  deployment_rollback:
+    display_name: "生产部署回滚"
+    description: "审批后回滚到已记录健康的应用镜像；不恢复数据库。"
+    allowed_domains: [smart_ops]
+    requires_human_approval: true
+    mapped: { plugin: "@agentops/dsh-deployment/tools", tool: "deployment_rollback" }
+    used_by: [deploy_operator]
   pull_logs:
     display_name: "远程日志拉取"
     description: "按日志采集任务配置从绑定 SSH 实例只读拉取 active 日志文件到租户任务目录。"
@@ -397,7 +432,7 @@ tools:
     note: "无（DSH 侧生成式 UI 面板由 present_content 渲染，不再单独推送 surface state）"
   request_cross_domain:
     display_name: "跨域请求"
-    description: "经 Manager 中转的跨业务域请求"
+    description: "经 SupAgent 中转的跨业务域请求"
     allowed_domains: []
     requires_human_approval: false
     mapped: null
@@ -729,7 +764,7 @@ tools:
     requires_human_approval: false
     mapped: { plugin: "@agentops/dsh-dag/tools", tool: "dag_catalog" }
     used_by: [manager]
-    note: "Manager 工作流创建治理工具"
+    note: "SupAgent 工作流创建治理工具"
   dag_validate:
     display_name: "工作流校验"
     description: "校验 AgentOps-DSH 工作流 YAML 的解析、节点引用、依赖拓扑、输入声明和表达式；只校验，不执行。"
@@ -740,7 +775,7 @@ tools:
     note: "生产工作流落盘前必须通过"
   trigger_workflow:
     display_name: "触发预定义工作流"
-    description: "直接触发一个预定义 workflow（templated / hybrid / conversational / task 四种 run_mode）。 这是 Manager Agent 推荐的工作流触发方式：不需要 bash 工具，不需要 curl HTTP 调用， 不依赖任何 sandbox/docker。handler 内部直连 orchestrator.run()，等价于 /api/agent/run 端点。 返回 {run_id} 后，前端会在组件面板自动显示 DAG 节点进度（通过 SSE 实时推送）。 workflow_id 必须是 workflows/*.yaml 中真实存在的 workflow 标识 （如 log-patrol / video-pipeline / smart-query）。 templated / hybrid 模式需要 workflow 存在；本工具主要用于 templated 模式触发预定义 workflow。"
+    description: "直接触发一个预定义 workflow（templated / hybrid / conversational / task 四种 run_mode）。 这是 SupAgent 推荐的工作流触发方式：不需要 bash 工具，不需要 curl HTTP 调用， 不依赖任何 sandbox/docker。handler 内部直连 orchestrator.run()，等价于 /api/agent/run 端点。 返回 {run_id} 后，前端会在组件面板自动显示 DAG 节点进度（通过 SSE 实时推送）。 workflow_id 必须是 workflows/*.yaml 中真实存在的 workflow 标识 （如 log-patrol / video-pipeline / smart-query）。 templated / hybrid 模式需要 workflow 存在；本工具主要用于 templated 模式触发预定义 workflow。"
     allowed_domains: [manager]
     requires_human_approval: false
     mapped: null
@@ -770,6 +805,22 @@ tools:
     mapped: { plugin: "@agentops/dsh-capability/tools", tool: "wecom_notify" }
     used_by: [log_analyst, coding_agent, log_puller, proposal_planner, task_conductor, task_decomposer, task_dispatcher, task_monitor, task_planner]
     note: "能力中心实例解析，URL 不出现在工具参数中"
+  feishu_docs_list:
+    display_name: "飞书云文档目录"
+    description: "列出能力中心绑定的飞书云空间目录，可递归读取子文件夹并返回文档 token、类型与链接。"
+    allowed_domains: [oa_query]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-capability/feishu-tools", tool: "feishu_docs_list" }
+    used_by: [oa_assistant]
+    note: "凭证与 API 地址来自能力中心实例，不向模型暴露 App ID/App Secret"
+  feishu_docs_read:
+    display_name: "飞书云文档读取"
+    description: "按文档 token、docx URL 或 wiki URL 读取飞书云文档正文（Markdown）。"
+    allowed_domains: [oa_query]
+    requires_human_approval: false
+    mapped: { plugin: "@agentops/dsh-capability/feishu-tools", tool: "feishu_docs_read" }
+    used_by: [oa_assistant]
+    note: "只读；电子表格读取暂未接入"
   feishu_notify:
     display_name: "飞书群推送"
     description: "发送飞书群机器人消息。Webhook URL 从能力中心绑定的飞书机器人实例加密凭证读取。"

@@ -1,0 +1,5 @@
+id: smart_query
+name: 业务资产
+description: 沉淀业务口径、数据目录、查询方法与能力边界等可复用业务知识。
+visibility: shared
+readers: []

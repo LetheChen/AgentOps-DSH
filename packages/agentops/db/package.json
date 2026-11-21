@@ -39,6 +39,7 @@
     "tsx": "^4.20.6",
     "typescript": "^5.9.2",
     "@agentops/dsh-capability": "workspace:*",
+    "@agentops/dsh-vault": "workspace:*",
     "@deepseek-ai/dsh-agent-preset-registry": "workspace:*"
   },
   "peerDependencies": {
@@ -47,6 +48,7 @@
     "@deepseek-ai/dsh-home-paths": "workspace:*",
     "@deepseek-ai/dsh-tools": "workspace:*",
     "@agentops/dsh-capability": "workspace:*",
+    "@agentops/dsh-vault": "workspace:*",
     "@deepseek-ai/dsh-agent-preset-registry": "workspace:*"
   }
 }

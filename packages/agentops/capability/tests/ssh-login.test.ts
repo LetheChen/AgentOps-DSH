@@ -15,6 +15,7 @@ function sshRuntime(config: Readonly<Record<string, unknown>>, secret: string | 
     config,
     accessPolicy: {},
     secret,
+    credentialGeneration: 'gen-1',
   }
 }
 

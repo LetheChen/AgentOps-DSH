@@ -21,7 +21,7 @@
           - id: agentops-knowledge-tools
             name: '@agentops/dsh-knowledge/tools'
             config:
-              readableSpaces: [finance, hr, ops, weekly, smart_query, project_analysis]
+              readableSpaces: [finance, hr, ops, office_docs, project_analysis, technical_docs, learning, smart_query, content_creation, review]
               allowedImportRoots: []
 
           - id: agentops-dag-tools

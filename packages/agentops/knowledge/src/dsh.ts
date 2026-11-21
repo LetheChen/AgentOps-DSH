@@ -177,8 +177,8 @@ export function createWikiDraftTool(wiki: WikiService, config: KnowledgeConfig):
       sourceTaskId: { type: 'string' },
       sourceReportId: { type: 'string' },
       pageType: { type: 'string', description: 'source, entity, concept, comparison, or overview.' },
-      targetSpaceId: { type: 'string', description: 'Existing knowledge space id, such as project_analysis.' },
-      categoryPath: { type: 'string', description: 'Existing or new one-/two-segment category path under a stable branch.' },
+      targetSpaceId: { type: 'string', description: 'Optional existing knowledge space id. Omit it to auto-classify into a built-in domain.' },
+      categoryPath: { type: 'string', description: 'Optional category path. Omit it for automatic routing; flat domains always use the space root.' },
     },
     output: {
       schema: {

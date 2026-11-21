@@ -37,7 +37,9 @@ declare module '@deepseek-ai/cordis' {
 
 /** Root-owned log collection service consumed by Agent-scoped tools. */
 export class LogCollectionRuntime extends Service {
+  /** Registry of the deployment's log collection tasks. */
   readonly store: LogCollectionStore
+  /** Capability center repository backing SSH instance bindings. */
   readonly capabilityStore: CapabilityStore
 
   /**

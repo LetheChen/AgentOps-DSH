@@ -26,7 +26,7 @@ describe('AgentOps sidebar menu', () => {
   it('declares the groups in sidebar order', () => {
     expect(AGENTOPS_MENU_SECTIONS.map(section => [section.id, section.order, section.defaultOpen]))
       .toEqual([
-        ['agent-management', 52, true],
+        ['agent-management', 50, true],
         ['capability-center', 52.5, true],
         ['task-management', 53, true],
         ['observability', 57.5, true],
@@ -72,6 +72,7 @@ describe('AgentOps sidebar menu', () => {
       ['agentops-capability', 52.6],
       ['agentops-skills', 52.62],
       ['agentops-logs', 52.65],
+      ['agentops-deployments', 52.66],
       ['agentops-schedules', 52.7],
     ])
   })
@@ -93,6 +94,6 @@ describe('AgentOps sidebar menu', () => {
       ...AGENTOPS_MENU_SECTIONS.map(section => section.order),
       ...AGENTOPS_MENU_ROWS.filter(row => row.section === undefined).map(row => row.order),
     ].sort((a, b) => a - b)
-    expect(topLevel).toEqual([51, 52, 52.5, 53, 57.5, 59])
+    expect(topLevel).toEqual([50, 51, 52.5, 53, 57.5, 59])
   })
 })

@@ -32,37 +32,29 @@ kind: "package-reference"
 <a id="understand-the-implementation"></a>
 ## 实现说明
 
-`src/schema.ts` 创建版本化 task 与 ACL 表。`src/store.ts` 负责创建、查询、带 revision 的更新、软删除、ACL 授权与鉴权。本地目录固定为 `<root>/<tenant>/<task-id>`，并执行 containment 校验。
+`src/schema.ts` 创建版本化 task 与 ACL 表。`src/store.ts` 负责创建、查询、带 revision 的更新、软删除、ACL 授权与鉴权。`PullLogsService` 在读取凭证材料前校验固定的 SSH Host Key。`src/transport.ts` 执行只读 SFTP 传输，并通过临时文件、fsync 与原子 rename 发布每个本地文件。本地目录固定为 `<root>/<tenant>/<task-id>`，并执行 containment 校验。
 
 -----
 
 <a id="further-exploration"></a>
 ## 进一步阅读
 
-- 完整迁移设计见 `agentops/LOG-COLLECTION-MIGRATION-DESIGN-v9.md`。
-- 最小实施范围见 `agentops/LOG-COLLECTION-MVP-SCOPE.md`。
+- 版本化 task 与 ACL 契约的实现见 `src/schema.ts` 与 `src/store.ts`。
 
 -----
 
 <a id="model-experience"></a>
 ## 模型体验
 
-### 任务注册表
+无。本包只存储任务与 ACL 行，不构造模型输入。
 
-#### 模型可见内容
-
-没有模型工具或消息。本包只存储任务与 ACL 行。
-
-#### Token 影响
-
-无直接 token 贡献。
-
-#### KV Cache 影响
+#### KV 缓存影响
 
 无。
 
-<a id="known-limitations-and-deferred-work"></a>
 ## 已知限制与后续工作
+
+<a id="known-limitations-and-deferred-work"></a>
 
 - root plugin、控制面 RPC、浏览器桥和能力中心「日志采集」页已挂载；MaxKB 真实 SFTP 采集已验证。
 - 创建/更新任务前会通过能力中心校验 SSH 实例：存在、已启用、凭证已配置、Host Key 已固定。

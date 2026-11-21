@@ -12,7 +12,7 @@ import { seedAgentOps } from '../../deploy/seed-agentops.mjs'
 const here = dirname(fileURLToPath(import.meta.url))
 const deployDir = resolve(here, '..', '..', 'deploy')
 
-test('部署：compose 与 Dockerfile 可解析且相互引用一致', () => {
+void test('部署：compose 与 Dockerfile 可解析且相互引用一致', () => {
   const compose = load(readFileSync(join(deployDir, 'docker-compose.yml'), 'utf8')) as {
     services: Record<string, { build?: { dockerfile?: string }; image?: string; healthcheck?: { test?: string[] } }>
   }
@@ -30,7 +30,7 @@ test('部署：compose 与 Dockerfile 可解析且相互引用一致', () => {
   }
 })
 
-test('部署：挂载补丁的 root 行都指向镜像内绝对路径', () => {
+void test('部署：挂载补丁的 root 行都指向镜像内绝对路径', () => {
   const patch = load(readFileSync(join(deployDir, 'agentops.patch.yml'), 'utf8')) as {
     insert: { id: string; name: string; config?: { plugins?: { name: string }[] } }[]
   }[]
@@ -38,7 +38,7 @@ test('部署：挂载补丁的 root 行都指向镜像内绝对路径', () => {
   const rootRows = rows.filter(row => row.config?.plugins === undefined)
   const presetRows = rows.flatMap(row => row.config?.plugins ?? [])
 
-  assert.equal(rootRows.length, 12, `root 行应为 12 个，实际 ${rootRows.length}`)
+  assert.equal(rootRows.length, 13, `root 行应为 13 个，实际 ${rootRows.length}`)
   for (const row of rootRows) {
     assert.ok(row.name.startsWith('/app/packages/agentops/'), `${row.id} 不是镜像内绝对路径：${row.name}`)
   }
@@ -49,21 +49,26 @@ test('部署：挂载补丁的 root 行都指向镜像内绝对路径', () => {
   }
 })
 
-test('部署：bootstrap 链接的包都存在', () => {
+void test('部署：bootstrap 链接的包都存在', () => {
   const source = readFileSync(join(deployDir, 'bootstrap.mjs'), 'utf8')
   const listed = [...source.matchAll(/'([a-z-]+)'/g)].map(match => match[1])
-  const packages = ['host', 'knowledge', 'dag', 'task', 'vault', 'capability', 'log-collection', 'ui-capability', 'security', 'db', 'workflow-catalog', 'client', 'bundle']
+  const packages = ['host', 'knowledge', 'dag', 'task', 'vault', 'capability', 'log-collection', 'deployment', 'ui-capability', 'security', 'db', 'workflow-catalog', 'client', 'bundle']
   for (const name of packages) {
     assert.ok(listed.includes(name), `bootstrap 未链接 ${name}`)
     assert.ok(existsSync(resolve(deployDir, '..', name, 'package.json')), `包不存在：${name}`)
   }
 })
 
-test('部署：seed 导入全部迁移资产，默认不覆盖、--force 才覆盖', () => {
+void test('部署：seed 导入全部迁移资产，默认不覆盖、--force 才覆盖', () => {
   const dshHome = mkdtempSync(join(tmpdir(), 'agentops-seed-'))
   const assetRoot = resolve(deployDir, '..', '..', '..', 'agentops')
   const yamlAssets = (dir: string): string[] => readdirSync(join(assetRoot, dir))
     .filter(name => name.endsWith('.yaml'))
+    .sort()
+  const skillsRoot = resolve(deployDir, '..', 'skills')
+  const skillFiles = readdirSync(skillsRoot, { recursive: true, withFileTypes: true })
+    .filter(entry => entry.isFile())
+    .map(entry => `skills/${join(entry.parentPath, entry.name).slice(skillsRoot.length + 1).replaceAll('\\', '/')}`)
     .sort()
   const expected = [
     ...yamlAssets('agents').map(name => `agents/${name}`),
@@ -72,6 +77,7 @@ test('部署：seed 导入全部迁移资产，默认不覆盖、--force 才覆�
     ...yamlAssets('domains').map(name => `domains/${name}`),
     ...readdirSync(join(assetRoot, 'actors'))
       .map(name => `actors/${name}/actor_visual_profile.json`),
+    ...skillFiles,
   ].sort()
   try {
     const first = seedAgentOps({ dshHome })
@@ -81,6 +87,8 @@ test('部署：seed 导入全部迁移资产，默认不覆盖、--force 才覆�
     assert.deepEqual(readdirSync(join(dshHome, 'agentops', 'mappings')).sort(), yamlAssets('mappings'))
     assert.deepEqual(readdirSync(join(dshHome, 'agentops', 'domains')).sort(), yamlAssets('domains'))
     assert.ok(existsSync(join(dshHome, 'agentops', 'actors', 'log_puller', 'actor_visual_profile.json')))
+    assert.ok(existsSync(join(dshHome, 'agentops', 'skills', 'data-query', 'SKILL.md')))
+    assert.ok(existsSync(join(dshHome, 'agentops', 'skills', 'weekly-report-summary', 'SKILL.md')))
 
     const manager = join(dshHome, 'agentops', 'agents', 'manager.yaml')
     writeFileSync(manager, '# local edit\n', 'utf8')
@@ -97,7 +105,7 @@ test('部署：seed 导入全部迁移资产，默认不覆盖、--force 才覆�
   }
 })
 
-test('部署：镜像携带迁移资产，启动时 seed 并挂载生成式 Agent preset', () => {
+void test('部署：镜像携带迁移资产，启动时 seed 并挂载生成式 Agent preset', () => {
   const dockerfile = readFileSync(join(deployDir, 'Dockerfile'), 'utf8')
   assert.match(dockerfile, /COPY agentops\/agents \.\/agentops\/agents/)
   assert.match(dockerfile, /COPY agentops\/workflows \.\/agentops\/workflows/)
@@ -109,10 +117,11 @@ test('部署：镜像携带迁移资产，启动时 seed 并挂载生成式 Agen
   const bootstrap = readFileSync(join(deployDir, 'bootstrap.mjs'), 'utf8')
   assert.match(bootstrap, /seedAgentOps\(\{ dshHome \}\)/)
   assert.match(bootstrap, /'--patch', '\/etc\/agentops\/agentops\.patch\.yml'/)
+  assert.match(bootstrap, /'--patch', '\/app\/packages\/agentops\/browser\/cordis\.patch\.yml'/)
   assert.match(bootstrap, /'--patch', '\/app\/packages\/agentops\/bundle\/presets\/agents\.generated\.patch\.yml'/)
 })
 
-test('部署：Agent 与工作流目录位于持久化 DSH_HOME', () => {
+void test('部署：Agent 与工作流目录位于持久化 DSH_HOME', () => {
   type PatchConfig = {
     agentDir?: string
     workflowDir?: string

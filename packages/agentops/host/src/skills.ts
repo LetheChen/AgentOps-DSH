@@ -70,7 +70,11 @@ export function readDisabledSkills(file: string): Set<string> {
   }
 }
 
-/** Write disabled names atomically. */
+/**
+ * Write disabled names atomically.
+ * @param file - JSON file path.
+ * @param names - the skill names to disable.
+ */
 export function writeDisabledSkills(file: string, names: Iterable<string>): void {
   const values = [...new Set(names)].filter(isSkillName).sort()
   mkdirSync(dirname(file), { recursive: true })
@@ -79,7 +83,12 @@ export function writeDisabledSkills(file: string, names: Iterable<string>): void
   renameSync(temp, file)
 }
 
-/** Project live skills plus disabled state into rows safe for the browser. */
+/**
+ * Project live skills plus disabled state into rows safe for the browser.
+ * @param skills - the live skill registry to project.
+ * @param config - the managed directory and the disabled-name file.
+ * @returns the browser-facing rows and the paths they were read from.
+ */
 export async function listManagedSkills(
   skills: Pick<SkillRegistry, 'snapshot'>,
   config: SkillCenterConfig,
@@ -200,7 +209,12 @@ export async function installSkill(
   }
 }
 
-/** Delete one installed skill directory. Built-in skills are not removable. */
+/**
+ * Delete one installed skill directory. Built-in skills are not removable.
+ * @param skills - the listed skills to find the target in.
+ * @param config - the managed directory and the disabled-name file.
+ * @param name - the skill name to delete.
+ */
 export function deleteInstalledSkill(
   skills: readonly { readonly name: string; readonly path?: string | null }[],
   config: SkillCenterConfig,
@@ -293,7 +307,12 @@ function isMissing(error: unknown): boolean {
     && (error.code === 'ENOENT' || error.code === 'ENOTDIR')
 }
 
-/** Register the skill management routes. */
+/**
+ * Register the skill management routes.
+ * @param ctx - the plugin context owning the connection.
+ * @param skills - the live skill registry.
+ * @param config - the managed directory and the disabled-name file.
+ */
 export function registerSkillsRoutes(ctx: Context, skills: SkillRegistry, config: SkillCenterConfig): void {
   const routes = [
     { path: '/api/agentops/skills', handler: skillListHandler(skills, config) },

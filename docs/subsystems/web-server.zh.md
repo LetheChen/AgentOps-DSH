@@ -123,7 +123,7 @@ Host `ctx.connection` members consumed by transport-independent adapters.
 
 ```ts cordis-catalog
 /**
- * Compose exact Fetch routes and the shared-channel RPC interceptor.
+ * Compose exact Fetch routes and the shared-channel RPC interceptors.
  * @param channel - shared channel mounted by Connection.
  * @returns Fetch handler for trusted, authenticated requests.
  */

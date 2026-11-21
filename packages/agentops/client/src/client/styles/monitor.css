@@ -470,21 +470,27 @@
 
 .ao-monitor__agent-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(430px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 8px;
   min-width: 0;
+}
+
+.ao-monitor__agent-card.is-skill {
+  grid-template-areas:
+    'head'
+    'tags';
 }
 
 .ao-monitor__agent-card {
   display: grid;
   grid-template-areas:
-    'head runtime stats'
-    'tags runtime stats';
-  grid-template-columns: minmax(0, 1.05fr) minmax(140px, .9fr) minmax(150px, .85fr);
-  gap: 7px 14px;
-  align-items: center;
+    'head'
+    'tags'
+    'stats';
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
   min-width: 0;
-  padding: 12px 14px;
+  padding: 8px 10px;
   background: var(--color-bg-surface);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
@@ -492,28 +498,29 @@
 }
 
 .ao-monitor__agent-head {
-  display: flex;
+  display: grid;
   grid-area: head;
-  flex-direction: column;
-  align-items: flex-start;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   gap: 6px;
   min-width: 0;
 }
 
 .ao-monitor__agent-idblock {
   display: flex;
-  flex: 1;
   flex-direction: column;
-  gap: 1px;
+  gap: 0;
   min-width: 0;
 }
 
 .ao-monitor__agent-name {
+  overflow: hidden;
   color: var(--color-text-primary);
   font-size: 12px;
   font-weight: 500;
   line-height: 1.35;
-  overflow-wrap: anywhere;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ao-monitor__agent-id {
@@ -529,7 +536,7 @@
 .ao-monitor__badges {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 3px;
   justify-content: flex-start;
   max-width: 100%;
   min-width: 0;
@@ -557,14 +564,15 @@
 }
 
 .ao-monitor__agent-tags {
-  display: flex;
+  display: grid;
   grid-area: tags;
-  flex-direction: column;
-  gap: 3px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 6px;
   min-width: 0;
   color: var(--color-text-secondary);
   font-size: 9px;
-  line-height: 1.35;
+  line-height: 1.3;
 }
 
 .ao-monitor__agent-tags > span {
@@ -576,12 +584,10 @@
 
 .ao-monitor__agent-runtime {
   display: flex;
-  grid-area: runtime;
-  gap: 7px;
-  align-items: flex-start;
-  align-self: stretch;
+  gap: 5px;
+  align-items: center;
   min-width: 0;
-  padding: 8px 9px;
+  padding: 3px 6px;
   background: var(--color-bg-base);
   border: 1px solid transparent;
   border-left-width: 2px;
@@ -608,7 +614,6 @@
   flex-shrink: 0;
   width: 6px;
   height: 6px;
-  margin-top: 4px;
   background: var(--color-border-strong);
   border-radius: var(--radius-full);
 }
@@ -626,10 +631,13 @@
 }
 
 .ao-monitor__agent-runtime strong {
+  overflow: hidden;
   color: var(--color-text-secondary);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 500;
-  line-height: 1.35;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ao-monitor__agent-runtime span {
@@ -641,8 +649,9 @@
 .ao-monitor__agent-stats {
   display: grid;
   grid-area: stats;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 7px 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px 8px;
+  align-items: center;
   min-width: 0;
   padding-top: 0;
   border-top: 0;
@@ -650,23 +659,28 @@
 
 .ao-monitor__agent-stat {
   display: flex;
-  flex-direction: column;
-  gap: 1px;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 3px;
   min-width: 0;
+  white-space: nowrap;
 }
 
 .ao-monitor__agent-stat > span {
   color: var(--color-text-secondary);
   font-size: 8px;
-  line-height: 1.35;
+  line-height: 1.3;
 }
 
 .ao-monitor__agent-stat > strong {
+  overflow: hidden;
   color: var(--color-text-secondary);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 500;
-  line-height: 1.35;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ao-monitor__tips {
@@ -830,7 +844,7 @@
 
 @media (min-width: 1800px) {
   .ao-monitor__agent-grid {
-    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   }
 }
 
@@ -854,7 +868,7 @@
   }
 
   .ao-monitor__agent-grid {
-    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   }
 }
 
@@ -905,13 +919,12 @@
     grid-template-areas:
       'head'
       'tags'
-      'runtime'
       'stats';
     grid-template-columns: minmax(0, 1fr);
   }
 
   .ao-monitor__agent-stats {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .ao-monitor__tip-item {

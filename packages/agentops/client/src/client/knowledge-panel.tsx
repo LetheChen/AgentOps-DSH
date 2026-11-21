@@ -4,10 +4,13 @@
  * remaining tabs inspect the same searchable knowledge store.
  */
 
-import { useCallback, useEffect, useState, type KeyboardEvent, type ReactElement, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactElement, type ReactNode } from 'react'
 
 import { WikiWorkbench } from './knowledge-wiki-panel.tsx'
+import { MemoryNebulaPanel } from './memory-nebula-panel.tsx'
 import { createKnowledgeSpace } from './knowledge-wiki-api.ts'
+import { buildKnowledgeCategoryTree, countCategoryDocuments, type KnowledgeCategoryNode, type KnowledgeTreeDocument } from './knowledge-tree.ts'
+import { KnowledgeMarkdown } from './knowledge-markdown.tsx'
 
 interface DomainSummary {
   id: string
@@ -15,12 +18,13 @@ interface DomainSummary {
   display_name: string
   description: string
   page_count: number
+  categories: readonly { path: string; page_count: number }[]
   last_ingest_at: string | null
   supports_lint: boolean
   lint_summary: { critical: number; warning: number; info: number; total: number }
 }
 
-type TabKey = 'wiki' | 'dashboard' | 'ask' | 'search' | 'vault' | 'archive' | 'lint'
+type TabKey = 'wiki' | 'nebula' | 'dashboard' | 'ask' | 'search' | 'vault' | 'archive' | 'lint'
 
 const ICONS: Record<TabKey, ReactElement> = {
   wiki: (
@@ -31,6 +35,16 @@ const ICONS: Record<TabKey, ReactElement> = {
       <circle cx="13" cy="12" r="1.2" fill="none" stroke="currentColor" strokeWidth="1.3" />
       <circle cx="3" cy="12" r="1.2" fill="none" stroke="currentColor" strokeWidth="1.3" />
       <path d="M4.1 4.8 6.7 6.9M11.9 4.8 9.3 6.9M11.4 11.2 9.3 9.1M4.6 11.2 6.7 9.1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  ),
+  nebula: (
+    <svg viewBox="0 0 16 16" width="14" height="14">
+      <circle cx="8" cy="8" r="1.5" fill="none" stroke="currentColor" strokeWidth="1.3" />
+      <circle cx="3" cy="4" r="1.1" fill="none" stroke="currentColor" strokeWidth="1.3" />
+      <circle cx="13" cy="4" r="1.1" fill="none" stroke="currentColor" strokeWidth="1.3" />
+      <circle cx="13" cy="12" r="1.1" fill="none" stroke="currentColor" strokeWidth="1.3" />
+      <circle cx="3" cy="12" r="1.1" fill="none" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M4 4.9 6.7 7M12 4.9 9.3 7M12 11.1 9.3 9M4 11.1 6.7 9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
     </svg>
   ),
   dashboard: (
@@ -75,6 +89,7 @@ const ICONS: Record<TabKey, ReactElement> = {
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'wiki', label: 'Wiki 工作台' },
+  { key: 'nebula', label: '记忆星云' },
   { key: 'dashboard', label: '仪表盘' },
   { key: 'ask', label: '智能问答' },
   { key: 'search', label: '搜索中心' },
@@ -93,6 +108,7 @@ export function KnowledgePanel(): ReactElement {
   const [spaceName, setSpaceName] = useState('')
   const [spaceBusy, setSpaceBusy] = useState(false)
   const [spaceError, setSpaceError] = useState('')
+  const contentRef = useRef<HTMLDivElement>(null)
 
   const loadDomains = useCallback((): Promise<void> => {
     setState('loading')
@@ -114,6 +130,10 @@ export function KnowledgePanel(): ReactElement {
 
   useEffect(() => { void loadDomains() }, [loadDomains])
 
+  useEffect(() => {
+    if (contentRef.current !== null) contentRef.current.scrollTop = 0
+  }, [tab])
+
   const createSpace = async (): Promise<void> => {
     setSpaceBusy(true)
     setSpaceError('')
@@ -134,7 +154,7 @@ export function KnowledgePanel(): ReactElement {
     <div className="ao-page kh-page agentops-surface">
       <header className="ao-page-header">
         <div className="ao-page-heading">
-          <h1 className="ao-page-title">知识库</h1>
+          <h1 className="ao-page-title">知识库管理</h1>
           <p className="ao-page-description">统一浏览、检索与治理 Agent 可使用的知识资料。</p>
         </div>
       </header>
@@ -153,8 +173,9 @@ export function KnowledgePanel(): ReactElement {
         ))}
       </div>
 
-      <div className="kh-content">
+      <div className="kh-content" ref={contentRef}>
         {tab === 'wiki' ? <WikiWorkbench /> : null}
+        {tab === 'nebula' ? <MemoryNebulaPanel /> : null}
         {tab === 'ask' ? <AskCenter /> : null}
         {tab === 'search' ? <SearchCenter /> : null}
         {tab === 'vault' ? <VaultBrowser /> : null}
@@ -195,6 +216,18 @@ export function KnowledgePanel(): ReactElement {
                         <span className="kh-domain-card-id font-mono">{domain.id}</span>
                         <span className="kh-lint-badge kh-lint-badge-off">无 Lint</span>
                       </div>
+                      {domain.description === '' ? null : (
+                        <p className="kh-domain-card-description">{domain.description}</p>
+                      )}
+                      {domain.categories.length === 0 ? null : (
+                        <div className="kh-domain-card-categories">
+                          {domain.categories.map(category => (
+                            <span className="kh-category-tag" key={category.path}>
+                              {category.path} · {category.page_count}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                       <div className="kh-domain-card-stats">
                         <div className="kh-domain-card-stat">
                           <span className="kh-domain-card-stat-label">页面数</span>
@@ -323,10 +356,101 @@ function SearchCenter(): ReactElement {
   )
 }
 
-interface VaultSpace { id: string; name: string; documents: { id: string; title: string; version: number; updatedAt: string }[] }
-interface VaultDocument { id: string; title: string; version: number; chunks: { ordinal: number; section: string | null; text: string }[] }
+interface VaultSpace { id: string; name: string; documents: KnowledgeTreeDocument[] }
+interface VaultDocument {
+  id: string
+  spaceId: string
+  categoryPath: string
+  title: string
+  version: number
+  chunks: { ordinal: number; section: string | null; text: string }[]
+}
 
-/** Vault 浏览：左侧知识域/文档树，右侧原文预览。 */
+interface VaultDocumentRowProps {
+  spaceId: string
+  document: KnowledgeTreeDocument
+  selectedId: string | null
+  onOpen: (id: string) => void
+}
+
+function VaultDocumentRow({ spaceId, document, selectedId, onOpen }: VaultDocumentRowProps): ReactElement {
+  const open = (): void => { onOpen(document.id) }
+  return (
+    <li className="kh-tree-node" role="treeitem">
+      <div
+        className={`kh-tree-node-row${selectedId === document.id ? ' kh-tree-node-selected' : ''}`}
+        role="button"
+        tabIndex={0}
+        title={`${spaceId}/${document.categoryPath}${document.categoryPath === '' ? '' : '/'}${document.id}`}
+        onClick={open}
+        onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); open() } }}
+      >
+        <span className="kh-tree-chevron-spacer" />
+        <span className="kh-tree-node-name">{document.title}</span>
+      </div>
+    </li>
+  )
+}
+
+interface VaultCategoryRowsProps {
+  spaceId: string
+  categories: readonly KnowledgeCategoryNode[]
+  expanded: Record<string, boolean>
+  selectedId: string | null
+  onToggle: (key: string) => void
+  onOpen: (id: string) => void
+}
+
+function VaultCategoryRows({ spaceId, categories, expanded, selectedId, onToggle, onOpen }: VaultCategoryRowsProps): ReactElement {
+  return (
+    <ul className="kh-tree-list" role="group">
+      {categories.map((category) => {
+        const key = `category:${spaceId}:${category.path}`
+        const open = expanded[key] === true
+        return (
+          <li className="kh-tree-node" role="treeitem" aria-expanded={open} key={category.path}>
+            <div
+              className="kh-tree-node-row"
+              role="button"
+              tabIndex={0}
+              onClick={() => { onToggle(key) }}
+              onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onToggle(key) } }}
+            >
+              <span className="kh-tree-chevron">{open ? '▾' : '▸'}</span>
+              <span className="kh-tree-node-name">{category.name}</span>
+              <span className="kh-tree-count">{countCategoryDocuments(category)}</span>
+            </div>
+            {open ? (
+              <ul className="kh-tree-list" role="group">
+                {category.documents.map(document => (
+                  <VaultDocumentRow
+                    key={document.id}
+                    spaceId={spaceId}
+                    document={document}
+                    selectedId={selectedId}
+                    onOpen={onOpen}
+                  />
+                ))}
+                {category.children.length === 0 ? null : (
+                  <VaultCategoryRows
+                    spaceId={spaceId}
+                    categories={category.children}
+                    expanded={expanded}
+                    selectedId={selectedId}
+                    onToggle={onToggle}
+                    onOpen={onOpen}
+                  />
+                )}
+              </ul>
+            ) : null}
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
+/** Vault 浏览：左侧知识域/分类/文档树，右侧原文预览。 */
 function VaultBrowser(): ReactElement {
   const [spaces, setSpaces] = useState<VaultSpace[]>([])
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
@@ -360,6 +484,10 @@ function VaultBrowser(): ReactElement {
     if (response.ok) setSelected(await response.json() as VaultDocument)
   }, [])
 
+  const toggle = useCallback((key: string): void => {
+    setExpanded(previous => ({ ...previous, [key]: previous[key] !== true }))
+  }, [])
+
   return (
     <div className="kh-vault">
       <div className="kh-vault-tree">
@@ -368,37 +496,48 @@ function VaultBrowser(): ReactElement {
           {loading && <div className="kh-loading"><span>加载中...</span></div>}
           {error !== '' && <div className="kh-error"><p>{error}</p></div>}
           {!loading && spaces.length === 0 && <div className="kh-tree-empty">知识库为空</div>}
-          {spaces.map(space => (
-            <div key={space.id}>
-              <div
-                className="kh-tree-node"
-                role="treeitem"
-                aria-expanded={expanded[space.id] === true}
-                onClick={() =>{  setExpanded(prev => ({ ...prev, [space.id]: prev[space.id] !== true })) }}
-              >
-                <span className="kh-tree-chevron">{expanded[space.id] === true ? '▾' : '▸'}</span>
-                <span className="kh-tree-node-name">{space.name}</span>
+          {spaces.map((space) => {
+            const tree = buildKnowledgeCategoryTree(space.documents)
+            return (
+              <div key={space.id}>
+                <div className="kh-tree-node" role="treeitem" aria-expanded={expanded[space.id] === true}>
+                  <div
+                    className="kh-tree-node-row"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => { toggle(space.id) }}
+                    onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggle(space.id) } }}
+                  >
+                    <span className="kh-tree-chevron">{expanded[space.id] === true ? '▾' : '▸'}</span>
+                    <span className="kh-tree-node-name">{space.name}</span>
+                    <span className="kh-tree-count">{space.documents.length}</span>
+                  </div>
+                </div>
+                {expanded[space.id] === true && (
+                  <ul className="kh-tree-list" role="group">
+                    {tree.documents.map(document => (
+                      <VaultDocumentRow
+                        key={document.id}
+                        spaceId={space.id}
+                        document={document}
+                        selectedId={selected?.id ?? null}
+                        onOpen={(id) => { void openDocument(id) }}
+                      />
+                    ))}
+                    <VaultCategoryRows
+                      spaceId={space.id}
+                      categories={tree.categories}
+                      expanded={expanded}
+                      selectedId={selected?.id ?? null}
+                      onToggle={toggle}
+                      onOpen={(id) => { void openDocument(id) }}
+                    />
+                    {space.documents.length === 0 && <li className="kh-tree-empty">（空知识域）</li>}
+                  </ul>
+                )}
               </div>
-              {expanded[space.id] === true && (
-                <ul className="kh-tree-list" role="tree">
-                  {space.documents.map(doc => (
-                    <li key={doc.id} className="kh-tree-node" role="treeitem">
-                      <span className="kh-tree-chevron-spacer" />
-                      <span
-                        className="kh-tree-node-name"
-                        role="button"
-                        tabIndex={0}
-                        title={`${space.id}/${doc.id}`}
-                        onClick={() => { void openDocument(doc.id) }}
-                        onKeyDown={(event) => { if (event.key === 'Enter') void openDocument(doc.id) }}
-                      >{doc.title}</span>
-                    </li>
-                  ))}
-                  {space.documents.length === 0 && <li className="kh-tree-empty">（空知识域）</li>}
-                </ul>
-              )}
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
 
@@ -409,7 +548,13 @@ function VaultBrowser(): ReactElement {
             <>
               <div className="kh-vault-breadcrumb">
                 <span className="kh-vault-breadcrumb-label">路径</span>
-                <span className="kh-vault-breadcrumb-path">{selected.id}</span>
+                <span className="kh-vault-breadcrumb-path">{selected.spaceId}</span>
+                {selected.categoryPath === '' ? null : (
+                  <>
+                    <span className="kh-vault-breadcrumb-sep">/</span>
+                    <span className="kh-vault-breadcrumb-path">{selected.categoryPath}</span>
+                  </>
+                )}
                 <span className="kh-vault-breadcrumb-sep">/</span>
                 <span className="kh-vault-breadcrumb-path">{selected.title}</span>
                 <span className="kh-vault-breadcrumb-sep">v{selected.version}</span>
@@ -626,7 +771,7 @@ interface AskCitation {
 }
 
 /** 智能问答（检索模式）：返回带版本化引用的片段，不做生成式改写。 */
-function AskCenter(): ReactElement {
+export function AskCenter(): ReactElement {
   const [question, setQuestion] = useState('')
   const [citations, setCitations] = useState<AskCitation[]>([])
   const [asked, setAsked] = useState(false)
@@ -681,8 +826,9 @@ function AskCenter(): ReactElement {
             <div className="kh-ask-section-title">📖 检索结果（按相关度排序）</div>
             <div className="kh-ask-answer-body">
               {citations.map(item => (
-                <div key={item.citation.chunkId} className="kh-ask-answer-body">
-                  <span className="kh-ask-citation-icon">[{item.marker}]</span> {item.text}
+                <div key={item.citation.chunkId} className="kh-ask-result">
+                  <span className="kh-ask-citation-icon">[{item.marker}]</span>
+                  <KnowledgeMarkdown className="kh-ask-markdown" text={item.text} />
                 </div>
               ))}
             </div>
@@ -703,7 +849,7 @@ function AskCenter(): ReactElement {
                       {item.citation.section === null ? '' : ` · ${item.citation.section}`} · v{item.citation.version}
                     </span>
                   </div>
-                  <div className="kh-ask-citation-snippet">{item.text.slice(0, 200)}…</div>
+                  <KnowledgeMarkdown className="kh-ask-citation-snippet" text={`${item.text.slice(0, 200)}${item.text.length > 200 ? '…' : ''}`} />
                 </div>
               ))}
             </div>

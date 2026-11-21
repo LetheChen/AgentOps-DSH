@@ -1,0 +1,5 @@
+id: technical_docs
+name: 技术文档
+description: 架构、接口、部署、故障排查和工程规范，服务研发、运维与交付。
+visibility: shared
+readers: []

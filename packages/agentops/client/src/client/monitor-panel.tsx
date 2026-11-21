@@ -789,25 +789,28 @@ function AgentCard({
   }, [workflowIds])
 
   const runtime = agentRuntimeText(workflowIds, stats, statsLoading, statsError)
-  const latest = stats?.latest === undefined ? '—' : formatTimestamp(stats.latest.startedAt)
+  const latest = stats?.latest === undefined ? '—' : formatTimestamp(stats.latest.startedAt, false)
 
   return (
-    <article className="ao-monitor__agent-card">
+    <article
+      className={`ao-monitor__agent-card${workflowIds.length === 0 ? ' is-skill' : ''}`}
+      title={`${agent.name} · ${executionBackendLabel(agent.execution_backend)} · ${sourceLabel(agent.source)}`}
+    >
       <div className="ao-monitor__agent-head">
         <div className="ao-monitor__agent-idblock">
           <span className="ao-monitor__agent-name">{agent.name}</span>
-          <span className="ao-monitor__agent-id">{agent.id}</span>
+          <span className="ao-monitor__agent-id">{agent.id} · {agent.domain || '未分类'}</span>
         </div>
-        <div className="ao-monitor__badges">
-          <span className="ao-monitor__badge">{executionBackendLabel(agent.execution_backend)}</span>
-          <span className="ao-monitor__badge ao-monitor__badge--muted">{sourceLabel(agent.source)}</span>
+        <div className={`ao-monitor__agent-runtime ao-monitor__agent-runtime--${runtime.tone}`}>
+          <span className="ao-monitor__status-dot" />
+          <strong>{runtime.title}</strong>
+          {runtime.detail === '' ? null : <span>{runtime.detail}</span>}
         </div>
       </div>
 
       <div className="ao-monitor__agent-tags">
-        <span>{agent.domain || '未分类'}</span>
-        <span className="ao-monitor__mono">{agent.model || '模型未标注'}</span>
-        <span className="ao-monitor__mono">
+        <span className="ao-monitor__mono" title={agent.model || '模型未标注'}>{agent.model || '模型未标注'}</span>
+        <span className="ao-monitor__mono" title={workflowIds.length === 0 ? '无工作流引用' : workflowIds.join('、')}>
           {workflowIds.length === 0
             ? '无工作流引用'
             : workflowIds.length === 1
@@ -816,20 +819,13 @@ function AgentCard({
         </span>
       </div>
 
-      <div className={`ao-monitor__agent-runtime ao-monitor__agent-runtime--${runtime.tone}`}>
-        <span className="ao-monitor__status-dot" />
-        <div>
-          <strong>{runtime.title}</strong>
-          <span>{runtime.detail}</span>
+      {workflowIds.length === 0 ? null : (
+        <div className="ao-monitor__agent-stats">
+          <AgentStat label="完成" value={stats === null ? '—' : formatNumber(stats.completed)} />
+          <AgentStat label="失败" value={stats === null ? '—' : formatNumber(stats.failed)} />
+          <AgentStat label="最近" value={latest} />
         </div>
-      </div>
-
-      <div className="ao-monitor__agent-stats">
-        <AgentStat label="总运行" value={stats === null ? '—' : formatNumber(stats.total)} />
-        <AgentStat label="完成" value={stats === null ? '—' : formatNumber(stats.completed)} />
-        <AgentStat label="失败" value={stats === null ? '—' : formatNumber(stats.failed)} />
-        <AgentStat label="最近" value={latest} />
-      </div>
+      )}
     </article>
   )
 }
@@ -971,30 +967,25 @@ function agentRuntimeText(
   loading: boolean,
   error: string,
 ): { readonly title: string; readonly detail: string; readonly tone: 'neutral' | 'info' | 'success' | 'warning' | 'error' } {
-  const workflows = workflowIds.length === 0 ? '无工作流引用' : workflowIds.join('、')
   if (workflowIds.length === 0) {
-    return {
-      title: '技能型 Agent',
-      detail: '在 DSH 会话中按需执行，当前 DAG 未引用该 Agent',
-      tone: 'neutral',
-    }
+    return { title: '技能型', detail: '', tone: 'neutral' }
   }
   if (loading && stats === null) {
-    return { title: '加载运行记录…', detail: workflows, tone: 'neutral' }
+    return { title: '加载运行记录…', detail: '', tone: 'neutral' }
   }
   if (error !== '') {
     return { title: '运行记录加载失败', detail: error, tone: 'error' }
   }
   if (stats === null || stats.total === 0) {
-    return { title: '暂无运行记录', detail: workflows, tone: 'neutral' }
+    return { title: '暂无运行记录', detail: '', tone: 'neutral' }
   }
   if (stats.running > 0) {
-    return { title: `${stats.running} 个运行中`, detail: `${workflows} · 累计 ${stats.total} 次`, tone: 'info' }
+    return { title: `${stats.running} 个运行中`, detail: '', tone: 'info' }
   }
   if (stats.failed > 0) {
-    return { title: `${stats.failed} 次失败记录`, detail: `${workflows} · 完成 ${stats.completed} 次`, tone: 'warning' }
+    return { title: '有失败记录', detail: '', tone: 'warning' }
   }
-  return { title: `已完成 ${stats.completed} 次`, detail: `${workflows} · 累计 ${stats.total} 次`, tone: 'success' }
+  return { title: '运行正常', detail: '', tone: 'success' }
 }
 
 function buildTrend(monitor: MonitorResponse | null): TrendDay[] {
@@ -1121,15 +1112,14 @@ function shortDate(date: string): string {
   return date.slice(5).replace('-', '/')
 }
 
-function formatTimestamp(value: string): string {
+function formatTimestamp(value: string, includeSeconds = true): string {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return '—'
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
   const hour = String(date.getHours()).padStart(2, '0')
   const minute = String(date.getMinutes()).padStart(2, '0')
-  const second = String(date.getSeconds()).padStart(2, '0')
-  return `${month}/${day} ${hour}:${minute}:${second}`
+  return `${month}/${day} ${hour}:${minute}${includeSeconds ? `:${String(date.getSeconds()).padStart(2, '0')}` : ''}`
 }
 
 /**

@@ -206,7 +206,7 @@ export type Config = PresetDefinition
 
 - `inject`: `loader` · `sessionProjections` · `agents`
 - `refs`: `Volatile` (`@deepseek-ai/cordis`)
-- `source`: [`packages/preset/agent-preset-registry/src/preset.ts:13`](../packages/preset/agent-preset-registry/src/preset.ts)
+- `source`: [`packages/preset/agent-preset-registry/src/preset.ts:15`](../packages/preset/agent-preset-registry/src/preset.ts)
 
 ```ts config-catalog
 /** Registry selection policy. */
@@ -3251,6 +3251,8 @@ export interface Config {
   agentsHome?: string
   /** Additional skill roots scanned after project roots and before user roots. */
   customSkillDirs?: string[]
+  /** JSON file listing skill names hidden from every filesystem root. */
+  disabledSkillsFile?: string
   /** Whether host-local skill roots are watched for catalog changes. */
   watch?: boolean
   /** Whether Chokidar uses polling instead of native filesystem events. */
@@ -4741,6 +4743,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 <!-- BEGIN GENERATED config-catalog:no-config -->
 | `package` | `inject` | `source` |
 | --- | --- | --- |
+| `@agentops/dsh-ui-capability` | — | [`packages/agentops/ui-capability/src/index.ts`](../packages/agentops/ui-capability/src/index.ts) |
 | `@agentops/dsh-workspace-layout` | — | [`packages/agentops/workspace-layout/src/index.ts`](../packages/agentops/workspace-layout/src/index.ts) |
 | `@deepseek-ai/dsh-acp-app` | `cmdlineArgs` | [`packages/bundle/acp-app/src/index.ts`](../packages/bundle/acp-app/src/index.ts) |
 | `@deepseek-ai/dsh-agent` | `sessionProjections` | [`packages/core/agent/src/index.ts`](../packages/core/agent/src/index.ts) |
@@ -4895,12 +4898,16 @@ Imported as libraries by other packages; a `cordis.yml` cannot load them.
 <!-- BEGIN GENERATED config-catalog:library -->
 | `package` | `inject` | `source` |
 | --- | --- | --- |
+| `@agentops/dsh-browser` | — | [`packages/agentops/browser/src/index.ts`](../packages/agentops/browser/src/index.ts) |
 | `@agentops/dsh-bundle` | — | [`packages/agentops/bundle/src/index.ts`](../packages/agentops/bundle/src/index.ts) |
+| `@agentops/dsh-capability` | — | [`packages/agentops/capability/src/index.ts`](../packages/agentops/capability/src/index.ts) |
 | `@agentops/dsh-contracts` | — | [`packages/agentops/contracts/src/index.ts`](../packages/agentops/contracts/src/index.ts) |
 | `@agentops/dsh-dag` | — | [`packages/agentops/dag/src/index.ts`](../packages/agentops/dag/src/index.ts) |
 | `@agentops/dsh-db` | — | [`packages/agentops/db/src/index.ts`](../packages/agentops/db/src/index.ts) |
+| `@agentops/dsh-deployment` | — | [`packages/agentops/deployment/src/index.ts`](../packages/agentops/deployment/src/index.ts) |
 | `@agentops/dsh-host` | — | [`packages/agentops/host/src/index.ts`](../packages/agentops/host/src/index.ts) |
 | `@agentops/dsh-knowledge` | — | [`packages/agentops/knowledge/src/index.ts`](../packages/agentops/knowledge/src/index.ts) |
+| `@agentops/dsh-log-collection` | — | [`packages/agentops/log-collection/src/index.ts`](../packages/agentops/log-collection/src/index.ts) |
 | `@agentops/dsh-security` | — | [`packages/agentops/security/src/index.ts`](../packages/agentops/security/src/index.ts) |
 | `@agentops/dsh-task` | — | [`packages/agentops/task/src/index.ts`](../packages/agentops/task/src/index.ts) |
 | `@agentops/dsh-workflow-compiler` | — | [`packages/agentops/workflow-compiler/src/index.ts`](../packages/agentops/workflow-compiler/src/index.ts) |

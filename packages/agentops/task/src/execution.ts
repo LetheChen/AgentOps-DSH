@@ -88,6 +88,7 @@ export function presetForTask(
  * @param sessionId - newly created Session id.
  * @param context - project workspace and execution scope.
  * @param agentPreset - selected Agent preset.
+ * @param leaseId - lease that authorizes this execution.
  * @returns prompt text.
  */
 export function buildTaskExecutionPrompt(
@@ -108,7 +109,7 @@ export function buildTaskExecutionPrompt(
     `execution_scope_id: ${context.scopeId}`,
     `lease_id: ${leaseId}`,
     `agent_preset: ${agentPreset}`,
-    `execution_backend: ${context.executionBackend ?? 'auto'}`,
+    `execution_backend: ${context.executionBackend}`,
     `标题: ${task.title}`,
     `描述: ${task.description}`,
     `类型: ${task.taskType}`,
@@ -130,6 +131,9 @@ export function buildTaskExecutionPrompt(
  * Create the exact browser route handler for launching task execution.
  * @param service - task write authority.
  * @param controller - DSH Session controller, or undefined when unavailable.
+ * @param permissions - optional controller applying execution permissions to the new Session.
+ * @param agents - optional registry resolving the just-created live Agent.
+ * @param resolveExecutionBackend - optional resolver picking the execution backend for a preset.
  * @returns fetch handler.
  */
 export function createTaskExecutionHandler(
@@ -171,7 +175,7 @@ export function createTaskExecutionHandler(
       }
 
       const agentPreset = body.agent_preset ?? dispatch.agentPreset
-      const executionBackend = resolveExecutionBackend?.(agentPreset) ?? baseExecutionContext.executionBackend ?? 'auto'
+      const executionBackend = resolveExecutionBackend?.(agentPreset) ?? baseExecutionContext.executionBackend
       const executionContext: TaskExecutionContext = { ...baseExecutionContext, executionBackend }
       const createRequest: SessionCreateRequest = {
         agentPreset,
@@ -255,7 +259,7 @@ export function createTaskExecutionHandler(
           scopeId: executionContext.scopeId,
           leaseId: run.lease.leaseId,
           agentPreset,
-          executionBackend: executionContext.executionBackend ?? 'auto',
+          executionBackend: executionContext.executionBackend,
         },
       }
       return jsonResponse(result, 200)
@@ -266,7 +270,7 @@ export function createTaskExecutionHandler(
 }
 
 async function parseBody(request: Request): Promise<TaskExecutionLaunchBody> {
-  const raw = await request.json()
+  const raw: unknown = await request.json()
   if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
     throw new Error('body must be a JSON object')
   }
@@ -276,7 +280,7 @@ async function parseBody(request: Request): Promise<TaskExecutionLaunchBody> {
     throw new Error('if_version must be a non-negative integer')
   }
   const role = value.role
-  if (role !== undefined && !['main_execution', 'validation', 'discussion'].includes(String(role))) {
+  if (role !== undefined && (typeof role !== 'string' || !['main_execution', 'validation', 'discussion'].includes(role))) {
     throw new Error('invalid role')
   }
   const roleValue = role === undefined ? undefined : (role as TaskExecutionLaunchBody['role'])

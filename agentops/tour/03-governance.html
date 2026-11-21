@@ -60,7 +60,7 @@
       <h1>层层委派之后，<br><em>靠边界而不是靠自觉</em></h1>
     </div>
     <div class="gov-side-head">
-      <p class="lede">治理不是一句“模型会遵守”。这里有四个真实的执行边界：Manager 不碰业务工具，workflow-owning Agent 只能跑被钉定的 DAG，SQL 只允许受控只读查询，运行语义则明确暴露已知限制。</p>
+      <p class="lede">治理不是一句“模型会遵守”。这里有四个真实的执行边界：SupAgent 不碰业务工具，workflow-owning Agent 只能跑被钉定的 DAG，SQL 只允许受控只读查询，运行语义则明确暴露已知限制。</p>
       <div class="receipt" id="receipt"><i></i><span id="receiptText">第 2 章回执尚未到达</span></div>
     </div>
   </header>
@@ -78,14 +78,14 @@
         <div class="g-head"><span class="g-no">01</span><span class="g-title"><h2>委派边界</h2><small>ENTRY AGENT · LEAST PRIVILEGE</small></span><span class="g-badge">DEPTH 1</span></div>
         <div class="g-body">
           <div class="boundary">
-            <span class="boundary-box"><span>MANAGER CAN</span><b>subagent · 汇总 · 展示</b><em>编排，不执行</em></span>
+            <span class="boundary-box"><span>SUPAGENT CAN</span><b>subagent · 汇总 · 展示</b><em>编排，不执行</em></span>
             <span class="boundary-arrow">→</span>
             <span class="boundary-box hot"><span>PRESET ALLOWLIST</span><b>smart_query</b><em>maxDepth: 1 · 一层委派</em></span>
           </div>
           <div class="rules">
-            <div class="rule"><i>1</i><span><b>Manager 不持有业务工具。</b> <code>sql_query</code>、<code>describe_database</code>、审批和运维写工具都在 denied_tools。</span></div>
+            <div class="rule"><i>1</i><span><b>SupAgent 不持有业务工具。</b> <code>sql_query</code>、<code>describe_database</code>、审批和运维写工具都在 denied_tools。</span></div>
             <div class="rule"><i>2</i><span><b>只能派白名单里的 Agent。</b> 不允许模型虚构 preset；一次任务派一层，子代理不能继续转派。</span></div>
-            <div class="rule"><i>3</i><span><b>失败不能由 Manager 代跑。</b> 业务 Agent 失败时只如实汇报原因和下一步建议。</span></div>
+            <div class="rule"><i>3</i><span><b>失败不能由 SupAgent 代跑。</b> 业务 Agent 失败时只如实汇报原因和下一步建议。</span></div>
           </div>
           <div class="g-foot"><code>manager.yaml:25-40,52-73</code><span>OPEN EVIDENCE ↗</span></div>
         </div>
@@ -102,7 +102,7 @@
           <div class="rules">
             <div class="rule"><i>1</i><span><b>preset 钉定工具边界。</b> <code>ownedWorkflowId: smart-query</code>，只暴露 <code>dag_run</code> 与 <code>list_runs</code>。</span></div>
             <div class="rule"><i>2</i><span><b>模型无法换工作流。</b> 即使传 <code>workflowId</code> / <code>yaml</code>，固定 workflow 解析仍以 preset 为准。</span></div>
-            <div class="rule"><i>3</i><span><b>节点不能递归启动 DAG。</b> Manager depth 0 → smart_query depth 1 → node depth 2；depth &gt; 1 的 <code>dag_run</code> 被拒绝。</span></div>
+            <div class="rule"><i>3</i><span><b>节点不能递归启动 DAG。</b> SupAgent depth 0 → smart_query depth 1 → node depth 2；depth &gt; 1 的 <code>dag_run</code> 被拒绝。</span></div>
           </div>
           <div class="g-foot"><code>dsh.ts:202-242,675-704</code><span>OPEN EVIDENCE ↗</span></div>
         </div>
@@ -147,7 +147,7 @@
       <section class="panel evidence">
         <div class="panel-head"><div class="panel-title"><span class="dot"></span>证据检查器 <span class="panel-sub">SOURCE-BACKED</span></div><span class="chip" id="evKind">POLICY</span></div>
         <div class="ev-body">
-          <div class="ev-top"><div><h2 id="evTitle">委派边界</h2><small id="evSub">Manager 只编排，不执行</small></div><span class="ev-badge" id="evBadge">ENFORCED</span></div>
+          <div class="ev-top"><div><h2 id="evTitle">委派边界</h2><small id="evSub">SupAgent 只编排，不执行</small></div><span class="ev-badge" id="evBadge">ENFORCED</span></div>
           <div class="ev-summary" id="evSummary"></div>
           <div class="ev-label">ENFORCEMENT POINTS</div>
           <div class="ev-rules" id="evRules"></div>

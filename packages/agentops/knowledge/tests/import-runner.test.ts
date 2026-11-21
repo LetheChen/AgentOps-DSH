@@ -25,7 +25,7 @@ function withRepo(run: (repo: SqliteKnowledgeRepository, service: KnowledgeServi
   const path = join(dir, 'kb.db')
   const repo = new SqliteKnowledgeRepository(path)
   const service = KnowledgeService.open(repo)
-  service.addSpace({ id: 'finance', name: '财务', visibility: 'shared', readers: [] })
+  service.addSpace({ id: 'finance', name: '财务', description: '', visibility: 'shared', readers: [] })
   const runner = new ImportRunner(service, repo)
   return run(repo, service, runner).finally(() => {
     repo.close()
@@ -33,7 +33,7 @@ function withRepo(run: (repo: SqliteKnowledgeRepository, service: KnowledgeServi
   })
 }
 
-test('执行导入：只读可导入项，重复项记为跳过', async () => {
+void test('执行导入：只读可导入项，重复项记为跳过', async () => {
   await withRepo(async (repo, service, runner) => {
     const job = await runner.execute(plan(), async path => ({ text: `内容 ${path}` }))
     assert.equal(job.status, 'completed')
@@ -46,7 +46,7 @@ test('执行导入：只读可导入项，重复项记为跳过', async () => {
   })
 })
 
-test('单个文件读取失败：其余继续，任务标记 partial 并记录错误', async () => {
+void test('单个文件读取失败：其余继续，任务标记 partial 并记录错误', async () => {
   await withRepo(async (repo, service, runner) => {
     const job = await runner.execute(plan().slice(0, 2), async (path) => {
       if (path.endsWith('b.md')) throw new Error('权限不足')
@@ -61,7 +61,7 @@ test('单个文件读取失败：其余继续，任务标记 partial 并记录�
   })
 })
 
-test('回滚只删除该任务导入的文档，其它文档不受影响', async () => {
+void test('回滚只删除该任务导入的文档，其它文档不受影响', async () => {
   await withRepo(async (repo, service, runner) => {
     service.addDocument({
       id: 'manual', spaceId: 'finance', title: '手工文档', mime: 'text/markdown',
@@ -79,7 +79,7 @@ test('回滚只删除该任务导入的文档，其它文档不受影响', async
   })
 })
 
-test('dbPath 解析：配置 > 环境变量 > DSH_HOME 默认', () => {
+void test('dbPath 解析：配置 > 环境变量 > DSH_HOME 默认', () => {
   assert.equal(resolveKnowledgeDbPath({ dbPath: '/x/kb.db', readableSpaces: [], allowedImportRoots: [] }), '/x/kb.db')
   assert.equal(
     resolveKnowledgeDbPath({ readableSpaces: [], allowedImportRoots: [] }, { AGENTOPS_KNOWLEDGE_DB: '/env/kb.db' }, '/home/u'),

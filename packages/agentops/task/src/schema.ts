@@ -944,7 +944,10 @@ export function buildSchemaStatements(): string[] {
 /** Complete schema as one executable script, for inspection and snapshots. */
 export const TASK_SCHEMA_SQL = `${buildSchemaStatements().map(sql => `${sql};`).join('\n')}\n`
 
-/** Upgrade a v2 database by adding the task lease control-plane table. */
+/**
+ * Upgrade a v2 database by adding the task lease control-plane table.
+ * @param db - the SQLite database to upgrade.
+ */
 export function upgradeTaskSchemaV2ToV3(db: DatabaseSync): void {
   db.exec(`CREATE TABLE task_leases (
     lease_id        TEXT PRIMARY KEY,

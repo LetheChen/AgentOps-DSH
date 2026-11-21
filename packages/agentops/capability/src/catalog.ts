@@ -9,8 +9,6 @@
 
 import type { CapabilityDefinition, CapabilityToolView, CapabilityTransport } from './types.ts'
 
-const NO_INSTANCE_FIELD: readonly { key: string; type: 'string'; label: string; required: boolean }[] = []
-
 interface CredentialFieldOptions {
   readonly placeholder?: string
   readonly description?: string
@@ -33,6 +31,7 @@ interface FieldOptions {
   readonly placeholder?: string
   readonly description?: string
   readonly options?: readonly string[]
+  readonly default?: unknown
 }
 
 const f = (
@@ -40,7 +39,7 @@ const f = (
   label: string,
   type: 'string' | 'number' | 'boolean' | 'array' | 'select' = 'string',
   requiredOrOptions: boolean | FieldOptions = true,
-): { key: string; type: 'string' | 'number' | 'boolean' | 'array' | 'select'; label: string; required: boolean; placeholder?: string; description?: string; options?: readonly string[] } => {
+): { key: string; type: 'string' | 'number' | 'boolean' | 'array' | 'select'; label: string; required: boolean; placeholder?: string; description?: string; options?: readonly string[]; default?: unknown } => {
   const options = typeof requiredOrOptions === 'boolean' ? { required: requiredOrOptions } : requiredOrOptions
   return {
     key,
@@ -50,8 +49,28 @@ const f = (
     ...(options.placeholder === undefined ? {} : { placeholder: options.placeholder }),
     ...(options.description === undefined ? {} : { description: options.description }),
     ...(options.options === undefined ? {} : { options: options.options }),
+    ...(options.default === undefined ? {} : { default: options.default }),
   }
 }
+
+const SEEYON_AUTH_TEMPLATE = JSON.stringify({
+  type: 'token-endpoint',
+  token_url: '/seeyon/rest/token',
+  token_method: 'POST',
+  token_params_in: 'json',
+  token_params: {
+    userName: 'config.username',
+    password: 'secret',
+    loginName: 'config.login_name',
+  },
+  token_path: 'id',
+  identity_path: 'bindingUser',
+  default_ttl_seconds: 900,
+  token_invalid_values: ['-1'],
+  token_request_headers: { accept: 'application/json' },
+  transport: 'header',
+  token_name: 'token',
+}, null, 2)
 
 /** The ten first-party capabilities shown by the P0 capability center. */
 export const BUILTIN_CAPABILITIES: readonly CapabilityDefinition[] = [
@@ -62,7 +81,15 @@ export const BUILTIN_CAPABILITIES: readonly CapabilityDefinition[] = [
     provider: 'seeyon',
     description: '致远 OA 审批、事项与表单接口。',
     transports: ['rest'],
-    configSchema: [f('base_url', 'OA 地址'), f('username', '服务账号'), credentialField('OA 密码')],
+    configSchema: [
+      f('base_url', 'OA 地址', 'string', { placeholder: 'https://oa.example.com' }),
+      f('username', 'REST 服务账号'),
+      f('login_name', '绑定登录名', 'string', { required: false, description: '用于换取绑定该用户的 token。' }),
+      f('member_code', '人员编码', 'string', { required: false, description: '待办/已办路由使用的 OA 人员编码。' }),
+      f('member_id', '成员 ID', 'string', { required: false, description: '仅待办路由可在没有人员编码时使用。' }),
+      f('auth', '认证配置 JSON', 'string', { description: '必填。声明 token 获取、身份绑定、失效值与传输方式。', default: SEEYON_AUTH_TEMPLATE }),
+      credentialField('OA 密码'),
+    ],
     riskLevel: 'medium',
     authorizationCapabilityId: 'oa',
     supportsInstances: true,
@@ -75,7 +102,17 @@ export const BUILTIN_CAPABILITIES: readonly CapabilityDefinition[] = [
     provider: 'feishu',
     description: '读写飞书云文档、电子表格与云空间文件。',
     transports: ['rest', 'oauth', 'mcp'],
-    configSchema: [f('app_id', 'App ID'), f('app_secret', 'App Secret'), f('base_url', 'API 地址', 'string', false)],
+    configSchema: [
+      f('app_id', 'App ID'),
+      f('base_url', 'API 地址', 'string', {
+        required: false,
+        placeholder: 'https://open.feishu.cn',
+        description: '仅支持 https://open.feishu.cn 或 https://open.larksuite.com；留空使用飞书。',
+      }),
+      credentialField('App Secret', {
+        description: '飞书开放平台企业自建应用的 App Secret；加密保存。',
+      }),
+    ],
     riskLevel: 'medium',
     authorizationCapabilityId: 'feishu-docs',
     supportsInstances: true,
@@ -158,13 +195,13 @@ export const BUILTIN_CAPABILITIES: readonly CapabilityDefinition[] = [
     capabilityId: 'browser',
     name: '浏览器能力',
     category: 'tool',
-    provider: 'browser',
-    description: '项目内置受管浏览器工具：Playwright + 系统 Chrome，固定动作 open/title/screenshot。',
-    transports: ['skill', 'cli', 'mcp'],
-    configSchema: [f('allowed_hosts', '允许访问主机', 'array'), f('headless', '无头模式', 'boolean', false), f('chrome_path', 'Chrome 路径', 'string', false)],
+    provider: 'dsh-browser-use',
+    description: 'DSH 原生浏览器能力：Chrome DevTools MCP provider，按 Agent/Session 隔离浏览器状态。',
+    transports: ['mcp'],
+    configSchema: [],
     riskLevel: 'high',
     authorizationCapabilityId: 'browser',
-    supportsInstances: true,
+    supportsInstances: false,
     credentialRequired: false,
   },
   {
@@ -203,16 +240,29 @@ export const BUILTIN_CAPABILITIES: readonly CapabilityDefinition[] = [
     credentialRequired: true,
   },
   {
-    capabilityId: 'log-collection',
-    name: '日志采集',
-    category: 'observability',
+    capabilityId: 'artifact-build',
+    name: 'Artifact Build',
+    category: 'automation',
     provider: 'agentops',
-    description: '采集本地或远程日志；远程采集复用 SSH 服务器，不单独创建日志采集实例。',
+    description: 'Local artifact build instances that write release manifests without production SSH credentials.',
     transports: ['cli'],
-    configSchema: NO_INSTANCE_FIELD,
+    configSchema: [],
     riskLevel: 'medium',
-    authorizationCapabilityId: 'ssh',
-    supportsInstances: false,
+    authorizationCapabilityId: 'artifact-build',
+    supportsInstances: true,
+    credentialRequired: false,
+  },
+  {
+    capabilityId: 'deployment',
+    name: 'Production Deployment',
+    category: 'automation',
+    provider: 'agentops',
+    description: 'SSH-backed production release instances with a durable journal, image backup, health checks, and rollback evidence.',
+    transports: ['cli'],
+    configSchema: [],
+    riskLevel: 'high',
+    authorizationCapabilityId: 'deployment',
+    supportsInstances: true,
     credentialRequired: false,
   },
 ]
@@ -244,52 +294,40 @@ export const BUILTIN_CAPABILITY_TOOLS: readonly CapabilityToolView[] = [
   },
   {
     toolId: 'log_query', displayName: '日志查询', description: '扫描本地或远程日志源，提取错误、时间和级别。',
-    capabilityId: 'log-collection', capabilityTransport: 'cli', authorizationCapabilityId: 'ssh',
+    capabilityId: 'ssh', capabilityTransport: 'cli', authorizationCapabilityId: 'ssh',
     requiresCapabilityInstance: true, handlerModule: '@agentops/dsh-log', handlerFunction: 'log_query',
     allowedDomains: ['smart_ops'], allowedAgents: [], deniedAgents: [],
     runtimeAvailable: false, runtimeNote: '当前 DSH 仓库尚未提供 log_query handler，接口保留为待接线。', declarationKind: 'runtime_tool',
   },
   {
     toolId: 'log_collection_cli', displayName: '日志采集 CLI', description: '本地与远程日志采集接口声明。',
-    capabilityId: 'log-collection', capabilityTransport: 'cli', authorizationCapabilityId: 'ssh',
+    capabilityId: 'ssh', capabilityTransport: 'cli', authorizationCapabilityId: 'ssh',
     requiresCapabilityInstance: true, handlerModule: 'metadata', handlerFunction: 'cli',
     allowedDomains: ['smart_ops'], allowedAgents: [], deniedAgents: [],
     runtimeAvailable: false, runtimeNote: METADATA_NOTE, declarationKind: 'interface',
   },
   {
-    toolId: 'browser_open', displayName: '打开网页', description: '受管浏览器打开页面，并遵守实例 allowed_hosts 访问边界。',
-    capabilityId: 'browser', capabilityTransport: 'cli', authorizationCapabilityId: 'browser',
-    requiresCapabilityInstance: true, handlerModule: '@agentops/dsh-browser', handlerFunction: 'browser_open',
-    allowedDomains: ['smart_ops'], allowedAgents: [], deniedAgents: [],
-    runtimeAvailable: false, runtimeNote: '当前 DSH 仓库尚未提供 browser_open handler，接口保留为待接线。', declarationKind: 'runtime_tool',
-  },
-  {
-    toolId: 'browser_title', displayName: '读取页面标题', description: '读取当前受管浏览器页面的标题。',
-    capabilityId: 'browser', capabilityTransport: 'cli', authorizationCapabilityId: 'browser',
-    requiresCapabilityInstance: true, handlerModule: '@agentops/dsh-browser', handlerFunction: 'browser_title',
-    allowedDomains: ['smart_ops'], allowedAgents: [], deniedAgents: [],
-    runtimeAvailable: false, runtimeNote: '当前 DSH 仓库尚未提供 browser_title handler，接口保留为待接线。', declarationKind: 'runtime_tool',
-  },
-  {
-    toolId: 'browser_screenshot', displayName: '页面截图', description: '对当前受管浏览器页面截图，供验收或留证。',
-    capabilityId: 'browser', capabilityTransport: 'cli', authorizationCapabilityId: 'browser',
-    requiresCapabilityInstance: true, handlerModule: '@agentops/dsh-browser', handlerFunction: 'browser_screenshot',
-    allowedDomains: ['smart_ops'], allowedAgents: [], deniedAgents: [],
-    runtimeAvailable: false, runtimeNote: '当前 DSH 仓库尚未提供 browser_screenshot handler，接口保留为待接线。', declarationKind: 'runtime_tool',
-  },
-  {
-    toolId: 'browser_mcp', displayName: '浏览器控制 MCP', description: '浏览器自动化 MCP Server 接口声明。',
-    capabilityId: 'browser', capabilityTransport: 'mcp', authorizationCapabilityId: 'browser',
-    requiresCapabilityInstance: true, handlerModule: 'metadata', handlerFunction: 'mcp',
-    allowedDomains: ['smart_ops'], allowedAgents: [], deniedAgents: [],
-    runtimeAvailable: false, runtimeNote: METADATA_NOTE, declarationKind: 'interface',
-  },
-  {
-    toolId: 'oa_rest', displayName: '致远 OA REST', description: '致远 OA 审批、事项与表单 REST 接口声明。',
+    toolId: 'oa_rest', displayName: '致远 OA 事项查询', description: '通过能力实例的 token 认证查询协同待办与已办事项。',
     capabilityId: 'oa', capabilityTransport: 'rest', authorizationCapabilityId: 'oa',
-    requiresCapabilityInstance: true, handlerModule: 'metadata', handlerFunction: 'rest',
-    allowedDomains: ['smart_ops'], allowedAgents: [], deniedAgents: [],
-    runtimeAvailable: false, runtimeNote: METADATA_NOTE, declarationKind: 'interface',
+    requiresCapabilityInstance: true, handlerModule: '@agentops/dsh-capability/oa-tools', handlerFunction: 'oa_affair_query',
+    allowedDomains: ['oa_query', 'smart_ops'], allowedAgents: [], deniedAgents: [],
+    runtimeAvailable: true, runtimeNote: '', declarationKind: 'runtime_tool',
+  },
+  {
+    toolId: 'oa_affair_detail', displayName: '致远 OA 事项详情', description: '按 object_id 查询流程状态、审批完成时间和业务表单字段。',
+    capabilityId: 'oa', capabilityTransport: 'rest', authorizationCapabilityId: 'oa',
+    requiresCapabilityInstance: true, handlerModule: '@agentops/dsh-capability/oa-tools', handlerFunction: 'oa_affair_detail',
+    allowedDomains: ['oa_query', 'smart_ops'], allowedAgents: [], deniedAgents: [],
+    runtimeAvailable: true, runtimeNote: '', declarationKind: 'runtime_tool',
+  },
+  {
+    toolId: 'browser_use_chrome_devtools_mcp', displayName: 'DSH 原生浏览器', description: '由 DSH browser-use 的 Chrome DevTools MCP provider 按 Agent/Session 动态注册。',
+    capabilityId: 'browser', capabilityTransport: 'mcp', authorizationCapabilityId: 'browser',
+    requiresCapabilityInstance: false, handlerModule: '@deepseek-ai/dsh-experimental-browser-use-chrome-devtools-mcp', handlerFunction: 'mcp',
+    allowedDomains: [], allowedAgents: [], deniedAgents: [],
+    runtimeAvailable: true,
+    runtimeNote: '实际模型工具名为 mcp__chrome-devtools-mcp__*；浏览器实例按 Agent/Session 隔离。',
+    declarationKind: 'runtime_tool',
   },
   {
     toolId: 'feishu_docs_rest', displayName: '飞书文档 REST', description: '飞书云文档、电子表格、云空间与知识库 REST 接口声明。',
@@ -297,6 +335,20 @@ export const BUILTIN_CAPABILITY_TOOLS: readonly CapabilityToolView[] = [
     requiresCapabilityInstance: true, handlerModule: 'metadata', handlerFunction: 'rest',
     allowedDomains: ['smart_ops'], allowedAgents: [], deniedAgents: [],
     runtimeAvailable: false, runtimeNote: METADATA_NOTE, declarationKind: 'interface',
+  },
+  {
+    toolId: 'feishu_docs_list', displayName: '飞书云文档目录', description: '列出能力实例绑定的飞书云空间目录，可递归返回子文件夹与文档 token。',
+    capabilityId: 'feishu-docs', capabilityTransport: 'rest', authorizationCapabilityId: 'feishu-docs',
+    requiresCapabilityInstance: true, handlerModule: '@agentops/dsh-capability/feishu-tools', handlerFunction: 'feishu_docs_list',
+    allowedDomains: ['oa_query'], allowedAgents: [], deniedAgents: [],
+    runtimeAvailable: true, runtimeNote: '', declarationKind: 'runtime_tool',
+  },
+  {
+    toolId: 'feishu_docs_read', displayName: '飞书云文档读取', description: '按 token、docx URL 或 wiki URL 读取飞书云文档正文。',
+    capabilityId: 'feishu-docs', capabilityTransport: 'rest', authorizationCapabilityId: 'feishu-docs',
+    requiresCapabilityInstance: true, handlerModule: '@agentops/dsh-capability/feishu-tools', handlerFunction: 'feishu_docs_read',
+    allowedDomains: ['oa_query'], allowedAgents: [], deniedAgents: [],
+    runtimeAvailable: true, runtimeNote: '', declarationKind: 'runtime_tool',
   },
   {
     toolId: 'feishu_docs_oauth', displayName: '飞书应用授权', description: '飞书应用 tenant_access_token / OAuth 凭证声明。',
@@ -361,16 +413,59 @@ export const BUILTIN_CAPABILITY_TOOLS: readonly CapabilityToolView[] = [
     allowedDomains: ['smart_ops'], allowedAgents: [], deniedAgents: [],
     runtimeAvailable: false, runtimeNote: METADATA_NOTE, declarationKind: 'interface',
   },
+  {
+    toolId: 'artifact_build', displayName: 'Artifact Build', description: 'Build a local release artifact and write its release manifest.',
+    capabilityId: 'artifact-build', capabilityTransport: 'cli', authorizationCapabilityId: 'artifact-build',
+    requiresCapabilityInstance: true, handlerModule: '@agentops/dsh-deployment', handlerFunction: 'artifact_build',
+    allowedDomains: ['smart_ops'], allowedAgents: [], deniedAgents: [],
+    runtimeAvailable: true, runtimeNote: '', declarationKind: 'runtime_tool',
+  },
+  {
+    toolId: 'deployment_plan', displayName: 'Deployment Plan', description: 'Verify a deployment instance and artifact without mutating production.',
+    capabilityId: 'deployment', capabilityTransport: 'cli', authorizationCapabilityId: 'deployment',
+    requiresCapabilityInstance: true, handlerModule: '@agentops/dsh-deployment', handlerFunction: 'deployment_plan',
+    allowedDomains: ['smart_ops'], allowedAgents: [], deniedAgents: [],
+    runtimeAvailable: true, runtimeNote: '', declarationKind: 'runtime_tool',
+  },
+  {
+    toolId: 'deployment_release', displayName: 'Deployment Release', description: 'Back up the current image, upload a verified artifact, execute the release, and check health.',
+    capabilityId: 'deployment', capabilityTransport: 'cli', authorizationCapabilityId: 'deployment',
+    requiresCapabilityInstance: true, handlerModule: '@agentops/dsh-deployment', handlerFunction: 'deployment_release',
+    allowedDomains: ['smart_ops'], allowedAgents: [], deniedAgents: [],
+    runtimeAvailable: true, runtimeNote: '', declarationKind: 'runtime_tool',
+  },
+  {
+    toolId: 'deployment_status', displayName: 'Deployment Status', description: 'Read the durable deployment journal and live image id.',
+    capabilityId: 'deployment', capabilityTransport: 'cli', authorizationCapabilityId: 'deployment',
+    requiresCapabilityInstance: true, handlerModule: '@agentops/dsh-deployment', handlerFunction: 'deployment_status',
+    allowedDomains: ['smart_ops'], allowedAgents: [], deniedAgents: [],
+    runtimeAvailable: true, runtimeNote: '', declarationKind: 'runtime_tool',
+  },
+  {
+    toolId: 'deployment_rollback', displayName: 'Deployment Rollback', description: 'Roll back a recorded healthy application image without restoring the database.',
+    capabilityId: 'deployment', capabilityTransport: 'cli', authorizationCapabilityId: 'deployment',
+    requiresCapabilityInstance: true, handlerModule: '@agentops/dsh-deployment', handlerFunction: 'deployment_rollback',
+    allowedDomains: ['smart_ops'], allowedAgents: [], deniedAgents: [],
+    runtimeAvailable: true, runtimeNote: '', declarationKind: 'runtime_tool',
+  },
 ]
 
-/** List tool declarations, optionally for one capability. */
+/**
+ * List tool declarations, optionally for one capability.
+ * @param capabilityId - capability id to filter by; omit for every capability.
+ * @returns the matching tool declarations sorted by capability id and tool id.
+ */
 export function listCapabilityTools(capabilityId?: string): CapabilityToolView[] {
   return [...BUILTIN_CAPABILITY_TOOLS]
     .filter(item => capabilityId === undefined || item.capabilityId === capabilityId)
     .sort((left, right) => left.capabilityId.localeCompare(right.capabilityId) || left.toolId.localeCompare(right.toolId))
 }
 
-/** A catalogue row with its transports typed as capability transports. */
+/**
+ * A catalogue row with its transports typed as capability transports.
+ * @param transport - transport the capability must support.
+ * @returns the capabilities that offer that transport.
+ */
 export function capabilitiesByTransport(transport: CapabilityTransport): readonly CapabilityDefinition[] {
   return BUILTIN_CAPABILITIES.filter(item => item.transports.includes(transport))
 }

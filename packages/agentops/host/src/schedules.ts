@@ -109,7 +109,11 @@ export function readSchedules(file: string): { file: string; entries: ScheduleSu
   return { file, entries, missing: false }
 }
 
-/** Atomically replace the schedules file. */
+/**
+ * Atomically replace the schedules file.
+ * @param file - path to `schedules.yaml`.
+ * @param entries - the schedules to persist.
+ */
 export function writeSchedules(file: string, entries: readonly ScheduleSummary[]): void {
   mkdirSync(dirname(file), { recursive: true })
   const document = {
@@ -134,7 +138,11 @@ export function writeSchedules(file: string, entries: readonly ScheduleSummary[]
   renameSync(temp, file)
 }
 
-/** Validate an editable schedule input. */
+/**
+ * Validate an editable schedule input.
+ * @param input - the schedule fields to check.
+ * @returns the validation errors, empty when the input is valid.
+ */
 export function validateScheduleInput(input: ScheduleInput): string[] {
   const errors: string[] = []
   if (!ID_PATTERN.test(input.id)) errors.push('id 必须是 1-64 位字母、数字、点、下划线或连字符')
@@ -145,7 +153,11 @@ export function validateScheduleInput(input: ScheduleInput): string[] {
   return errors
 }
 
-/** Validate a five-field Vixie cron expression. */
+/**
+ * Validate a five-field Vixie cron expression.
+ * @param expression - the cron expression to check.
+ * @returns the validation errors, empty when the expression is valid.
+ */
 export function validateCron(expression: string): string[] {
   const fields = expression.trim().split(/\s+/)
   if (fields.length !== 5) return ['必须是 5 段：minute hour day-of-month month day-of-week']
@@ -166,7 +178,13 @@ export function validateCron(expression: string): string[] {
   return errors
 }
 
-/** Whether a cron expression matches the supplied instant in its time zone. */
+/**
+ * Whether a cron expression matches the supplied instant in its time zone.
+ * @param expression - the five-field cron expression to evaluate.
+ * @param instant - the instant to test.
+ * @param timezone - the IANA time zone the expression is evaluated in.
+ * @returns true when the expression fires at that instant.
+ */
 export function matchesCron(expression: string, instant: Date, timezone: string): boolean {
   const fields = expression.trim().split(/\s+/)
   if (fields.length !== 5 || !validTimezone(timezone)) return false
@@ -216,7 +234,10 @@ export class ScheduleRuntime {
     this.#timer = undefined
   }
 
-  /** Evaluate every enabled schedule for the current minute. */
+  /**
+   * Evaluate every enabled schedule for the current minute.
+   * @param now - the instant schedules are evaluated against.
+   */
   async tick(now = new Date()): Promise<void> {
     const { entries } = readSchedules(this.#file)
     for (const entry of entries) {
@@ -228,7 +249,12 @@ export class ScheduleRuntime {
     }
   }
 
-  /** Trigger one schedule immediately, regardless of enabled state. */
+  /**
+   * Trigger one schedule immediately, regardless of enabled state.
+   * @param id - the schedule to trigger.
+   * @param now - the instant recorded as the run time.
+   * @returns the id of the session the trigger started.
+   */
   async runNow(id: string, now = new Date()): Promise<{ sessionId: string }> {
     if (this.#running.has(id)) throw new Error(`schedule ${id} is already running`)
     const entry = readSchedules(this.#file).entries.find(item => item.id === id)
@@ -282,7 +308,12 @@ export class ScheduleRuntime {
   }
 }
 
-/** Register schedule read/write/run routes. */
+/**
+ * Register schedule read/write/run routes.
+ * @param ctx - the plugin context owning the connection.
+ * @param file - path to `schedules.yaml`.
+ * @param runtime - the trigger runtime, when run-now is available.
+ */
 export function registerSchedulesRoute(ctx: Context, file: string, runtime?: ScheduleRuntime): void {
   ctx.effect(() => ctx.connection.fetch.register({
     path: '/api/agentops/schedules',

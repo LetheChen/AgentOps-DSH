@@ -21,8 +21,9 @@ const profileDir = join(dshHome, 'profiles', 'web')
 const packagesDir = resolve('/app/packages/agentops')
 const linkRoot = join(profileDir, 'node_modules', '@agentops')
 
-const PACKAGES = ['host', 'knowledge', 'dag', 'task', 'vault', 'capability',
+const PACKAGES = ['browser', 'host', 'knowledge', 'dag', 'task', 'vault', 'capability',
   'log-collection',
+  'deployment',
   'ui-capability',
   'security',
   'db',
@@ -62,6 +63,7 @@ async function main() {
   await run('pnpm', [
     'dsh', 'web', '--port', '3080', '--no-open',
     '--patch', '/etc/agentops/agentops.patch.yml',
+    '--patch', '/app/packages/agentops/browser/cordis.patch.yml',
     '--patch', '/app/packages/agentops/bundle/presets/agents.generated.patch.yml',
   ])
 }

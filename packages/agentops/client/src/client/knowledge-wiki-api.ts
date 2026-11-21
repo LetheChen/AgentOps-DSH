@@ -101,6 +101,7 @@ export interface KnowledgeMemoryNode {
   readonly spaceName: string
   readonly title: string
   readonly summary: string
+  readonly tags: readonly string[]
   readonly updatedAt: string
   readonly version: number
   readonly pageType: WikiPageType | 'document'
@@ -212,6 +213,7 @@ export async function checkWikiDraft(draftId: string): Promise<WikiDraft> {
  * Publish a ready draft as a searchable Wiki page.
  * @param draftId - draft identity.
  * @param targetSpaceId - destination knowledge space.
+ * @param categoryPath - category path to file the page under.
  * @returns the published draft and page.
  */
 export function publishWikiDraft(

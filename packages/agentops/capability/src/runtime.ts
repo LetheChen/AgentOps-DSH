@@ -13,7 +13,10 @@ import { dshHomePath } from '@deepseek-ai/dsh-home-paths'
 import { CapabilityStore } from './store.ts'
 import type { CapabilityRuntime } from './types.ts'
 
-/** Open the production capability store at its deployment path. */
+/**
+ * Open the production capability store at its deployment path.
+ * @returns the store backed by the deployed capabilities database.
+ */
 export function openCapabilityRuntimeStore(): CapabilityStore {
   return new CapabilityStore(dshHomePath('agentops', 'capabilities.db'))
 }
@@ -79,6 +82,7 @@ export function resolveCapabilitiesForTool(
   return resolveCapabilitySetForTool(agentPreset, capabilityId, store).runtimes
 }
 
+/** Binding state and enabled instances resolved for one preset and capability. */
 export interface CapabilityToolResolution {
   /** True when this preset was configured in the center; false preserves legacy fallback. */
   readonly configured: boolean
@@ -91,6 +95,7 @@ export interface CapabilityToolResolution {
  * @param agentPreset - authenticated preset id.
  * @param capabilityId - capability family to list.
  * @param store - injected store for tests.
+ * @returns the configured state plus enabled runtime instances.
  */
 export function resolveCapabilitySetForTool(
   agentPreset: string,

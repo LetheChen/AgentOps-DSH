@@ -249,6 +249,49 @@ type ValidationResult<T> =
 
 Generated from source by `scripts/gen-cordis-catalog.ts` (verified fresh by `pnpm run verify-cordis-catalog` in doc-sync; regenerate with `pnpm run gen-cordis-catalog`) — the language sides differ only in locale-specific paired document paths. Signature blocks use a `ts cordis-catalog` fence and keep the original source JSDoc; dispatch modes are defined in the [primer](../cordis-primer.md#dispatch-modes), and the framework-inherited `ctx` API lives in [cordis-api/inherited.md](../cordis-api/inherited.md).
 
+<a id="ctxcapabilityruntime--capabilityruntimeservice"></a>
+
+### `ctx.capabilityRuntime` — `CapabilityRuntimeService`
+
+Root-owned runtime repository shared with preset-scoped tools.
+
+```ts cordis-catalog
+/**
+ * Resolve one preset's configured binding state and enabled capability instances.
+ * @param agentPreset - preset bound to the executing Agent.
+ * @param capabilityId - capability family requested by the tool.
+ * @returns configured state plus enabled runtime instances.
+ */
+resolveSet(agentPreset: string, capabilityId: string): CapabilityToolResolution
+
+/**
+ * Resolve one authorized runtime instance.
+ * @param agentPreset - preset bound to the executing Agent.
+ * @param capabilityId - capability family requested by the tool.
+ * @param requestedInstanceId - optional explicit instance id or alias.
+ * @returns the authorized instance and its opened credential.
+ */
+resolve(agentPreset: string, capabilityId: string, requestedInstanceId?: string): CapabilityRuntime
+```
+
+Source: [`packages/agentops/capability/src/runtime.ts`](../../packages/agentops/capability/src/runtime.ts)
+
+<a id="ctxdeployment--deploymentruntime"></a>
+
+### `ctx.deployment` — `DeploymentRuntime`
+
+Root-owned deployment journal and capability store.
+
+Source: [`packages/agentops/deployment/src/dsh.ts`](../../packages/agentops/deployment/src/dsh.ts)
+
+<a id="ctxlogcollection--logcollectionruntime"></a>
+
+### `ctx.logCollection` — `LogCollectionRuntime`
+
+Root-owned log collection service consumed by Agent-scoped tools.
+
+Source: [`packages/agentops/log-collection/src/dsh.ts`](../../packages/agentops/log-collection/src/dsh.ts)
+
 <a id="ctxworkflowcatalog--workflowcatalogservice"></a>
 
 ### `ctx.workflowCatalog` — `WorkflowCatalogService`

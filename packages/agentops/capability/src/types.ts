@@ -103,6 +103,11 @@ export interface CapabilityRuntime {
   readonly config: Readonly<Record<string, unknown>>
   readonly accessPolicy: Readonly<Record<string, unknown>>
   readonly secret: string | null
+  /**
+   * The revision stamp of the stored credential. A token minted from an older
+   * generation is not reused after the credential rotates.
+   */
+  readonly credentialGeneration: string
 }
 
 /** Stable capability error codes. */
@@ -114,3 +119,9 @@ export type CapabilityErrorCode =
   | 'CAPABILITY_CONFIG_INVALID'
   | 'CREDENTIAL_UNAVAILABLE'
   | 'CREDENTIAL_DECRYPT_FAILED'
+  | 'CAPABILITY_AUTH_INVALID'
+  | 'TOKEN_ACQUISITION_FAILED'
+  | 'TOKEN_INVALID'
+  | 'CAPABILITY_HTTP_FAILED'
+  | 'CAPABILITY_RESPONSE_INVALID'
+  | 'CAPABILITY_IDENTITY_UNBOUND'

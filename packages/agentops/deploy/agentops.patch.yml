@@ -18,7 +18,7 @@
     - id: agentops-knowledge
       name: '/app/packages/agentops/knowledge/lib/index.js'
       config:
-        readableSpaces: [finance, hr, ops, weekly, smart_query, project_analysis]
+        readableSpaces: [finance, hr, ops, office_docs, project_analysis, technical_docs, learning, smart_query, content_creation, review]
         allowedImportRoots: []
 
     - id: agentops-dag
@@ -36,6 +36,8 @@
       name: /app/packages/agentops/capability/lib/index.js
     - id: agentops-log-collection
       name: '/app/packages/agentops/log-collection/lib/index.js'
+    - id: agentops-deployment
+      name: '/app/packages/agentops/deployment/lib/index.js'
     - id: agentops-ui-capability
       name: '/app/packages/agentops/ui-capability/lib/index.js'
     - id: agentops-db
@@ -62,7 +64,7 @@
           - id: agentops-knowledge-tools
             name: '@agentops/dsh-knowledge/tools'
             config:
-              readableSpaces: [finance, hr, ops, weekly, smart_query, project_analysis]
+              readableSpaces: [finance, hr, ops, office_docs, project_analysis, technical_docs, learning, smart_query, content_creation, review]
               allowedImportRoots: []
           - id: agentops-dag-tools
             name: '@agentops/dsh-dag/tools'

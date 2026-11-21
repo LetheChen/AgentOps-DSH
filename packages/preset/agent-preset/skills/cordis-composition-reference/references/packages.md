@@ -15,6 +15,7 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 | Package | Config | Description |
 |---|---|---|
 | `@agentops/dsh-client` | yes | AgentOps client plugins: panels and status surfaces mounted into the DSH Web GUI. |
+| `@agentops/dsh-ui-capability` | no | AgentOps capability-center panel for the DSH Web GUI. |
 | `@agentops/dsh-vault` | yes | AgentOps credential vault: connection metadata in SQLite, secrets sealed with AES-256-GCM. |
 | `@agentops/dsh-workflow-catalog` | yes | Workflow definition catalogue for AgentOps: list, read, validate, compile, and compare-and-swap save. |
 | `@agentops/dsh-workspace-layout` | no | Canonical AgentOps workspace paths for agent and workflow artifacts. |

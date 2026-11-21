@@ -9,10 +9,10 @@
     delegation: {
       kind: 'POLICY',
       title: '委派边界',
-      sub: 'Manager 只编排，不执行',
+      sub: 'SupAgent 只编排，不执行',
       badge: 'ENFORCED',
       summary: [
-        'Manager 的人设与权限配置同时限制职责：它通过 ',
+        'SupAgent 的人设与权限配置同时限制职责：它通过 ',
         { text: 'subagent', code: true },
         ' 派发任务，只拿到 ',
         { text: 'subagentId', code: true },
@@ -25,7 +25,7 @@
       rules: [
         {
           title: '工具最小化：',
-          body: ['人设要求 Manager 只做意图识别、任务分解和动态编排；', { text: 'sql_query', code: true }, '、', { text: 'describe_database', code: true }, '、审批和运维写工具都不在它的可用工具里。']
+          body: ['人设要求 SupAgent 只做意图识别、任务分解和动态编排；', { text: 'sql_query', code: true }, '、', { text: 'describe_database', code: true }, '、审批和运维写工具都不在它的可用工具里。']
         },
         {
           title: '目标白名单：',
@@ -33,7 +33,7 @@
         },
         {
           title: '一层委派：',
-          body: ['Manager 失败时不替代业务 Agent 执行；它只汇报失败原因和下一步建议。']
+          body: ['SupAgent 失败时不替代业务 Agent 执行；它只汇报失败原因和下一步建议。']
         }
       ],
       paths: [
@@ -41,7 +41,7 @@
         'agentops/agents/manager.yaml:52-73  · allowed_tools / denied_tools',
         'packages/agentops/bundle/presets/agents.generated.patch.yml:138-149  · allowedAgentPresets / maxDepth'
       ],
-      limit: '这里证明的是 Manager 的配置边界；具体子代理能做什么，仍要读取该 preset 自己的工具配置。'
+      limit: '这里证明的是 SupAgent 的配置边界；具体子代理能做什么，仍要读取该 preset 自己的工具配置。'
     },
     ownership: {
       kind: 'OWNERSHIP',
@@ -68,7 +68,7 @@
         },
         {
           title: '禁止递归：',
-          body: ['层级是 Manager 0 → smart_query 1 → node 2；', { text: 'delegationDepthOf(exec.agent) > 1', code: true }, ' 时拒绝 ', { text: 'dag_run', code: true }, '。']
+          body: ['层级是 SupAgent 0 → smart_query 1 → node 2；', { text: 'delegationDepthOf(exec.agent) > 1', code: true }, ' 时拒绝 ', { text: 'dag_run', code: true }, '。']
         }
       ],
       paths: [

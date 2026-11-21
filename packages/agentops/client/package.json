@@ -74,6 +74,7 @@
     "@types/markdown-it": "^14.2.0",
     "@types/three": "^0.187.0",
     "ajv": "^8.20.0",
+    "d3-force-3d": "3.0.6",
     "lucide-react": "^1.61.0",
     "markdown-it": "^15.0.3",
     "three": "^0.187.0"

@@ -22,12 +22,12 @@ function withTempRepo(run: (open: () => { repo: SqliteKnowledgeRepository; servi
   }
 }
 
-test('写入后可重开：空间、文档、切片与引用都在', () => {
+void test('写入后可重开：空间、文档、切片与引用都在', () => {
   withTempRepo((open) => {
     const first = open()
-    first.service.addSpace({ id: 'finance', name: '财务', visibility: 'shared', readers: [] })
+    first.service.addSpace({ id: 'finance', name: '财务', description: '财务制度', visibility: 'shared', readers: [] })
     first.service.addDocument({
-      id: 'doc-1', spaceId: 'finance', title: '差旅办法', mime: 'text/markdown',
+      id: 'doc-1', spaceId: 'finance', categoryPath: '差旅报销', title: '差旅办法', mime: 'text/markdown',
       parser: 'markdown@1', contentHash: 'h1', now: NOW,
       text: '# 住宿\n\n北京上海住宿标准每晚 600 元。',
     })
@@ -43,14 +43,16 @@ test('写入后可重开：空间、文档、切片与引用都在', () => {
       chunkId: hit.chunk.id, documentId: 'doc-1', version: 1, spaceId: 'finance', marker: 1,
     })?.text.includes('600 元'), true)
     assert.equal(second.service.listDocuments().length, 1)
+    assert.equal(second.service.listDocuments()[0]?.categoryPath, '')
+    assert.equal(second.service.listSpaces()[0]?.description, '财务制度')
     second.repo.close()
   })
 })
 
-test('新版本落库后旧版切片不再被检索，但版本记录保留', () => {
+void test('新版本落库后旧版切片不再被检索，但版本记录保留', () => {
   withTempRepo((open) => {
     const { repo, service } = open()
-    service.addSpace({ id: 's', name: 'S', visibility: 'shared', readers: [] })
+    service.addSpace({ id: 's', name: 'S', description: '', visibility: 'shared', readers: [] })
     service.addDocument({
       id: 'd', spaceId: 's', title: 'v1', mime: 'text/markdown', parser: 'md@1',
       contentHash: 'h1', now: NOW, text: '住宿标准 600 元',
@@ -66,10 +68,10 @@ test('新版本落库后旧版切片不再被检索，但版本记录保留', ()
   })
 })
 
-test('删除文档级联清理版本与切片', () => {
+void test('删除文档级联清理版本与切片', () => {
   withTempRepo((open) => {
     const { repo, service } = open()
-    service.addSpace({ id: 's', name: 'S', visibility: 'shared', readers: [] })
+    service.addSpace({ id: 's', name: 'S', description: '', visibility: 'shared', readers: [] })
     service.addDocument({
       id: 'd', spaceId: 's', title: 't', mime: 'text/markdown', parser: 'md@1',
       contentHash: 'h', now: NOW, text: '可检索内容',
@@ -82,11 +84,11 @@ test('删除文档级联清理版本与切片', () => {
   })
 })
 
-test('持久层同样强制空间可见性', () => {
+void test('持久层同样强制空间可见性', () => {
   withTempRepo((open) => {
     const { repo, service } = open()
-    service.addSpace({ id: 'a', name: 'A', visibility: 'shared', readers: [] })
-    service.addSpace({ id: 'b', name: 'B', visibility: 'restricted', readers: ['user:u1'] })
+    service.addSpace({ id: 'a', name: 'A', description: '', visibility: 'shared', readers: [] })
+    service.addSpace({ id: 'b', name: 'B', description: '', visibility: 'restricted', readers: ['user:u1'] })
     service.addDocument({
       id: 'da', spaceId: 'a', title: 'A 文档', mime: 'text/markdown', parser: 'md@1',
       contentHash: 'ha', now: NOW, text: '共享知识',
@@ -99,5 +101,24 @@ test('持久层同样强制空间可见性', () => {
     assert.equal(repo.search('知识', ['b']).length, 1)
     assert.equal(repo.search('知识', []).length, 0)
     repo.close()
+  })
+})
+
+void test('旧 weekly 空间迁移为内容创作并保留文档', () => {
+  withTempRepo((open) => {
+    const first = open()
+    first.service.addSpace({ id: 'weekly', name: 'Weekly 周报', description: '周报', visibility: 'shared', readers: [] })
+    first.service.addDocument({
+      id: 'weekly-report', spaceId: 'weekly', categoryPath: '周报模板', title: '周报', mime: 'text/markdown',
+      parser: 'md@1', contentHash: 'weekly-hash', now: NOW, text: '经营周报内容',
+    })
+    first.repo.close()
+
+    const second = open()
+    assert.equal(second.service.listSpaces()[0]?.id, 'content_creation')
+    assert.equal(second.service.listSpaces()[0]?.name, '内容创作')
+    assert.equal(second.service.listDocuments()[0]?.spaceId, 'content_creation')
+    assert.equal(second.service.search('经营周报', ['content_creation']).length, 1)
+    second.repo.close()
   })
 })

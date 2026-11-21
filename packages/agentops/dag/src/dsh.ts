@@ -196,8 +196,9 @@ function boundedPayloads(
  * Create the subagent-backed node executor.
  * @param subagents - runtime seam from the host.
  * @param config - provider and prompt budget.
- * @returns executor usable by {@link DagEngine}.
  * @param parentOf - resolves the agent the node's subagent is spawned from.
+ * @param ownerAgentPreset - preset every node subagent runs under; overrides the node's own agent reference.
+ * @returns executor usable by {@link DagEngine}.
  */
 export function createSubagentExecutor(
   subagents: SubagentRuntime,
@@ -890,7 +891,6 @@ export function applyDagTools(ctx: Context, config: DagPluginConfig = DEFAULT_CO
         }
       }
 
-      if (result === undefined) throw new Error('重跑未产生结果')
       if (closeError === undefined) return result
       return {
         ...result,

@@ -14,6 +14,7 @@
  */
 import { readFileSync, readdirSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import { load } from 'js-yaml'
 
@@ -23,8 +24,11 @@ import { TOOL_NAMES as DB_TOOLS } from '@agentops/dsh-db/tools'
 import { TOOL_NAMES as TASK_V1_TOOLS } from '@agentops/dsh-task/tools-v1'
 import { TOOL_NAMES as SECURITY_TOOLS } from '@agentops/dsh-security/tools'
 import { TOOL_NAMES as LOG_COLLECTION_TOOLS } from '../../packages/agentops/log-collection/src/tools-plugin.ts'
+import { TOOL_NAMES as DEPLOYMENT_TOOLS } from '../../packages/agentops/deployment/src/tools-plugin.ts'
 import { TOOL_NAMES as DAG_TOOLS } from '@agentops/dsh-dag/tools'
 import { TOOL_NAMES as CAPABILITY_NOTIFY_TOOLS } from '@agentops/dsh-capability/tools'
+import { TOOL_NAMES as OA_TOOLS } from '@agentops/dsh-capability/oa-tools'
+import { TOOL_NAMES as FEISHU_DOCS_TOOLS } from '@agentops/dsh-capability/feishu-tools'
 
 /** 已知插件 → 运行期会注册的工具名（直接从包导出，单一来源）。 */
 export const KNOWN_TOOLS: Readonly<Record<string, readonly string[]>> = {
@@ -34,8 +38,11 @@ export const KNOWN_TOOLS: Readonly<Record<string, readonly string[]>> = {
   '@agentops/dsh-task/tools-v1': TASK_V1_TOOLS,
   '@agentops/dsh-security/tools': SECURITY_TOOLS,
   '@agentops/dsh-log-collection/tools': LOG_COLLECTION_TOOLS,
+  '@agentops/dsh-deployment/tools': DEPLOYMENT_TOOLS,
   '@agentops/dsh-dag/tools': DAG_TOOLS,
   '@agentops/dsh-capability/tools': CAPABILITY_NOTIFY_TOOLS,
+  '@agentops/dsh-capability/oa-tools': OA_TOOLS,
+  '@agentops/dsh-capability/feishu-tools': FEISHU_DOCS_TOOLS,
 }
 
 /** DSH 外部插件 → 运行期会注册的工具名。外部插件不导出 `TOOL_NAMES`，在此维护显式契约。 */
@@ -93,6 +100,8 @@ const PLUGIN_LABEL: Record<string, string> = {
   '@agentops/dsh-task/tools': 'task-tools',
   '@agentops/dsh-security/tools': 'security-tools',
   '@agentops/dsh-dag/tools': 'dag-tools',
+  '@agentops/dsh-deployment/tools': 'deployment-tools',
+  '@agentops/dsh-capability/feishu-tools': 'feishu-docs-tools',
   '@deepseek-ai/dsh-tool-fs': 'fs-tools',
   '@deepseek-ai/dsh-tool-pwsh': 'pwsh-tool',
   '@deepseek-ai/dsh-tool-skill': 'tool-skill',
@@ -112,7 +121,16 @@ function renderPluginConfig(
   if (plugin === '@agentops/dsh-log-collection/tools') {
     return { tenantKey: 'default', agentPreset: agentPresetId, only: tools }
   }
+  if (plugin === '@agentops/dsh-deployment/tools') {
+    return { agentPreset: agentPresetId, only: tools }
+  }
   if (plugin === '@agentops/dsh-capability/tools') {
+    return { agentPreset: agentPresetId, only: tools }
+  }
+  if (plugin === '@agentops/dsh-capability/oa-tools') {
+    return { agentPreset: agentPresetId, only: tools }
+  }
+  if (plugin === '@agentops/dsh-capability/feishu-tools') {
     return { agentPreset: agentPresetId, only: tools }
   }
   if (plugin === '@agentops/dsh-knowledge/tools') {
@@ -253,7 +271,17 @@ export function buildPreset(
     // agent whose preset mounts only `tool-skill` gets an empty catalog — every
     // `skill(name=…)` call then answers "unknown or no longer available".
     if (plugin === '@deepseek-ai/dsh-tool-skill') {
-      rows.push({ id: 'skill-filesystem', name: '@deepseek-ai/dsh-skill-filesystem' })
+      // Presets own their provider instance. Point it at the seeded runtime
+      // directory so the catalog the Skill Center edits is the catalog the
+      // model loads, regardless of checkout location or launch cwd.
+      rows.push({
+        id: 'skill-filesystem',
+        name: '@deepseek-ai/dsh-skill-filesystem',
+        config: {
+          customSkillDirs: [{ __js: "dshHomePath('agentops', 'skills')" }],
+          disabledSkillsFile: { __js: "dshHomePath('agentops', 'skills-disabled.json')" },
+        },
+      })
     }
     const config = renderPluginConfig(plugin, tools, spaces, delegable, agent.agent_id)
     rows.push(config === undefined
@@ -320,11 +348,20 @@ export function renderPatch(presets: GeneratedPreset[], base: { agents: AgentYam
       if (row.config !== undefined) {
         lines.push('            config:')
         for (const [key, value] of Object.entries(row.config)) {
-          // workflowDir must resolve at boot inside the profile, so it renders
-          // as a `!!js` expression like the bundle's own patch rows do.
-          lines.push(key === 'workflowDir' && typeof value === 'object' && value !== null && '__js' in value
-            ? `              ${key}: !!js ${(value as { __js: string }).__js}`
-            : `              ${key}: ${JSON.stringify(value)}`)
+          // Path-valued config resolves at boot inside the profile, so it
+          // renders as a `!!js` expression like the bundle's own patch rows do.
+          if (key === 'customSkillDirs' && Array.isArray(value)) {
+            lines.push(`              ${key}:`)
+            for (const entry of value) {
+              lines.push(typeof entry === 'object' && entry !== null && '__js' in entry
+                ? `                - !!js ${(entry as { __js: string }).__js}`
+                : `                - ${JSON.stringify(entry)}`)
+            }
+          } else {
+            lines.push(typeof value === 'object' && value !== null && '__js' in value
+              ? `              ${key}: !!js ${(value as { __js: string }).__js}`
+              : `              ${key}: ${JSON.stringify(value)}`)
+          }
         }
       }
     }
@@ -333,7 +370,7 @@ export function renderPatch(presets: GeneratedPreset[], base: { agents: AgentYam
 }
 
 function main(): void {
-  const root = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')
+  const root = fileURLToPath(new URL('..', import.meta.url))
   const agentsDir = join(root, 'agents')
   const outFile = join(root, '..', 'packages', 'agentops', 'bundle', 'presets', 'agents.generated.patch.yml')
   const toolMap = load(readFileSync(join(root, 'mappings', 'tool-map.yaml'), 'utf8')) as ToolMap
@@ -363,7 +400,7 @@ function main(): void {
 
   // 生成物必须是合法 YAML（否则 Loader 会在挂载时才炸）。`!!js` 标签由 Cordis
   // Loader 的 schema 支持，本脚本只需校验结构：把所有 !!js 行替换为占位符再加载。
-  load(rendered.replace(/^(\s*[\w-]+: )!!js .*$/gm, '$1"__js_placeholder__"'))
+  load(rendered.replace(/^(\s*(?:-\s+|[\w-]+:\s+))!!js .*$/gm, '$1"__js_placeholder__"'))
 
   const write = process.argv.includes('--write')
   if (write) {

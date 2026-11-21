@@ -77,6 +77,7 @@ export type LogCollectionErrorCode =
 
 /** Typed log collection failure. */
 export class LogCollectionError extends Error {
+  /** Stable code callers branch on. */
   readonly code: LogCollectionErrorCode
 
   /**

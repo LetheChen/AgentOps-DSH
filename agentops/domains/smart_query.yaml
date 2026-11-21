@@ -1,7 +1,7 @@
 # config/domains/smart_query.yaml
 domain: smart_query
-display_name: 智能问数域
-description: 数据查询、报表、统计分析
+display_name: 数据问答域
+description: 内置问数工作流的数据查询、业务口径与统计分析
 default_permissions:
   allowed_tools:                         # 域级默认允许
     - sql_query
