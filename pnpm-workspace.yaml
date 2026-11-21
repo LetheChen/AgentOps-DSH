@@ -16,6 +16,8 @@ packages:
 
 overrides:
   'extract-zip>yauzl': '3.4.0'
+  # fontkit declares ^0.5.12 while deploy resolves the newest compatible release.
+  '@swc/helpers@^0.5.12': '0.5.24'
   '@deepseek-ai/cosmokit': 'link:vendor/cosmokit'
   '@deepseek-ai/schemastery': 'link:vendor/schemastery'
 
