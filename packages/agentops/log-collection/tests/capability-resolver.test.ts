@@ -12,7 +12,7 @@ const instance = {
   accessPolicy: {}, credentialConfigured: true, credentialGeneration: 'credential-1',
 }
 
-test('resolves non-secret SSH config from capability data', () => {
+void test('resolves non-secret SSH config from capability data', () => {
   const resolver = new CapabilitySshResolver({
     getInstance: () => instance,
     resolveRuntime: () => ({ instanceId: 'maxkb', secret: null }),
@@ -23,7 +23,7 @@ test('resolves non-secret SSH config from capability data', () => {
   })
 })
 
-test('reads secret only after frozen generation matches', async () => {
+void test('reads secret only after frozen generation matches', async () => {
   const resolver = new CapabilitySshResolver({
     getInstance: () => instance,
     resolveRuntime: () => ({ instanceId: 'maxkb', secret: 'p@ss&word' }),
@@ -31,7 +31,7 @@ test('reads secret only after frozen generation matches', async () => {
   assert.deepEqual(await resolver.readCredential('maxkb', 'credential-1'), { password: 'p@ss&word' })
 })
 
-test('rejects host-key pin missing from SSH config', () => {
+void test('rejects host-key pin missing from SSH config', () => {
   const resolver = new CapabilitySshResolver({
     getInstance: () => ({ ...instance, config: { ...instance.config, host_key_sha256: '' } }),
     resolveRuntime: () => ({ instanceId: 'maxkb', secret: null }),
@@ -41,7 +41,7 @@ test('rejects host-key pin missing from SSH config', () => {
   ))
 })
 
-test('rejects changed credential generation', async () => {
+void test('rejects changed credential generation', async () => {
   const resolver = new CapabilitySshResolver({
     getInstance: () => ({ ...instance, credentialGeneration: 'credential-2' }),
     resolveRuntime: () => ({ instanceId: 'maxkb', secret: 'secret' }),

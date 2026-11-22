@@ -9,7 +9,7 @@ function record(state: RunState, workflowId = 'hybrid-test'): RunRecord {
   return { workflowId, state }
 }
 
-test('活动投影：业务泳道按首次出现排序，并保留声明顺序与角色降级链', () => {
+void test('活动投影：业务泳道按首次出现排序，并保留声明顺序与角色降级链', () => {
   const workflow: WorkflowDefinition = {
     id: 'hybrid-test',
     inputs: [],
@@ -39,7 +39,7 @@ test('活动投影：业务泳道按首次出现排序，并保留声明顺序�
   assert.deepEqual(activity.handoffs, [], '没有 handoff 持久化事件时不得伪造')
 })
 
-test('活动投影：保留真实节点状态、耗时和缺失节点的 pending 降级', () => {
+void test('活动投影：保留真实节点状态、耗时和缺失节点的 pending 降级', () => {
   const workflow: WorkflowDefinition = {
     id: 'states',
     inputs: [],
@@ -85,7 +85,7 @@ test('活动投影：保留真实节点状态、耗时和缺失节点的 pending
   assert.equal(activity.nodes[4]!.attempts, 0)
 })
 
-test('活动投影：调度边只来自 after，数据边只来自 outputs 且忽略空目标', () => {
+void test('活动投影：调度边只来自 after，数据边只来自 outputs 且忽略空目标', () => {
   const workflow: WorkflowDefinition = {
     id: 'edges',
     inputs: [],
@@ -105,7 +105,7 @@ test('活动投影：调度边只来自 after，数据边只来自 outputs 且�
   assert.deepEqual(activity.dataEdges, [{ from: 'scan', to: 'analyze', port: 'raw' }])
 })
 
-test('活动投影：时间线只使用持久化的真实时间戳并稳定排序', () => {
+void test('活动投影：时间线只使用持久化的真实时间戳并稳定排序', () => {
   const workflow: WorkflowDefinition = {
     id: 'timeline',
     inputs: [],
@@ -167,7 +167,7 @@ test('活动投影：时间线只使用持久化的真实时间戳并稳定排�
   assert.equal(activity.timeline[7]!.error, 'run exploded')
 })
 
-test('活动投影：相同输入完全相等，结束事件必须来自真实 run 结束时间', () => {
+void test('活动投影：相同输入完全相等，结束事件必须来自真实 run 结束时间', () => {
   const workflow: WorkflowDefinition = {
     id: 'deterministic',
     inputs: [],
@@ -201,7 +201,7 @@ test('活动投影：相同输入完全相等，结束事件必须来自真实 r
   assert.deepEqual(running.timeline.map(entry => entry.type), ['run.started'])
 })
 
-test('活动投影：透传持久化的运行输入供节点重跑使用', () => {
+void test('活动投影：透传持久化的运行输入供节点重跑使用', () => {
   const workflow: WorkflowDefinition = {
     id: 'inputs',
     inputs: [

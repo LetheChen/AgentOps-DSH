@@ -36,14 +36,14 @@ async function run(ctx: Context, name: string) {
 const textOf = (result: { content: readonly unknown[] }) =>
   result.content.map(block => (block as { text?: string }).text ?? '').join(' ')
 
-test('未装策略时两个工具都能跑（基线）', async () => {
+void test('未装策略时两个工具都能跑（基线）', async () => {
   const ctx = await mount()
   const alpha = await run(ctx, 'alpha')
   assert.equal(alpha.isError, false)
   assert.match(textOf(alpha), /ran:alpha/)
 })
 
-test('装了策略：deny 名单内的工具被拒且带原因', async () => {
+void test('装了策略：deny 名单内的工具被拒且带原因', async () => {
   const ctx = await mount()
   toolPolicy.apply(ctx, { deny: ['alpha'] })
 
@@ -56,14 +56,14 @@ test('装了策略：deny 名单内的工具被拒且带原因', async () => {
   assert.match(textOf(beta), /ran:beta/)
 })
 
-test('deny 不存在的工具名无害（留痕语义）', async () => {
+void test('deny 不存在的工具名无害（留痕语义）', async () => {
   const ctx = await mount()
   toolPolicy.apply(ctx, { deny: ['server_restart', 'db_migrate'] })
   const alpha = await run(ctx, 'alpha')
   assert.equal(alpha.isError, false)
 })
 
-test('配置校验：deny 必填且不能是空串', () => {
+void test('配置校验：deny 必填且不能是空串', () => {
   assert.throws(() => toolPolicy.Config({} as never))
   assert.throws(() => toolPolicy.Config({ deny: [''] }))
 })

@@ -20,7 +20,7 @@ function seed(dir: string): void {
   knowledge.close()
 }
 
-test('backup：快照两个库并写入 manifest，缺失的库记为 skipped', () => {
+void test('backup：快照两个库并写入 manifest，缺失的库记为 skipped', () => {
   const root = mkdtempSync(join(tmpdir(), 'agentops-backup-'))
   try {
     const data = join(root, 'data')
@@ -39,7 +39,7 @@ test('backup：快照两个库并写入 manifest，缺失的库记为 skipped', 
   }
 })
 
-test('restore：哈希一致才恢复，数据可读', () => {
+void test('restore：哈希一致才恢复，数据可读', () => {
   const root = mkdtempSync(join(tmpdir(), 'agentops-restore-'))
   try {
     const data = join(root, 'data')
@@ -61,7 +61,7 @@ test('restore：哈希一致才恢复，数据可读', () => {
   }
 })
 
-test('restore：覆盖前先给现状做安全快照，可回退', () => {
+void test('restore：覆盖前先给现状做安全快照，可回退', () => {
   const root = mkdtempSync(join(tmpdir(), 'agentops-safety-'))
   try {
     const data = join(root, 'data')
@@ -94,7 +94,7 @@ test('restore：覆盖前先给现状做安全快照，可回退', () => {
   }
 })
 
-test('restore：目标为空时不生成安全快照', () => {
+void test('restore：目标为空时不生成安全快照', () => {
   const root = mkdtempSync(join(tmpdir(), 'agentops-nosafety-'))
   try {
     const data = join(root, 'data')
@@ -109,7 +109,7 @@ test('restore：目标为空时不生成安全快照', () => {
   }
 })
 
-test('restore：被篡改的备份文件被拒绝，不覆盖目标库', () => {
+void test('restore：被篡改的备份文件被拒绝，不覆盖目标库', () => {
   const root = mkdtempSync(join(tmpdir(), 'agentops-tamper-'))
   try {
     const data = join(root, 'data')
@@ -127,7 +127,7 @@ test('restore：被篡改的备份文件被拒绝，不覆盖目标库', () => {
   }
 })
 
-test('listBackups：按创建时间倒序，忽略无 manifest 的目录', () => {
+void test('listBackups：按创建时间倒序，忽略无 manifest 的目录', () => {
   const root = mkdtempSync(join(tmpdir(), 'agentops-list-'))
   try {
     const data = join(root, 'data')
@@ -142,7 +142,7 @@ test('listBackups：按创建时间倒序，忽略无 manifest 的目录', () =>
   }
 })
 
-test('backupFolderName：冒号与点被替换，可用于 Windows 路径', () => {
+void test('backupFolderName：冒号与点被替换，可用于 Windows 路径', () => {
   const name = backupFolderName(new Date('2026-10-25T04:30:00.123Z'))
   assert.equal(name, '2026-10-25T04-30-00-123Z')
 })

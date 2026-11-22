@@ -6,13 +6,13 @@ import { join } from 'node:path'
 
 import { matchesCron, readSchedules, ScheduleRuntime, validateCron, writeSchedules } from '../src/schedules.ts'
 
-test('readSchedules：文件缺失返回空并标记 missing', () => {
+void test('readSchedules：文件缺失返回空并标记 missing', () => {
   const result = readSchedules(join(tmpdir(), 'no-such-schedules.yaml'))
   assert.equal(result.missing, true)
   assert.deepEqual(result.entries, [])
 })
 
-test('readSchedules：解析 cron / enabled / inputs，跳过残缺条目', () => {
+void test('readSchedules：解析 cron / enabled / inputs，跳过残缺条目', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentops-schedules-'))
   try {
     const file = join(dir, 'schedules.yaml')
@@ -51,7 +51,7 @@ test('readSchedules：解析 cron / enabled / inputs，跳过残缺条目', () =
   }
 })
 
-test('writeSchedules：原子回写后保留运行证据', () => {
+void test('writeSchedules：原子回写后保留运行证据', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentops-schedules-write-'))
   try {
     const file = join(dir, 'schedules.yaml')
@@ -67,14 +67,14 @@ test('writeSchedules：原子回写后保留运行证据', () => {
   }
 })
 
-test('cron：校验五段表达式并按 IANA 时区匹配', () => {
+void test('cron：校验五段表达式并按 IANA 时区匹配', () => {
   assert.deepEqual(validateCron('0 9 * * 1-5'), [])
   assert.ok(validateCron('0 9 * *').some(error => error.includes('5 段')))
   assert.equal(matchesCron('0 9 * * 1-5', new Date('2026-11-16T01:00:00.000Z'), 'Asia/Shanghai'), true)
   assert.equal(matchesCron('0 9 * * 1-5', new Date('2026-11-15T01:00:00.000Z'), 'Asia/Shanghai'), false)
 })
 
-test('ScheduleRuntime：到点只触发一次，并创建 AgentOps 会话', async () => {
+void test('ScheduleRuntime：到点只触发一次，并创建 AgentOps 会话', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentops-schedules-runtime-'))
   try {
     const workflows = join(dir, 'workflows')

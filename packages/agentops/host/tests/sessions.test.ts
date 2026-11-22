@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 
 import { summariseEvent, toSummary } from '../src/sessions.ts'
 
-test('toSummary：保留标题、live/persisted 与更新时间', () => {
+void test('toSummary：保留标题、live/persisted 与更新时间', () => {
   const summary = toSummary({
     header: { id: 's1', title: '差旅报销排查', updatedAt: '2026-10-25T06:00:00Z' },
     live: true,
@@ -15,13 +15,13 @@ test('toSummary：保留标题、live/persisted 与更新时间', () => {
   })
 })
 
-test('toSummary：缺标题时给出占位而不是空字符串', () => {
+void test('toSummary：缺标题时给出占位而不是空字符串', () => {
   const summary = toSummary({ header: { id: 's2' }, live: false, persisted: true })
   assert.equal(summary.title, '(untitled)')
   assert.equal(summary.updatedAt, null)
 })
 
-test('summariseEvent：提取类型、时间与截断预览，不解释内容', () => {
+void test('summariseEvent：提取类型、时间与截断预览，不解释内容', () => {
   const event = summariseEvent({
     type: 'message',
     at: '2026-10-25T06:01:00Z',

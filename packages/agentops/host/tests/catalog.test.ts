@@ -10,13 +10,13 @@ function tempDir(prefix: string): string {
   return mkdtempSync(join(tmpdir(), prefix))
 }
 
-test('目录缺失时业务域注册表为空且标记 missing', () => {
+void test('目录缺失时业务域注册表为空且标记 missing', () => {
   const scan = scanDomains(join(tmpdir(), 'agentops-absent-domains'))
   assert.equal(scan.missing, true)
   assert.deepEqual(scan.entries, [])
 })
 
-test('解析业务域默认值与文件名排序', () => {
+void test('解析业务域默认值与文件名排序', () => {
   const dir = tempDir('agentops-domains-')
   writeFileSync(join(dir, 'smart_query.yaml'), [
     'domain: smart_query',
@@ -45,7 +45,7 @@ test('解析业务域默认值与文件名排序', () => {
   assert.deepEqual(query.issues, [])
 })
 
-test('非法业务域文件保留为条目并带 issue', () => {
+void test('非法业务域文件保留为条目并带 issue', () => {
   const dir = tempDir('agentops-domains-')
   writeFileSync(join(dir, 'broken.yaml'), 'display_name: 缺少 domain\n', 'utf8')
 
@@ -56,7 +56,7 @@ test('非法业务域文件保留为条目并带 issue', () => {
   assert.ok((scan.entries[0]?.issues.length ?? 0) > 0)
 })
 
-test('Actor 注册表按子目录读取 Profile', () => {
+void test('Actor 注册表按子目录读取 Profile', () => {
   const dir = tempDir('agentops-actors-')
   mkdirSync(join(dir, 'log_puller'), { recursive: true })
   writeFileSync(join(dir, 'log_puller', 'actor_visual_profile.json'), JSON.stringify({
@@ -86,7 +86,7 @@ test('Actor 注册表按子目录读取 Profile', () => {
   assert.equal(actor.views[0]?.fieldCount, 1)
 })
 
-test('Actor 子目录缺少 Profile 时保留为无效条目', () => {
+void test('Actor 子目录缺少 Profile 时保留为无效条目', () => {
   const dir = tempDir('agentops-actors-')
   mkdirSync(join(dir, 'manager'), { recursive: true })
 

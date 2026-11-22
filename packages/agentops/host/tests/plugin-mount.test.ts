@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import { apply as applyRoot, inject as rootInject, name as rootName } from '../src/index.ts'
 import { apply as applyTools, inject as toolsInject, name as toolsName } from '../src/tools.ts'
 
-test('插件身份：root 无注入，tools 半注入 tools', () => {
+void test('插件身份：root 无注入，tools 半注入 tools', () => {
   assert.equal(rootName, 'agentops-system')
   assert.deepEqual(rootInject, [], 'root 不能注入 tools：该服务只在 Agent 作用域提供')
   assert.equal(typeof applyRoot, 'function')
@@ -14,7 +14,7 @@ test('插件身份：root 无注入，tools 半注入 tools', () => {
   assert.equal(typeof applyTools, 'function')
 })
 
-test('root apply 只挂路由，不触碰工具注册表', () => {
+void test('root apply 只挂路由，不触碰工具注册表', () => {
   let touched = false
   const routes: string[] = []
   const ctx = {
@@ -36,7 +36,7 @@ test('root apply 只挂路由，不触碰工具注册表', () => {
   assert.equal(routes.includes('/api/agentops/credentials'), false)
 })
 
-test('tools 半只注册一个只读工具，不写会话、不读文件', () => {
+void test('tools 半只注册一个只读工具，不写会话、不读文件', () => {
   const registered: { name: string }[] = []
   const ctx = {
     tools: {
@@ -50,6 +50,6 @@ test('tools 半只注册一个只读工具，不写会话、不读文件', () =>
   assert.deepEqual(registered.map(tool => tool.name).sort(), ['agentops_system_status', 'board_cleanup', 'present_content'])
 })
 
-test('tools 半在缺少 tools 服务时抛出，而不是静默成功', () => {
+void test('tools 半在缺少 tools 服务时抛出，而不是静默成功', () => {
   assert.throws(() =>{  applyTools({} as never) }, /tools|undefined/i)
 })

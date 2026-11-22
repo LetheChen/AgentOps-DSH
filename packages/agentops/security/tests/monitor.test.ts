@@ -30,7 +30,7 @@ function row(input: Partial<UsageRecord> & Pick<UsageRecord, 'id' | 'at' | 'tota
   }
 }
 
-test('监控区间：非法 days 回退 30，合法值与 UTC 起点稳定', () => {
+void test('监控区间：非法 days 回退 30，合法值与 UTC 起点稳定', () => {
   assert.equal(parseMonitorDays('7'), 7)
   assert.equal(parseMonitorDays('90'), 90)
   assert.equal(parseMonitorDays('31'), 30)
@@ -38,7 +38,7 @@ test('监控区间：非法 days 回退 30，合法值与 UTC 起点稳定', () 
   assert.equal(monitorSince(7, new Date('2026-10-27T23:30:00.000+08:00')), '2026-10-21T00:00:00.000Z')
 })
 
-test('监控聚合：provider/model/用途与 UTC 日期独立分桶', () => {
+void test('监控聚合：provider/model/用途与 UTC 日期独立分桶', () => {
   const rows = [
     row({ id: 'a', provider: 'ds', model: 'v4', agent: 'chat', totalTokens: 10, at: '2026-10-20T23:30:00.000Z' }),
     row({ id: 'b', provider: 'ds', model: 'v4', agent: 'chat', totalTokens: 20, at: '2026-10-20T23:59:59.000Z' }),
@@ -64,7 +64,7 @@ test('监控聚合：provider/model/用途与 UTC 日期独立分桶', () => {
   assert.equal(utcDayKey('2026-10-21T00:00:00.000+08:00'), '2026-10-20')
 })
 
-test('监控热力日聚合：同一天合并、按日期升序', () => {
+void test('监控热力日聚合：同一天合并、按日期升序', () => {
   assert.deepEqual(buildDailyUsage([
     row({ id: 'a', totalTokens: 3, at: '2026-10-22T10:00:00.000Z' }),
     row({ id: 'b', totalTokens: 4, at: '2026-10-21T10:00:00.000Z' }),
@@ -75,7 +75,7 @@ test('监控热力日聚合：同一天合并、按日期升序', () => {
   ])
 })
 
-test('监控聚合：空输入不产生假数据', () => {
+void test('监控聚合：空输入不产生假数据', () => {
   assert.deepEqual(buildMonitorSummary([]), {
     totalTokens: 0,
     promptTokens: 0,

@@ -23,7 +23,7 @@ function mount(): { tools: Map<string, Tool>; dir: string; store: SecurityStore 
   return { tools, dir, store }
 }
 
-test('工具挂载：四个写工具都在，且都注入 tools', () => {
+void test('工具挂载：四个写工具都在，且都注入 tools', () => {
   const { tools, dir, store } = mount()
   try {
     assert.deepEqual([...tools.keys()].sort(), [
@@ -35,7 +35,7 @@ test('工具挂载：四个写工具都在，且都注入 tools', () => {
   }
 })
 
-test('security_user_create：缺 reason 由参数 schema 拦截（execute 仍写审计）', async () => {
+void test('security_user_create：缺 reason 由参数 schema 拦截（execute 仍写审计）', async () => {
   const { tools, dir, store } = mount()
   try {
     const created = await tools.get('security_user_create')!.execute(
@@ -53,7 +53,7 @@ test('security_user_create：缺 reason 由参数 schema 拦截（execute 仍写
   }
 })
 
-test('security_user_set_status：无 confirm 拒绝，陈旧版本拒绝，正常路径升版本', async () => {
+void test('security_user_set_status：无 confirm 拒绝，陈旧版本拒绝，正常路径升版本', async () => {
   const { tools, dir, store } = mount()
   try {
     const created = await tools.get('security_user_create')!.execute({ name: 'A', reason: 'r' }, {})
@@ -88,7 +88,7 @@ test('security_user_set_status：无 confirm 拒绝，陈旧版本拒绝，正�
   }
 })
 
-test('security_role_assign：角色/用户不存在被拒，成功返回合并权限', async () => {
+void test('security_role_assign：角色/用户不存在被拒，成功返回合并权限', async () => {
   const { tools, dir, store } = mount()
   try {
     const created = await tools.get('security_user_create')!.execute({ name: 'B', reason: 'r' }, {})
@@ -111,7 +111,7 @@ test('security_role_assign：角色/用户不存在被拒，成功返回合并�
   }
 })
 
-test('security_token_issue：无 confirm 拒绝；成功后只回一次明文，库里只有哈希', async () => {
+void test('security_token_issue：无 confirm 拒绝；成功后只回一次明文，库里只有哈希', async () => {
   const { tools, dir, store } = mount()
   try {
     const created = await tools.get('security_user_create')!.execute({ name: 'C', reason: 'r' }, {})

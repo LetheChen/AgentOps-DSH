@@ -35,7 +35,7 @@ function parsed(source: string) {
   return result.value
 }
 
-test('workflow edit operation 运行时拒绝未知字段和错误类型', () => {
+void test('workflow edit operation 运行时拒绝未知字段和错误类型', () => {
   assert.deepEqual(parseWorkflowEditOperation({
     kind: 'add-node',
     id: 'collect',
@@ -61,7 +61,7 @@ test('workflow edit operation 运行时拒绝未知字段和错误类型', () =>
   }), WorkflowEditError)
 })
 
-test('workflow edit operation 接受非空且不含 NUL 的任意 id、agent 和 port', () => {
+void test('workflow edit operation 接受非空且不含 NUL 的任意 id、agent 和 port', () => {
   assert.deepEqual(parseWorkflowEditOperation({
     kind: 'add-data-edge',
     from: 'scan logs',
@@ -93,7 +93,7 @@ test('workflow edit operation 接受非空且不含 NUL 的任意 id、agent 和
     port: `bad${String.fromCharCode(0)}port`,
   }), WorkflowEditError)
 })
-test('workflow edit operation 解析六类节点并严格校验类型专用字段', () => {
+void test('workflow edit operation 解析六类节点并严格校验类型专用字段', () => {
   assert.deepEqual(parseWorkflowEditOperation({
     kind: 'add-node',
     id: 'cmd',
@@ -244,7 +244,7 @@ test('workflow edit operation 解析六类节点并严格校验类型专用字�
   }), WorkflowEditError)
 })
 
-test('添加 Agent 节点只插入新 YAML 片段并保留 CRLF、缩进和注释', () => {
+void test('添加 Agent 节点只插入新 YAML 片段并保留 CRLF、缩进和注释', () => {
   const result = applyWorkflowEdit(CRLF_SOURCE, {
     kind: 'add-node',
     id: 'collect',
@@ -276,7 +276,7 @@ test('添加 Agent 节点只插入新 YAML 片段并保留 CRLF、缩进和注�
 
   assert.equal(result.text, expected)
 })
-test('依次添加 command、await_command、gateway、parallel_branch 与 while，并保留 CRLF 和注释', () => {
+void test('依次添加 command、await_command、gateway、parallel_branch 与 while，并保留 CRLF 和注释', () => {
   let text = CRLF_SOURCE
 
   const command = applyWorkflowEdit(text, {
@@ -394,7 +394,7 @@ test('依次添加 command、await_command、gateway、parallel_branch 与 while
   assert.ok(text.includes('\r\n'))
 })
 
-test('添加任意合法 id、agent 与 port 时安全引号化 YAML', () => {
+void test('添加任意合法 id、agent 与 port 时安全引号化 YAML', () => {
   const added = applyWorkflowEdit(CRLF_SOURCE, {
     kind: 'add-node',
     id: 'collect logs: #1',
@@ -428,7 +428,7 @@ test('添加任意合法 id、agent 与 port 时安全引号化 YAML', () => {
   assert.match(withPort.text, /"result: #1": \[analyze\]/)
 })
 
-test('删除节点同时清理 after 与 outputs，保留无关注释', () => {
+void test('删除节点同时清理 after 与 outputs，保留无关注释', () => {
   const source = [
     '# header',
     'workflow_id: demo',
@@ -458,7 +458,7 @@ test('删除节点同时清理 after 与 outputs，保留无关注释', () => {
   assert.match(result.text, /# footer/)
 })
 
-test('添加调度边只修改 after，不把 outputs 变成调度依赖', () => {
+void test('添加调度边只修改 after，不把 outputs 变成调度依赖', () => {
   const source = CRLF_SOURCE.replace(
     '# footer stays',
     [
@@ -480,7 +480,7 @@ test('添加调度边只修改 after，不把 outputs 变成调度依赖', () =>
   assert.deepEqual(value.nodes[0]?.outputs, { result: ['analyze'] })
 })
 
-test('添加数据边只修改 outputs，不增加 after', () => {
+void test('添加数据边只修改 outputs，不增加 after', () => {
   const result = applyWorkflowEdit(CRLF_SOURCE, {
     kind: 'add-data-edge',
     from: 'scan',
@@ -496,7 +496,7 @@ test('添加数据边只修改 outputs，不增加 after', () => {
   assert.deepEqual(value.nodes[1]?.after, ['scan'])
   assert.match(result.text, /# footer stays/)
 })
-test('编辑 flow-style outputs 时保留 gateway 的空端口', () => {
+void test('编辑 flow-style outputs 时保留 gateway 的空端口', () => {
   const source = [
     'workflow_id: demo',
     'nodes:',
@@ -528,7 +528,7 @@ test('编辑 flow-style outputs 时保留 gateway 的空端口', () => {
   assert.match(result.text, /next: \[\]/)
 })
 
-test('删除数据边只移除指定 port 与 target', () => {
+void test('删除数据边只移除指定 port 与 target', () => {
   const source = [
     'workflow_id: demo',
     'business_id: demo',
@@ -556,7 +556,7 @@ test('删除数据边只移除指定 port 与 target', () => {
   assert.deepEqual(value.nodes.find(node => node.id === 'analyze')?.after, ['scan'])
 })
 
-test('点号、空格与冒号组成的既有节点 id 可删除并清理两类边', () => {
+void test('点号、空格与冒号组成的既有节点 id 可删除并清理两类边', () => {
   const source = [
     'workflow_id: demo',
     'nodes:',
@@ -583,7 +583,7 @@ test('点号、空格与冒号组成的既有节点 id 可删除并清理两类�
   assert.deepEqual(parsed(withoutTarget.text).nodes[1]?.after, [])
 })
 
-test('语义无效的编辑抛出带 issue 的 WorkflowEditError', () => {
+void test('语义无效的编辑抛出带 issue 的 WorkflowEditError', () => {
   assert.throws(() => applyWorkflowEdit(CRLF_SOURCE, {
     kind: 'add-node',
     id: 'scan',
@@ -615,7 +615,7 @@ test('语义无效的编辑抛出带 issue 的 WorkflowEditError', () => {
   })
 })
 
-test('mapping 形式的 nodes 支持添加与删除节点', () => {
+void test('mapping 形式的 nodes 支持添加与删除节点', () => {
   const source = [
     'workflow_id: demo',
     'nodes:',
@@ -642,7 +642,7 @@ test('mapping 形式的 nodes 支持添加与删除节点', () => {
   assert.deepEqual(value.nodes.map(node => node.id), ['collect', 'analyze'])
   assert.deepEqual(value.nodes[1]?.after, [])
 })
-test('mapping 形式的 nodes 支持添加全部非 Agent 节点', () => {
+void test('mapping 形式的 nodes 支持添加全部非 Agent 节点', () => {
   let text = [
     'workflow_id: demo',
     'nodes:',
@@ -692,7 +692,7 @@ test('mapping 形式的 nodes 支持添加全部非 Agent 节点', () => {
   )
 })
 
-test('添加第二个 await_command 在写入 YAML 前失败', () => {
+void test('添加第二个 await_command 在写入 YAML 前失败', () => {
   const source = [
     'workflow_id: demo',
     'nodes:',

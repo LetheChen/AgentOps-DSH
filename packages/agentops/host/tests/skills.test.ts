@@ -14,7 +14,7 @@ function fixture() {
   return { root, managedDir, disabledFile }
 }
 
-test('disabled skill manifest round-trips and validates names', () => {
+void test('disabled skill manifest round-trips and validates names', () => {
   const f = fixture()
   try {
     writeDisabledSkills(f.disabledFile, ['disabled-skill', 'disabled-skill'])
@@ -26,7 +26,7 @@ test('disabled skill manifest round-trips and validates names', () => {
   }
 })
 
-test('listManagedSkills marks installed and disabled rows without leaking paths', async () => {
+void test('listManagedSkills marks installed and disabled rows without leaking paths', async () => {
   const f = fixture()
   try {
     const installedPath = join(f.managedDir, 'installed-skill', 'SKILL.md')
@@ -51,7 +51,7 @@ test('listManagedSkills marks installed and disabled rows without leaking paths'
   }
 })
 
-test('deleteInstalledSkill removes managed skills but refuses built-ins', () => {
+void test('deleteInstalledSkill removes managed skills but refuses built-ins', () => {
   const f = fixture()
   try {
     const installedDir = join(f.managedDir, 'installed-skill')

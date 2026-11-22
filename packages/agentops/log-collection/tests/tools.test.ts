@@ -3,7 +3,7 @@ import test from 'node:test'
 
 import { createPullLogsTool, type PullLogsService } from '../src/index.ts'
 
-test('pull_logs exposes only canonical log_task_id', () => {
+void test('pull_logs exposes only canonical log_task_id', () => {
   const tool = createPullLogsTool({} as PullLogsService, { tenantKey: 'tenant-a', agentPreset: 'log_puller' })
   assert.equal(tool.name, 'pull_logs')
   assert.deepEqual(Object.keys((tool.parameters as { properties?: Record<string, unknown> }).properties ?? {}), ['log_task_id'])
@@ -24,7 +24,7 @@ interface PullLogsToolResult {
   readonly files_cleaned: number
 }
 
-test('pull_logs renders the complete structured result for the model', () => {
+void test('pull_logs renders the complete structured result for the model', () => {
   const tool = createPullLogsTool({} as PullLogsService, { tenantKey: 'tenant-a', agentPreset: 'log_puller' })
   const value = {
     ok: true,

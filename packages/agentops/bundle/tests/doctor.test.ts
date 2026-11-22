@@ -8,7 +8,7 @@ import { DatabaseSync } from 'node:sqlite'
 import { backupDatabases } from '../src/backup.ts'
 import { doctor } from '../src/doctor.ts'
 
-test('doctor：健康库通过完整性检查并报告表数', () => {
+void test('doctor：健康库通过完整性检查并报告表数', () => {
   const root = mkdtempSync(join(tmpdir(), 'agentops-doctor-'))
   try {
     const data = join(root, 'data')
@@ -30,7 +30,7 @@ test('doctor：健康库通过完整性检查并报告表数', () => {
   }
 })
 
-test('doctor：损坏文件报告 unreadable/corrupt 并计入问题', () => {
+void test('doctor：损坏文件报告 unreadable/corrupt 并计入问题', () => {
   const root = mkdtempSync(join(tmpdir(), 'agentops-doctor-bad-'))
   try {
     const data = join(root, 'data')
@@ -46,14 +46,14 @@ test('doctor：损坏文件报告 unreadable/corrupt 并计入问题', () => {
   }
 })
 
-test('doctor：数据目录不存在、无备份都会被指出', () => {
+void test('doctor：数据目录不存在、无备份都会被指出', () => {
   const report = doctor(join(tmpdir(), 'agentops-doctor-missing-xyz'))
   assert.ok(report.problems.some(problem => problem.includes('数据目录不存在')))
   assert.ok(report.problems.some(problem => problem.includes('尚无备份')))
   assert.ok(report.databases.every(check => check.integrity === 'missing'))
 })
 
-test('doctor：备份过旧会超过阈值报警', () => {
+void test('doctor：备份过旧会超过阈值报警', () => {
   const root = mkdtempSync(join(tmpdir(), 'agentops-doctor-old-'))
   try {
     const data = join(root, 'data')

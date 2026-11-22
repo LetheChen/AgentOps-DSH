@@ -90,7 +90,7 @@ function fakeRuntime(
 
 const parent = { session: { header: { id: 'session-test' } }, options: {} } as never
 
-test('nodePrompt 声明输出端口协议，并保留输入、上游 JSON 与共享长度预算', () => {
+void test('nodePrompt 声明输出端口协议，并保留输入、上游 JSON 与共享长度预算', () => {
   const node = {
     id: 'a',
     type: 'agent' as const,
@@ -128,7 +128,7 @@ test('nodePrompt 声明输出端口协议，并保留输入、上游 JSON 与共
   assert.ok(embedded.length <= 80, `embedded JSON must stay within the shared budget: ${embedded.length}`)
 })
 
-test('nodeOutputSchema：端口均为必填且禁止额外键，无端口时不请求 schema', () => {
+void test('nodeOutputSchema：端口均为必填且禁止额外键，无端口时不请求 schema', () => {
   assert.deepEqual(nodeOutputSchema({
     id: 'a', type: 'agent', agentRef: 'owner', outputs: { answer: '', score: '' }, after: [],
   }), {
@@ -140,7 +140,7 @@ test('nodeOutputSchema：端口均为必填且禁止额外键，无端口时不�
   assert.equal(nodeOutputSchema({ id: 'empty', type: 'agent', agentRef: 'owner', after: [] }), undefined)
 })
 
-test('subagent 执行器：文本 JSON 形成端口对象，失败抛出诊断', async () => {
+void test('subagent 执行器：文本 JSON 形成端口对象，失败抛出诊断', async () => {
   const ok = fakeRuntime()
   const executor = createSubagentExecutor(ok.runtime, { provider: 'spawn', concurrency: 2 }, () => parent)
   const outputs = await executor({
@@ -170,7 +170,7 @@ test('subagent 执行器：文本 JSON 形成端口对象，失败抛出诊断',
   )
 })
 
-test('subagent 执行器：优先使用 structured，并拒绝缺端口、额外端口和非法 JSON', async () => {
+void test('subagent 执行器：优先使用 structured，并拒绝缺端口、额外端口和非法 JSON', async () => {
   const structured = fakeRuntime(() => ({ structured: { answer: 42 } }))
   const structuredExecutor = createSubagentExecutor(structured.runtime, {}, () => parent)
   assert.deepEqual(await structuredExecutor({
@@ -202,7 +202,7 @@ test('subagent 执行器：优先使用 structured，并拒绝缺端口、额外
   )
 })
 
-test('subagent 执行器：节点使用自己的 Agent、模型、角色提示词与超时', async () => {
+void test('subagent 执行器：节点使用自己的 Agent、模型、角色提示词与超时', async () => {
   const fake = fakeRuntime()
   const caller = new AbortController()
   const executor = createSubagentExecutor(fake.runtime, { provider: 'spawn' }, () => parent)
@@ -237,7 +237,7 @@ nodes:
     business_role: 意图分类员
 `
 
-test('dag_run 钉定工作流与所属 Agent，list_runs 能按 Agent 查回归属与 actor', async () => {
+void test('dag_run 钉定工作流与所属 Agent，list_runs 能按 Agent 查回归属与 actor', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentops-dag-attrib-'))
   try {
     writeFileSync(join(dir, 'owned.yaml'), OWNED_YAML)
@@ -281,7 +281,7 @@ test('dag_run 钉定工作流与所属 Agent，list_runs 能按 Agent 查回归�
 })
 
 
-test('dag_run 未钉定 Agent 时使用节点声明的 agent，而不是 workflow id', async () => {
+void test('dag_run 未钉定 Agent 时使用节点声明的 agent，而不是 workflow id', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentops-dag-unpinned-'))
   try {
     writeFileSync(join(dir, 'unpinned.yaml'), [
@@ -311,7 +311,7 @@ test('dag_run 未钉定 Agent 时使用节点声明的 agent，而不是 workflo
   }
 })
 
-test('dag_run 允许被派发的 Agent 启动工作流，但拒绝工作流节点再进入', async () => {
+void test('dag_run 允许被派发的 Agent 启动工作流，但拒绝工作流节点再进入', async () => {
   const registered = new Map<string, { execute: (args: never, exec: never) => Promise<unknown> }>()
   const ctx = {
     tools: { register: (def: { name: string }) => { registered.set(def.name, def as never); return () => {} } },
@@ -347,7 +347,7 @@ test('dag_run 允许被派发的 Agent 启动工作流，但拒绝工作流节�
 })
 
 
-test('subagent 执行器：command 节点明确失败且不启动子代理', async () => {
+void test('subagent 执行器：command 节点明确失败且不启动子代理', async () => {
   const fake = fakeRuntime()
   const executor = createSubagentExecutor(fake.runtime, {}, () => parent)
 
@@ -363,7 +363,7 @@ test('subagent 执行器：command 节点明确失败且不启动子代理', asy
   assert.deepEqual(fake.specs, [])
 })
 
-test('dag_run 返回终结节点输出，调用方不需要自己猜答案', async () => {
+void test('dag_run 返回终结节点输出，调用方不需要自己猜答案', async () => {
   const registered = new Map<string, { execute: (args: never, exec: never) => Promise<unknown> }>()
   const ctx = {
     tools: { register: (def: { name: string }) => { registered.set(def.name, def as never); return () => {} } },
@@ -388,7 +388,7 @@ test('dag_run 返回终结节点输出，调用方不需要自己猜答案', asy
   assert.deepEqual(result.outputs, { answer: { answer: 'done:answer' } })
 })
 
-test('dag_validate / dag_run 挂载与执行', async () => {
+void test('dag_validate / dag_run 挂载与执行', async () => {
   const registered = new Map<string, { execute: (args: never, exec: never) => Promise<unknown> }>()
   const { runtime, labels } = fakeRuntime()
   const ctx = {
@@ -411,7 +411,7 @@ test('dag_validate / dag_run 挂载与执行', async () => {
   assert.deepEqual(labels, ['a', 'b'])
 })
 
-test('dag_catalog：列出工作流描述、输入、节点数与校验状态', async () => {
+void test('dag_catalog：列出工作流描述、输入、节点数与校验状态', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentops-dag-catalog-'))
   try {
     writeFileSync(join(dir, 'smart-query.yaml'), [
@@ -459,7 +459,7 @@ test('dag_catalog：列出工作流描述、输入、节点数与校验状态', 
   }
 })
 
-test('dag_catalog：缺 workflowDir 或目录不存在时明确失败', async () => {
+void test('dag_catalog：缺 workflowDir 或目录不存在时明确失败', async () => {
   const registered = new Map<string, { execute: (args: never, exec: never) => Promise<unknown> }>()
   const ctx = {
     tools: { register: (def: { name: string }) => { registered.set(def.name, def as never); return () => {} } },
@@ -483,7 +483,7 @@ test('dag_catalog：缺 workflowDir 或目录不存在时明确失败', async ()
   )
 })
 
-test('dag_run 缺父 Agent 时明确拒绝', async () => {
+void test('dag_run 缺父 Agent 时明确拒绝', async () => {
   const registered = new Map<string, { execute: (args: never, exec: never) => Promise<unknown> }>()
   const { runtime } = fakeRuntime()
   const ctx = {
@@ -497,7 +497,7 @@ test('dag_run 缺父 Agent 时明确拒绝', async () => {
   )
 })
 
-test('dag_run 按 workflowId 加载定义、预先生成 runId 并持久化运行输入', async () => {
+void test('dag_run 按 workflowId 加载定义、预先生成 runId 并持久化运行输入', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentops-dag-run-'))
   try {
     writeFileSync(join(dir, 'input-flow.yaml'), [
@@ -551,7 +551,7 @@ test('dag_run 按 workflowId 加载定义、预先生成 runId 并持久化运�
   }
 })
 
-test('dag_run 要求 workflowId 与 yaml 二选一', async () => {
+void test('dag_run 要求 workflowId 与 yaml 二选一', async () => {
   const registered = new Map<string, { execute: (args: never, exec: never) => Promise<unknown> }>()
   const fake = fakeRuntime()
   const ctx = {
@@ -570,7 +570,7 @@ test('dag_run 要求 workflowId 与 yaml 二选一', async () => {
   assert.deepEqual(fake.labels, [])
 })
 
-test('dag_run 拒绝未知工作流与未声明输入，且不启动子代理', async () => {
+void test('dag_run 拒绝未知工作流与未声明输入，且不启动子代理', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentops-dag-run-'))
   try {
     writeFileSync(join(dir, 'input-flow.yaml'), [
@@ -608,7 +608,7 @@ test('dag_run 拒绝未知工作流与未声明输入，且不启动子代理', 
   }
 })
 
-test('dag_run 历史保存失败时仍返回执行结果并明确报告历史错误', async () => {
+void test('dag_run 历史保存失败时仍返回执行结果并明确报告历史错误', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentops-dag-run-'))
   try {
     const blocker = join(dir, 'not-a-directory')
@@ -634,7 +634,7 @@ test('dag_run 历史保存失败时仍返回执行结果并明确报告历史错
   }
 })
 
-test('dag_rerun 复用 runId 与 inputs，重跑节点并保留上游输出', async () => {
+void test('dag_rerun 复用 runId 与 inputs，重跑节点并保留上游输出', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentops-dag-rerun-'))
   try {
     writeFileSync(join(dir, 'rerun-flow.yaml'), RERUN_YAML)
@@ -689,7 +689,7 @@ test('dag_rerun 复用 runId 与 inputs，重跑节点并保留上游输出', as
   }
 })
 
-test('dag_rerun 缺父 Agent 时拒绝且不改变历史', async () => {
+void test('dag_rerun 缺父 Agent 时拒绝且不改变历史', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentops-dag-rerun-'))
   try {
     writeFileSync(join(dir, 'rerun-flow.yaml'), RERUN_YAML)
@@ -731,7 +731,7 @@ test('dag_rerun 缺父 Agent 时拒绝且不改变历史', async () => {
   }
 })
 
-test('dag_rerun 拒绝 workflowId 不匹配、未知节点、运行中记录与非法输入', async () => {
+void test('dag_rerun 拒绝 workflowId 不匹配、未知节点、运行中记录与非法输入', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentops-dag-rerun-'))
   try {
     writeFileSync(join(dir, 'rerun-flow.yaml'), RERUN_YAML)
@@ -812,7 +812,7 @@ test('dag_rerun 拒绝 workflowId 不匹配、未知节点、运行中记录与�
   }
 })
 
-test('dag_rerun 最终历史保存失败时仍返回重跑结果并报告错误', async () => {
+void test('dag_rerun 最终历史保存失败时仍返回重跑结果并报告错误', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentops-dag-rerun-'))
   try {
     writeFileSync(join(dir, 'rerun-flow.yaml'), RERUN_YAML)
@@ -857,7 +857,7 @@ test('dag_rerun 最终历史保存失败时仍返回重跑结果并报告错误'
   }
 })
 
-test('dag_run 绑定工作流时，inputs 参数按声明生成而不是空对象', () => {
+void test('dag_run 绑定工作流时，inputs 参数按声明生成而不是空对象', () => {
   const pinnedSchema = inputsParameter([
     { name: 'question', type: 'string', required: true, description: '用户问题' },
     { name: 'database', type: 'string', required: false },
@@ -874,7 +874,7 @@ test('dag_run 绑定工作流时，inputs 参数按声明生成而不是空对�
   assert.equal(openSchema.properties, undefined)
 })
 
-test('dag_run 的交付渲染把 answer 原文交给模型', () => {
+void test('dag_run 的交付渲染把 answer 原文交给模型', () => {
   const text = deliveryText({
     present_result: { answer: '## 本周 304 笔' },
     audit: { ok: true, rows: 3 },

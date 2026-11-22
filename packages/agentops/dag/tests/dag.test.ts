@@ -15,7 +15,7 @@ const record = (calls: string[]): NodeExecutor => async (node) => {
   return { ok: true, from: node.id }
 }
 
-test('表达式：比较、布尔、括号、占位符，拒绝 eval', () => {
+void test('表达式：比较、布尔、括号、占位符，拒绝 eval', () => {
   const ctx = { result: { severity: 'reject', score: 0.8 }, count: 3 }
   assert.equal(evaluateExpression("{{result.severity}} == 'reject'", ctx), true)
   assert.equal(evaluateExpression('{{count}} >= 3 and {{result.score}} < 1', ctx), true)
@@ -28,7 +28,7 @@ test('表达式：比较、布尔、括号、占位符，拒绝 eval', () => {
   assert.throws(() => evaluateExpression("a == 'x' && b()", { a: 'x' }), ExpressionError)
 })
 
-test('校验：缺依赖、循环、gateway 无 condition、while 无限次', () => {
+void test('校验：缺依赖、循环、gateway 无 condition、while 无限次', () => {
   const missing = validateWorkflow(wf([{ id: 'a', type: 'agent', after: ['nope'] }]))
   assert.equal(missing.ok, false)
   assert.match(missing.errors.join(), /依赖不存在的节点/)
@@ -49,7 +49,7 @@ test('校验：缺依赖、循环、gateway 无 condition、while 无限次', ()
   assert.match(loop.errors.join(), /maxIterations/)
 })
 
-test('并行聚合：聚合节点必须等分支完成（旧引擎竞态回归）', () => {
+void test('并行聚合：聚合节点必须等分支完成（旧引擎竞态回归）', () => {
   const workflow = wf([
     { id: 'start', type: 'agent', after: [] },
     { id: 'b1', type: 'agent', after: ['start'] },
@@ -62,7 +62,7 @@ test('并行聚合：聚合节点必须等分支完成（旧引擎竞态回归�
   assert.ok(joinLevel > branchLevel, `join 应在分支之后：${JSON.stringify(levels)}`)
 })
 
-test('执行：线性 + 并行聚合拿到真实分支输出', async () => {
+void test('执行：线性 + 并行聚合拿到真实分支输出', async () => {
   const calls: string[] = []
   const workflow = wf([
     { id: 'start', type: 'agent', after: [] },
@@ -78,7 +78,7 @@ test('执行：线性 + 并行聚合拿到真实分支输出', async () => {
   assert.deepEqual(calls, ['start', 'b1', 'b2', 'end'])
 })
 
-test('gateway：只执行选中端口的下游分支，未选分支及后继保持 skipped', async () => {
+void test('gateway：只执行选中端口的下游分支，未选分支及后继保持 skipped', async () => {
   const workflow = wf([
     { id: 'check', type: 'agent', after: [] },
     {
@@ -104,7 +104,7 @@ test('gateway：只执行选中端口的下游分支，未选分支及后继保�
   assert.equal(run.nodes.done!.status, 'completed')
 })
 
-test('失败传播：下游跳过，上游保留结果', async () => {
+void test('失败传播：下游跳过，上游保留结果', async () => {
   const workflow = wf([
     { id: 'a', type: 'agent', after: [] },
     { id: 'b', type: 'agent', after: ['a'] },
@@ -121,7 +121,7 @@ test('失败传播：下游跳过，上游保留结果', async () => {
   assert.equal(run.nodes.c!.status, 'skipped')
 })
 
-test('while：按 continueIf 迭代，受 maxIterations 限制', async () => {
+void test('while：按 continueIf 迭代，受 maxIterations 限制', async () => {
   const seen: number[] = []
   const workflow = wf([
     { id: 'seed', type: 'agent', after: [] },
@@ -140,7 +140,7 @@ test('while：按 continueIf 迭代，受 maxIterations 限制', async () => {
   assert.deepEqual(seen, [1, 2, 3])
 })
 
-test('取消：信号中止后不再启动新节点', async () => {
+void test('取消：信号中止后不再启动新节点', async () => {
   const controller = new AbortController()
   const workflow = wf([
     { id: 'a', type: 'agent', after: [] },
@@ -154,7 +154,7 @@ test('取消：信号中止后不再启动新节点', async () => {
   assert.equal(run.nodes.b!.status, 'skipped')
 })
 
-test('校验失败直接抛错，不执行任何节点', async () => {
+void test('校验失败直接抛错，不执行任何节点', async () => {
   let called = false
   await assert.rejects(
     new DagEngine().run(wf([{ id: 'a', type: 'agent', after: ['ghost'] }]), async () => { called = true }),
@@ -179,7 +179,7 @@ function settledRun(
   }
 }
 
-test('节点失效：onlyNode 只重置目标并保留 attempts 与无关节点', () => {
+void test('节点失效：onlyNode 只重置目标并保留 attempts 与无关节点', () => {
   const workflow = wf([
     { id: 'a', type: 'agent', after: [] },
     { id: 'b', type: 'agent', after: ['a'] },
@@ -215,7 +215,7 @@ test('节点失效：onlyNode 只重置目标并保留 attempts 与无关节点'
   assert.deepEqual(next.nodes.d, run.nodes.d)
 })
 
-test('节点失效：重跑下游会传递失效，并保留非下游完成产物', () => {
+void test('节点失效：重跑下游会传递失效，并保留非下游完成产物', () => {
   const workflow = wf([
     { id: 'a', type: 'agent', after: [] },
     { id: 'b', type: 'agent', after: ['a'] },
@@ -240,7 +240,7 @@ test('节点失效：重跑下游会传递失效，并保留非下游完成产�
   assert.deepEqual(next.nodes.side, run.nodes.side)
 })
 
-test('节点失效：parallel_branch 的分支依赖参与下游传播', () => {
+void test('节点失效：parallel_branch 的分支依赖参与下游传播', () => {
   const workflow = wf([
     { id: 'start', type: 'agent', after: [] },
     { id: 'left', type: 'agent', after: ['start'] },
@@ -264,7 +264,7 @@ test('节点失效：parallel_branch 的分支依赖参与下游传播', () => {
   assert.deepEqual(next.nodes.right, run.nodes.right)
 })
 
-test('节点失效：未知节点、workflow mismatch、运行中的 run 被明确拒绝', () => {
+void test('节点失效：未知节点、workflow mismatch、运行中的 run 被明确拒绝', () => {
   const workflow = wf([{ id: 'a', type: 'agent', after: [] }], 'actual')
   const completed = settledRun('actual', { a: { status: 'completed', attempts: 1 } })
 
@@ -284,7 +284,7 @@ test('节点失效：未知节点、workflow mismatch、运行中的 run 被明�
   )
 })
 
-test('执行上下文：新运行使用调用方 runId，并向普通节点传递 inputs', async () => {
+void test('执行上下文：新运行使用调用方 runId，并向普通节点传递 inputs', async () => {
   const workflow = wf([{ id: 'a', type: 'agent', after: [] }], 'workflow-a')
   const seen: Array<{ runId: string; inputs: Readonly<Record<string, unknown>> }> = []
   const run = await new DagEngine().run(workflow, async (_node, context) => {
@@ -303,7 +303,7 @@ test('执行上下文：新运行使用调用方 runId，并向普通节点传�
   }])
 })
 
-test('执行上下文：while body 使用真实 runId 并保留 inputs 与迭代号', async () => {
+void test('执行上下文：while body 使用真实 runId 并保留 inputs 与迭代号', async () => {
   const workflow = wf([
     { id: 'seed', type: 'agent', after: [] },
     { id: 'work', type: 'agent', after: [] },
@@ -327,7 +327,7 @@ test('执行上下文：while body 使用真实 runId 并保留 inputs 与迭代
   ])
 })
 
-test('执行上下文：resume 复用原 runId，并采用本次 inputs', async () => {
+void test('执行上下文：resume 复用原 runId，并采用本次 inputs', async () => {
   const workflow = wf([
     { id: 'a', type: 'agent', after: [] },
     { id: 'b', type: 'agent', after: ['a'] },

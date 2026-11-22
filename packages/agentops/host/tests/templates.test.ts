@@ -24,7 +24,7 @@ function envelope(components: Record<string, unknown>[]) {
   return validateSurfaceEnvelope({ version: 'v1.0', catalogId: CATALOG, components })
 }
 
-test('模板：metric_group 生成合法 surface，tone 归一化', () => {
+void test('模板：metric_group 生成合法 surface，tone 归一化', () => {
   const built = buildTemplate('metric_group', {
     metrics: [
       { label: '任务总数', value: 128, unit: '件', tone: 'info' },
@@ -39,7 +39,7 @@ test('模板：metric_group 生成合法 surface，tone 归一化', () => {
   assert.equal(second.tone, 'neutral', '非法 tone 必须回落到 neutral')
 })
 
-test('模板：table 中文列名 slug 化，path 与行结构对齐', () => {
+void test('模板：table 中文列名 slug 化，path 与行结构对齐', () => {
   const built = buildTemplate('table', {
     columns: ['审核 Agent', '单量'],
     rows: [['差旅报销审核', 396], ['费用报销审核', 86]],
@@ -55,7 +55,7 @@ test('模板：table 中文列名 slug 化，path 与行结构对齐', () => {
   assert.equal(rows[0]![table.columns[0]!.id], '差旅报销审核')
 })
 
-test('模板：bar_chart 支持单系列与多系列', () => {
+void test('模板：bar_chart 支持单系列与多系列', () => {
   const single = buildTemplate('bar_chart', { items: [{ label: 'a', value: 1 }, { label: 'b', value: 2 }], unit: '单' })
   assert.equal(single.ok, true)
   if (single.ok) assert.equal(envelope(single.components).ok, true)
@@ -68,7 +68,7 @@ test('模板：bar_chart 支持单系列与多系列', () => {
   if (multi.ok) assert.equal(envelope(multi.components).ok, true)
 })
 
-test('模板：未迁移与未知类型给出可行动的拒绝原因', () => {
+void test('模板：未迁移与未知类型给出可行动的拒绝原因', () => {
   const form = buildTemplate('form', {})
   assert.equal(form.ok, false)
   if (!form.ok) assert.match(form.reason, /暂未迁移/)
@@ -78,7 +78,7 @@ test('模板：未迁移与未知类型给出可行动的拒绝原因', () => {
   if (!unknown.ok) assert.match(unknown.reason, /未知 content_type/)
 })
 
-test('模板：所有声明支持的类型都能产出合法 surface', () => {
+void test('模板：所有声明支持的类型都能产出合法 surface', () => {
   const samples: Record<string, unknown> = {
     metric_group: { metrics: [{ label: 'a', value: 1 }] },
     table: { columns: ['x', 'y'], rows: [[1, 2]] },
@@ -102,7 +102,7 @@ test('模板：所有声明支持的类型都能产出合法 surface', () => {
   assert.equal(UNSUPPORTED_TYPES.length, 3)
 })
 
-test('清理：present_content 模板通道落库，board_cleanup 能删单卡与清空', async () => {
+void test('清理：present_content 模板通道落库，board_cleanup 能删单卡与清空', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentops-board-'))
   const store = new SurfaceStore(join(dir, 'surfaces.db'))
   try {
@@ -135,7 +135,7 @@ test('清理：present_content 模板通道落库，board_cleanup 能删单卡�
   }
 })
 
-test('组件齐全：AoGrid / AoTable / AoTimeline 都能通过真实 schema', () => {
+void test('组件齐全：AoGrid / AoTable / AoTimeline 都能通过真实 schema', () => {
   const grid = envelope([
     { id: 'root', component: 'AoGrid', columns: { default: 2, compact: 1 }, children: ['m1'] },
     { id: 'm1', component: 'AoMetric', label: 'a', value: '1' },
@@ -156,7 +156,7 @@ test('组件齐全：AoGrid / AoTable / AoTimeline 都能通过真实 schema', (
   assert.equal(timeline.ok, true)
 })
 
-test('报错可读：AoGrid columns 写成数字时点出形状，不再出现误导性的 text 提示', () => {
+void test('报错可读：AoGrid columns 写成数字时点出形状，不再出现误导性的 text 提示', () => {
   const bad = envelope([
     { id: 'root', component: 'AoGrid', columns: 3, children: ['m1'] },
     { id: 'm1', component: 'AoMetric', label: 'a', value: '1' },
@@ -168,7 +168,7 @@ test('报错可读：AoGrid columns 写成数字时点出形状，不再出现�
   assert.equal(bad.reason.includes("required property 'text'"), false, '不应把 Text 分支的报错当成结论')
 })
 
-test('报错可读：AoTable 缺 columns 时明确点名，并说明列结构', () => {
+void test('报错可读：AoTable 缺 columns 时明确点名，并说明列结构', () => {
   const bad = envelope([{ id: 'root', component: 'AoTable', source: { path: '/rows' } }])
   assert.equal(bad.ok, false)
   if (bad.ok) return

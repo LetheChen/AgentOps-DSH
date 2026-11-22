@@ -23,7 +23,7 @@ async function mintScope(ctx: Context, name: string): Promise<Scope> {
 
 const keyOf = (scope: Scope) => scopeOf(scope.ctx)!
 
-test('人设原样带入：{{…}} 保留字面量，并且顶替部署人设', async () => {
+void test('人设原样带入：{{…}} 保留字面量，并且顶替部署人设', async () => {
   const ctx = await mount()
   const scope = await mintScope(ctx, 'agent-a')
   await scope.ctx.plugin(personaStatic, { text: '你是工作流节点 {{node_id}}，输入 {{question}}。' })
@@ -38,7 +38,7 @@ test('人设原样带入：{{…}} 保留字面量，并且顶替部署人设', 
   assert.doesNotMatch(global, /\{\{node_id\}\}/)
 })
 
-test('反证：不加 interpolate:false 时 strict 插值会抛错', async () => {
+void test('反证：不加 interpolate:false 时 strict 插值会抛错', async () => {
   const ctx = await mount()
   const scope = await mintScope(ctx, 'agent-b')
   scope.ctx.systemPrompt.section({ name: 'deployment:persona-prefix', order: 0, text: '节点 {{node_id}}' })
@@ -47,6 +47,6 @@ test('反证：不加 interpolate:false 时 strict 插值会抛错', async () =>
   assert.throws(() => renderPrompt(assembly), /unknown prompt variable/)
 })
 
-test('配置校验：text 必填', () => {
+void test('配置校验：text 必填', () => {
   assert.throws(() => personaStatic.Config({} as never))
 })

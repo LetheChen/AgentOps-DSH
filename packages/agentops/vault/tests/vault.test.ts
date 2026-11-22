@@ -37,7 +37,7 @@ function withoutHomeOverrides(run: () => void): void {
   }
 }
 
-test('路径：未设 DSH_HOME 时使用 ~/.dsh，不落在仓库工作目录', () => {
+void test('路径：未设 DSH_HOME 时使用 ~/.dsh，不落在仓库工作目录', () => {
   withoutHomeOverrides(() => {
     const home = join(homedir(), '.dsh', 'agentops')
     assert.equal(resolveVaultPath({}), join(home, 'credentials.db'))
@@ -47,7 +47,7 @@ test('路径：未设 DSH_HOME 时使用 ~/.dsh，不落在仓库工作目录', 
   })
 })
 
-test('路径：DSH_HOME 生效，显式配置优先', () => {
+void test('路径：DSH_HOME 生效，显式配置优先', () => {
   const previous = process.env.DSH_HOME
   process.env.DSH_HOME = join(tmpdir(), 'agentops-home')
   try {
@@ -71,7 +71,7 @@ function withStore(run: (store: ConnectionStore, dir: string) => Promise<void>):
   })
 }
 
-test('加密：同一明文两次加密密文不同，AAD 不同则打不开', () => {
+void test('加密：同一明文两次加密密文不同，AAD 不同则打不开', () => {
   const key = randomBytes(32)
   const aad = secretAad('database', 'audit_reader')
   const first = sealSecret(key, 'p@ss', aad)
@@ -82,7 +82,7 @@ test('加密：同一明文两次加密密文不同，AAD 不同则打不开', (
   assert.throws(() => openSecret(randomBytes(32), first, aad), /unable to authenticate|bad decrypt/i)
 })
 
-test('存储：列表不含密文，hasSecret 如实反映；留空密码不改动', async () => {
+void test('存储：列表不含密文，hasSecret 如实反映；留空密码不改动', async () => {
   await withStore(async (store) => {
     store.upsert({
       id: 'audit_reader', kind: 'database', name: '智能审批业务数据', driver: 'mysql',
@@ -114,7 +114,7 @@ test('存储：列表不含密文，hasSecret 如实反映；留空密码不改�
   })
 })
 
-test('存储：类型不可改，删除后读不到', async () => {
+void test('存储：类型不可改，删除后读不到', async () => {
   await withStore(async (store) => {
     store.upsert({
       id: 'host-1', kind: 'server', name: '构建机', driver: 'ssh',
@@ -130,7 +130,7 @@ test('存储：类型不可改，删除后读不到', async () => {
   })
 })
 
-test('探测：SQLite 可读文件成功，缺失文件失败且带原因', async () => {
+void test('探测：SQLite 可读文件成功，缺失文件失败且带原因', async () => {
   await withStore(async (store, dir) => {
     const { DatabaseSync } = await import('node:sqlite')
     const file = join(dir, 'audit.db')
@@ -151,7 +151,7 @@ test('探测：SQLite 可读文件成功，缺失文件失败且带原因', asyn
   })
 })
 
-test('审计：写进 security.db 的 audit_events，detail 不含密码', async () => {
+void test('审计：写进 security.db 的 audit_events，detail 不含密码', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentops-audit-'))
   const path = join(dir, 'security.db')
   try {

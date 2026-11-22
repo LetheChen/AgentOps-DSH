@@ -26,7 +26,7 @@ function createTask(store: LogCollectionStore) {
   })
 }
 
-test('creates, lists and resolves a task under tenant/task directory', () => {
+void test('creates, lists and resolves a task under tenant/task directory', () => {
   const { db, store, root } = openStore()
   try {
     const task = createTask(store)
@@ -40,7 +40,7 @@ test('creates, lists and resolves a task under tenant/task directory', () => {
   }
 })
 
-test('rejects relative or traversing remote paths', () => {
+void test('rejects relative or traversing remote paths', () => {
   const { db, store, root } = openStore()
   try {
     assert.throws(() => store.create({
@@ -53,7 +53,7 @@ test('rejects relative or traversing remote paths', () => {
   }
 })
 
-test('enforces optimistic revision checks', () => {
+void test('enforces optimistic revision checks', () => {
   const { db, store, root } = openStore()
   try {
     const task = createTask(store)
@@ -66,7 +66,7 @@ test('enforces optimistic revision checks', () => {
   }
 })
 
-test('keeps task ids reserved after soft delete', () => {
+void test('keeps task ids reserved after soft delete', () => {
   const { db, store, root } = openStore()
   try {
     const task = createTask(store)
@@ -82,7 +82,7 @@ test('keeps task ids reserved after soft delete', () => {
   }
 })
 
-test('requires an explicit task ACL and supports revoke plus new generation', () => {
+void test('requires an explicit task ACL and supports revoke plus new generation', () => {
   const { db, store, root } = openStore()
   try {
     const task = createTask(store)
@@ -99,7 +99,7 @@ test('requires an explicit task ACL and supports revoke plus new generation', ()
   }
 })
 
-test('does not leak tasks across tenants', () => {
+void test('does not leak tasks across tenants', () => {
   const { db, store, root } = openStore()
   try {
     createTask(store)
@@ -110,7 +110,7 @@ test('does not leak tasks across tenants', () => {
     rmSync(root, { recursive: true, force: true })
   }
 })
-test('resolves a business-local subdirectory and rejects traversal', () => {
+void test('resolves a business-local subdirectory and rejects traversal', () => {
   const { db, store, root } = openStore()
   try {
     const task = store.create({

@@ -57,7 +57,7 @@ nodes:
     after: [route]
 `
 
-test('YAML 加载：映射节点、to 端口、并行分支、gateway 条件', () => {
+void test('YAML 加载：映射节点、to 端口、并行分支、gateway 条件', () => {
   const wf = parseWorkflowYaml(YAML)
   assert.equal(wf.id, 'travel-expense')
   assert.equal(wf.nodes.length, 8)
@@ -72,12 +72,12 @@ test('YAML 加载：映射节点、to 端口、并行分支、gateway 条件', (
   assert.equal(result.ok, true, result.errors.join('；'))
 })
 
-test('YAML 加载：未知 type 与缺失 workflow_id 明确报错', () => {
+void test('YAML 加载：未知 type 与缺失 workflow_id 明确报错', () => {
   assert.throws(() => parseWorkflowYaml('nodes:\n  a:\n    type: magic\n'), WorkflowParseError)
   assert.throws(() => parseWorkflowYaml('nodes: {}\n'), /workflow_id/)
 })
 
-test('YAML 加载：保留协作视图使用的节点展示元数据', () => {
+void test('YAML 加载：保留协作视图使用的节点展示元数据', () => {
   const wf = parseWorkflowYaml(`
 workflow_id: metadata
 nodes:
@@ -102,7 +102,7 @@ nodes:
   })
 })
 
-test('skip_if 命中：节点标记完成但带 skipped 原因，下游继续', async () => {
+void test('skip_if 命中：节点标记完成但带 skipped 原因，下游继续', async () => {
   const wf = parseWorkflowYaml(YAML)
   const calls: string[] = []
   const run = await new DagEngine().run(wf, async (node) => {
@@ -116,7 +116,7 @@ test('skip_if 命中：节点标记完成但带 skipped 原因，下游继续', 
   assert.ok(calls.includes('step3') || calls.includes('branch_a'), '下游仍应执行')
 })
 
-test('运行存储：保存后可读回，列表按时间倒序', () => {
+void test('运行存储：保存后可读回，列表按时间倒序', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentops-run-'))
   const path = join(dir, 'runs.db')
   try {
@@ -143,7 +143,7 @@ test('运行存储：保存后可读回，列表按时间倒序', () => {
   }
 })
 
-test('运行存储：节点级起止时间跨重开仍可读，且可从两者算出耗时', () => {
+void test('运行存储：节点级起止时间跨重开仍可读，且可从两者算出耗时', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentops-run-time-'))
   const path = join(dir, 'runs.db')
   try {
@@ -183,7 +183,7 @@ test('运行存储：节点级起止时间跨重开仍可读，且可从两者�
   }
 })
 
-test('断点续跑：已完成节点不再执行，失败节点重跑', async () => {
+void test('断点续跑：已完成节点不再执行，失败节点重跑', async () => {
   const wf = parseWorkflowYaml(YAML)
   const firstCalls: string[] = []
   const first = await new DagEngine().run(wf, async (node) => {
@@ -204,7 +204,7 @@ test('断点续跑：已完成节点不再执行，失败节点重跑', async ()
   assert.ok(secondCalls.includes('branch_a'), '失败节点应重跑')
 })
 
-test('取消后的运行可保存为 cancelled 状态', async () => {
+void test('取消后的运行可保存为 cancelled 状态', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentops-run2-'))
   const path = join(dir, 'runs.db')
   try {
@@ -224,7 +224,7 @@ test('取消后的运行可保存为 cancelled 状态', async () => {
   }
 })
 
-test('运行存储：运行输入跨重开保留在详情记录中', () => {
+void test('运行存储：运行输入跨重开保留在详情记录中', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentops-run-inputs-'))
   const path = join(dir, 'runs.db')
   try {
@@ -245,7 +245,7 @@ test('运行存储：运行输入跨重开保留在详情记录中', () => {
   }
 })
 
-test('运行存储：旧库自动增加 inputs 列，旧记录按空对象读取', () => {
+void test('运行存储：旧库自动增加 inputs 列，旧记录按空对象读取', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentops-run-legacy-inputs-'))
   const path = join(dir, 'runs.db')
   try {
