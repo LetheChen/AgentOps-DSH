@@ -137,9 +137,9 @@ export function registerCatalogRoutes(ctx: Context, domainDir: string, actorDir:
       path: '/api/agentops/domain-registry',
       methods: ['GET'],
       requestBody: 'buffered',
-      fetch: async () => new Response(JSON.stringify({ domains: scanDomains(domainDir).entries }), {
+      fetch: () => Promise.resolve(new Response(JSON.stringify({ domains: scanDomains(domainDir).entries }), {
         headers: { 'content-type': 'application/json; charset=utf-8' },
-      }),
+      })),
     }), 'agentops-system: GET /api/agentops/domain-registry')
   }
 
@@ -148,7 +148,7 @@ export function registerCatalogRoutes(ctx: Context, domainDir: string, actorDir:
       path: '/api/agentops/actors',
       methods: ['GET'],
       requestBody: 'buffered',
-      fetch: async () => json({ actors: scanActors(actorDir).entries }),
+      fetch: () => Promise.resolve(json({ actors: scanActors(actorDir).entries })),
     }), 'agentops-system: GET /api/agentops/actors')
   }
 }

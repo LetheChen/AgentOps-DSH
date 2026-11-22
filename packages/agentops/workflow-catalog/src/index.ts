@@ -65,7 +65,7 @@ export class WorkflowCatalogService extends Service {
    */
   constructor(ctx: Context, config: WorkflowCatalogConfig) {
     super(ctx, 'workflowCatalog')
-    if (typeof config?.directory !== 'string' || config.directory.trim() === '') {
+    if (typeof config.directory !== 'string' || config.directory.trim() === '') {
       throw new TypeError('workflowCatalog 需要非空的 directory 配置')
     }
     this.directory = config.directory

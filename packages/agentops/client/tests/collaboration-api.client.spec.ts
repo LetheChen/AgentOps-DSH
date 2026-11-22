@@ -368,7 +368,7 @@ describe('collaboration activity API', () => {
     expect(requestInit?.credentials).toBe('include')
     expect(requestInit?.signal).toBe(controller.signal)
     expect(new Headers(requestInit?.headers).get('content-type')).toBe('application/json')
-    expect(JSON.parse(String(requestInit?.body))).toEqual({
+    expect(JSON.parse(requestInit?.body as string)).toEqual({
       runId: 'run-1',
       workflowId: 'log-patrol',
       nodeId: 'analyze',

@@ -443,7 +443,7 @@ it('rejects an out-of-order acknowledgement and reports synchronous send failure
   await expect.poll(() => h.model.state.getSnapshot().issue).toBe('invalidOutput')
   h.model.connect()
   await expect.poll(() => h.model.state.getSnapshot().writable).toBe(true)
-  const handle = vi.mocked(h.remote.attach).mock.results.at(-1)!.value
+  const handle = vi.mocked(h.remote.attach).mock.results.at(-1)!.value as { send: (input: unknown) => void }
   vi.spyOn(handle, 'send').mockImplementation(() => { throw new Error('send failed') })
   h.model.write('next')
   expect(h.model.state.getSnapshot()).toMatchObject({ phase: 'failed', error: 'send failed' })

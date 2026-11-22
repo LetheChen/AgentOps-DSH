@@ -36,8 +36,15 @@ function toneOf(value: unknown, fallback: Tone = 'neutral'): Tone {
   return TONES.includes(value as Tone) ? value as Tone : fallback
 }
 
+function primitiveText(value: unknown): string | undefined {
+  if (typeof value === 'string') return value
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') return String(value)
+  if (typeof value === 'symbol') return value.toString()
+  return undefined
+}
+
 function str(value: unknown, fallback = ''): string {
-  return value === null || value === undefined ? fallback : String(value)
+  return primitiveText(value) ?? fallback
 }
 
 function arrayOf(value: unknown): unknown[] {
@@ -47,8 +54,8 @@ function arrayOf(value: unknown): unknown[] {
 function pick(row: unknown, keys: string[], fallback = ''): string {
   if (row === null || typeof row !== 'object') return fallback
   for (const key of keys) {
-    const value = (row as Record<string, unknown>)[key]
-    if (value !== null && value !== undefined) return String(value)
+    const value = primitiveText((row as Record<string, unknown>)[key])
+    if (value !== undefined) return value
   }
   return fallback
 }

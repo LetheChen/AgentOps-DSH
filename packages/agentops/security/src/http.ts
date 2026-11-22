@@ -68,9 +68,9 @@ export function registerSecurityRoutes(ctx: Context, store: SecurityStore): void
       path: route.path,
       methods: ['GET'],
       requestBody: 'buffered',
-      fetch: async request => new Response(JSON.stringify(route.body(request)), {
+      fetch: request => Promise.resolve(new Response(JSON.stringify(route.body(request)), {
         headers: { 'content-type': 'application/json; charset=utf-8' },
-      }),
+      })),
     }), `agentops-security: ${route.path}`)
   }
 }

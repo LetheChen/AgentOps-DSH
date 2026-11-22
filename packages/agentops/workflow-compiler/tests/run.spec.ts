@@ -60,7 +60,7 @@ describe('runNode 超时', () => {
     const attempt = (signal: AbortSignal): Promise<never> => {
       signals.push(signal)
       return new Promise<never>((_resolve, reject) => {
-        signal.addEventListener('abort', () =>{  reject(signal.reason) }, { once: true })
+        signal.addEventListener('abort', () => { reject(signal.reason instanceof Error ? signal.reason : new Error('aborted')) }, { once: true })
       })
     }
     const { sleep } = fakeSleep()

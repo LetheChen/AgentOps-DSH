@@ -138,7 +138,7 @@ function createTool(
  * @param config - preset binding and optional fixed instance.
  */
 export function apply(ctx: Context, config: NotifyToolsConfig): void {
-  const agentPreset = config.agentPreset?.trim() ?? ''
+  const agentPreset = config.agentPreset.trim()
   if (agentPreset === '') {
     throw new Error('@agentops/dsh-capability/tools requires config.agentPreset; add it to the preset plugin row')
   }

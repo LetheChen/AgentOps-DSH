@@ -989,7 +989,7 @@ describe('collaboration panel', () => {
       if (path === '/api/agentops/runs') return jsonResponse(runPage('completed'))
       if (path === '/api/agentops/workflow-rerun') {
         order.push('rerun')
-        rerunBody = JSON.parse(String(init?.body))
+        rerunBody = JSON.parse(init?.body as string)
         return jsonResponse({
           ok: true,
           sessionId: 'session-rerun-1',

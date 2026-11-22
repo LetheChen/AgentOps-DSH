@@ -18,7 +18,7 @@ async function mount(): Promise<Context> {
       name: toolName,
       description: `test tool ${toolName}`,
       parameters: {},
-      output: { schema: { type: 'string' }, render: (_args, value) => [{ type: 'text', text: String(value) }] },
+      output: { schema: { type: 'string' }, render: (_args, value) => [{ type: 'text', text: value }] },
       execute: () => Promise.resolve(`ran:${toolName}`),
     }))
   }

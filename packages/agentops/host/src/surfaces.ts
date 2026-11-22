@@ -444,9 +444,9 @@ export function registerSurfaceRoutes(ctx: Context, store: SurfaceStore): void {
     path: '/api/agentops/surfaces',
     methods: ['GET'],
     requestBody: 'buffered',
-    fetch: async (request) => {
+    fetch: (request) => {
       const limit = Math.min(Math.max(Number(new URL(request.url).searchParams.get('limit') ?? '20') || 20, 1), 100)
-      return json({ surfaces: store.list(limit) })
+      return Promise.resolve(json({ surfaces: store.list(limit) }))
     },
   }), 'agentops-system: /api/agentops/surfaces')
 
@@ -477,14 +477,14 @@ export function registerSurfaceRoutes(ctx: Context, store: SurfaceStore): void {
     path: '/api/agentops/surfaces/views',
     methods: ['GET'],
     requestBody: 'buffered',
-    fetch: async () => json({ views: store.views() }),
+    fetch: () => Promise.resolve(json({ views: store.views() })),
   }), 'agentops-system: /api/agentops/surfaces/views')
 
   ctx.effect(() => ctx.connection.fetch.register({
     path: '/api/agentops/surfaces/latest',
     methods: ['GET'],
     requestBody: 'buffered',
-    fetch: async () => json({ surface: store.latest() }),
+    fetch: () => Promise.resolve(json({ surface: store.latest() })),
   }), 'agentops-system: /api/agentops/surfaces/latest')
 }
 
@@ -544,7 +544,7 @@ export function createPresentContentTool(store: SurfaceStore): ToolDefinition {
         type: 'text',
         text:  value.stored
           ? `已发布会话面板 surface（#${String(value.id)}，${String(value.components)} 个组件）`
-          : `surface 未发布：${String(value.reason ?? '校验失败')}`,
+          : `surface 未发布：${value.reason ?? '校验失败'}`,
       }],
     },
     execute(args) {
@@ -615,7 +615,7 @@ export function createBoardCleanupTool(store: SurfaceStore): ToolDefinition {
       },
       render: (_args, value) => [{
         type: 'text',
-        text:  value.ok ? `已删除 ${String(value.removed)} 张卡片` : `未删除：${String(value.reason ?? '未知原因')}`,
+        text:  value.ok ? `已删除 ${String(value.removed)} 张卡片` : `未删除：${value.reason ?? '未知原因'}`,
       }],
     },
     execute(args) {

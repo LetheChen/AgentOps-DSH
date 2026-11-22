@@ -425,7 +425,7 @@ export function AgentsPanel({
         </section>
       )}
 
-      {!showSkeleton && catalogMissing && catalog !== null && (
+      {!showSkeleton && catalogMissing && (
         <section className="agx-empty-state">
           <h2>{t('page.catalogMissing')}</h2>
           <p>{t('page.catalogMissingDescription')}</p>

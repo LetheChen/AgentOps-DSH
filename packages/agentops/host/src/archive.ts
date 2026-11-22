@@ -40,10 +40,11 @@ export interface ArchiveListing {
  */
 export function scanArchive(dir: string, limit = 200, maxDepth = 3): ArchiveListing {
   const entries: ArchiveEntry[] = []
-  let truncated = false
+  const state = { truncated: false }
+  const isTruncated = (): boolean => state.truncated
 
   const walk = (current: string, depth: number): void => {
-    if (depth > maxDepth || truncated) return
+    if (depth > maxDepth || isTruncated()) return
     let children: string[]
     try {
       children = readdirSync(current)
@@ -51,7 +52,7 @@ export function scanArchive(dir: string, limit = 200, maxDepth = 3): ArchiveList
       return
     }
     for (const child of children) {
-      if (truncated) return
+      if (isTruncated()) return
       const full = join(current, child)
       let stat
       try {
@@ -63,7 +64,7 @@ export function scanArchive(dir: string, limit = 200, maxDepth = 3): ArchiveList
         walk(full, depth + 1)
         continue
       }
-      if (entries.length >= limit) { truncated = true; return }
+      if (entries.length >= limit) { state.truncated = true; return }
       entries.push({
         name: child,
         path: relative(dir, full).split('\\').join('/'),
@@ -77,12 +78,12 @@ export function scanArchive(dir: string, limit = 200, maxDepth = 3): ArchiveList
   try {
     statSync(dir)
   } catch {
-    return { dir, entries: [], truncated: false, missing: true }
+    return { dir, entries: [], truncated: state.truncated, missing: true }
   }
 
   walk(dir, 0)
   entries.sort((left, right) => right.mtime.localeCompare(left.mtime))
-  return { dir, entries, truncated, missing: false }
+  return { dir, entries, truncated: state.truncated, missing: false }
 }
 
 /**
@@ -95,8 +96,8 @@ export function registerArchiveRoute(ctx: Context, dir: string): void {
     path: '/api/agentops/archive',
     methods: ['GET'],
     requestBody: 'buffered',
-    fetch: async () => new Response(JSON.stringify(scanArchive(dir)), {
+    fetch: () => Promise.resolve(new Response(JSON.stringify(scanArchive(dir)), {
       headers: { 'content-type': 'application/json; charset=utf-8' },
-    }),
+    })),
   }), 'agentops-system: /api/agentops/archive')
 }

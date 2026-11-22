@@ -266,7 +266,7 @@ export function SurfaceScreen({
           : Array.from({ length: columns }, (_, column) => (
             <div key={column} style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: '1 1 0', minWidth: 0 }}>
               {shownViews
-                .filter((_, index) => index % (columns ?? 1) === column)
+                .filter((_, index) => index % columns === column)
                 .map(row => (
                   <Card
                     key={row.viewId}

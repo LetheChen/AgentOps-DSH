@@ -95,8 +95,9 @@ export function apply(ctx: Context, config: TaskPluginConfig = DEFAULT_CONFIG): 
   const api = new TaskHttpApi(service, db, {
     exportRootDir,
     listWorkspaces: () => {
-      const registry = ctx.get('workspaceRegistry' as never) as unknown as { list(): readonly { id: string; title: string; path: string }[] } | undefined
-      return registry?.list().map(workspace => ({ workspace_id: String(workspace.id), title: workspace.title, path: workspace.path })) ?? []
+      // The workspace registry is an optional cross-package service; its typed key is not augmented in this package.
+      const registry = (ctx.get as (name: string) => unknown)('workspaceRegistry') as { list(): readonly { id: string; title: string; path: string }[] } | undefined
+      return registry?.list().map(workspace => ({ workspace_id: workspace.id, title: workspace.title, path: workspace.path })) ?? []
     },
   })
   ctx.inject(['connection'], (connectionCtx) => {

@@ -75,7 +75,7 @@ describe('agent catalogue API', () => {
   it('loads the catalogue without exposing malformed details as data', async () => {
     let capturedUrl = ''
     const fetchImpl: typeof fetch = async (input) => {
-      capturedUrl = String(input)
+      capturedUrl = input instanceof Request ? input.url : input.toString()
       return jsonResponse({ dir: '/srv/agents', missing: false, entries: [AGENT] })
     }
 
@@ -99,7 +99,7 @@ describe('agent catalogue API', () => {
   it('loads the live model catalog with provider failures isolated', async () => {
     let captured: { readonly url: string; readonly init: RequestInit } | undefined
     const fetchImpl: typeof fetch = async (input, init = {}) => {
-      captured = { url: String(input), init }
+      captured = { url: input instanceof Request ? input.url : input.toString(), init }
       return jsonResponse({
         providers: [{
           id: 'deepseek',
@@ -133,7 +133,7 @@ describe('agent catalogue API', () => {
   it('loads one Agent with its non-fatal issues', async () => {
     let captured: { readonly url: string; readonly init: RequestInit } | undefined
     const fetchImpl: typeof fetch = async (input, init = {}) => {
-      captured = { url: String(input), init }
+      captured = { url: input instanceof Request ? input.url : input.toString(), init }
       return jsonResponse(operationPayload({}, [{
         path: 'tier',
         message: 'tier missing; defaulted to T2',
@@ -159,7 +159,7 @@ describe('agent catalogue API', () => {
   ] as const)('%s sends the complete camelCase Agent record', async (_name, request, path) => {
     let captured: { readonly url: string; readonly init: RequestInit } | undefined
     const fetchImpl: typeof fetch = async (input, init = {}) => {
-      captured = { url: String(input), init }
+      captured = { url: input instanceof Request ? input.url : input.toString(), init }
       return jsonResponse(operationPayload())
     }
 
@@ -171,7 +171,7 @@ describe('agent catalogue API', () => {
   it('deletes by Agent id and returns the confirmed id', async () => {
     let captured: { readonly url: string; readonly init: RequestInit } | undefined
     const fetchImpl: typeof fetch = async (input, init = {}) => {
-      captured = { url: String(input), init }
+      captured = { url: input instanceof Request ? input.url : input.toString(), init }
       return jsonResponse({ ok: true, value: { agentId: 'log_analyst' } })
     }
 
@@ -216,7 +216,7 @@ describe('agent catalogue API', () => {
   it('loads the tool catalogue with its migration targets', async () => {
     let capturedUrl = ''
     const fetchImpl: typeof fetch = async (input) => {
-      capturedUrl = String(input)
+      capturedUrl = input instanceof Request ? input.url : input.toString()
       return jsonResponse({
         file: '/srv/mappings/tool-map.yaml',
         missing: false,

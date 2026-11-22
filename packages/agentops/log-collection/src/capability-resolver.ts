@@ -88,7 +88,15 @@ export class CapabilitySshResolver implements SshCapabilityResolver {
    * @param expectedRevision - frozen credential generation.
    * @returns password or private key material.
    */
-  async readCredential(instanceId: string, expectedRevision: string): Promise<SshCredential> {
+  readCredential(instanceId: string, expectedRevision: string): Promise<SshCredential> {
+    try {
+      return Promise.resolve(this.#resolveCredential(instanceId, expectedRevision))
+    } catch (error) {
+      return Promise.reject(error instanceof Error ? error : new Error('credential resolution failed', { cause: error }))
+    }
+  }
+
+  #resolveCredential(instanceId: string, expectedRevision: string): SshCredential {
     const instance = this.#source.getInstance(instanceId)
     if (instance === null || instance.capabilityId !== 'ssh' || instance.status !== 'enabled') {
       throw new LogCollectionError('CAPABILITY_INSTANCE_UNAVAILABLE', `SSH instance ${instanceId} is unavailable`)

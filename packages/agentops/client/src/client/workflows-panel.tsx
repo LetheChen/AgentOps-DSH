@@ -2110,7 +2110,7 @@ export function WorkflowsPanel({
                         nodeOutputsLabel={ports => t('canvas.node.outputs', { ports: ports.join(', ') })}
                         nodeNoOutputsLabel={t('canvas.node.noOutputs')}
                         editable={canEditCanvas}
-                        selectable={graph !== null}
+                        selectable
                         {...(selection?.kind === 'node' ? { selectedNodeId: selection.id } : {})}
                         {...(selectedCanvasEdge === null ? {} : { selectedEdge: selectedCanvasEdge })}
                         onNodeSelect={selectNode}

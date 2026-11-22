@@ -52,7 +52,7 @@ function onlyRegistrar(
 export async function createVaultResolver(vaultPath: string): Promise<(datasource: DatasourceConfig) => Promise<Target | null>> {
   const { ConnectionStore } = await import('@agentops/dsh-vault/src/store.ts')
   const store = new ConnectionStore(vaultPath)
-  return async (datasource) => {
+  const resolve = (datasource: DatasourceConfig): Target | null => {
     const connection = store.get(datasource.key)
     if (connection !== null && connection.kind === 'database') {
       let password: string | null = null
@@ -74,6 +74,7 @@ export async function createVaultResolver(vaultPath: string): Promise<(datasourc
     if (env !== undefined && env.trim().length > 0) return parseDsn(datasource, env.trim())
     return null
   }
+  return datasource => Promise.resolve(resolve(datasource))
 }
 
 /**

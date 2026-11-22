@@ -110,9 +110,9 @@ export function registerToolCatalogRoute(ctx: Context, file: string): void {
     path: '/api/agentops/tools',
     methods: ['GET'],
     requestBody: 'buffered',
-    fetch: async () => new Response(JSON.stringify(readToolCatalog(file)), {
+    fetch: () => Promise.resolve(new Response(JSON.stringify(readToolCatalog(file)), {
       headers: { 'content-type': 'application/json; charset=utf-8' },
-    }),
+    })),
   }), 'agentops-system: /api/agentops/tools')
 }
 

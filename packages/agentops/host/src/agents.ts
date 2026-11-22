@@ -231,7 +231,7 @@ export function registerAgentsRoute(ctx: Context, dir: string): void {
     path: '/api/agentops/agents',
     methods: ['GET'],
     requestBody: 'buffered',
-    fetch: async () => json(scanAgents(dir)),
+    fetch: () => Promise.resolve(json(scanAgents(dir))),
   }), 'agentops-system: GET /api/agentops/agents')
 
   ctx.effect(() => ctx.connection.fetch.register({

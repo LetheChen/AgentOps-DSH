@@ -179,7 +179,7 @@ export class ConnectionStore {
         .run(sealed, now, input.id)
     }
     const saved = this.get(input.id)
-    if (saved === undefined || saved === null) throw new Error('connection disappeared during upsert')
+    if (saved === null) throw new Error('connection disappeared during upsert')
     return saved
   }
 

@@ -58,10 +58,10 @@ export function registerVaultRoutes(ctx: Context, store: ConnectionStore): void 
     path: '/api/agentops/connections',
     methods: ['GET'],
     requestBody: 'buffered',
-    fetch: async (request) => {
+    fetch: (request) => {
       const kind = new URL(request.url).searchParams.get('kind')
       const filter = kind === 'database' || kind === 'server' ? kind : undefined
-      return json({ connections: store.list(filter) })
+      return Promise.resolve(json({ connections: store.list(filter) }))
     },
   }), 'agentops-vault: list connections')
 
@@ -112,7 +112,7 @@ export function registerVaultRoutes(ctx: Context, store: ConnectionStore): void 
       } catch {
         return json({ ok: false, reason: '请求体不是合法 JSON' }, 400)
       }
-      const id = typeof (body as { id?: unknown })?.id === 'string' ? (body as { id: string }).id : ''
+      const id = typeof (body as { id?: unknown }).id === 'string' ? (body as { id: string }).id : ''
       if (id === '') return json({ ok: false, reason: '缺少 id' }, 400)
       const removed = store.remove(id)
       appendAudit({ action: 'connection.delete', target: id, result: removed ? 'ok' : 'fail' })
@@ -124,9 +124,9 @@ export function registerVaultRoutes(ctx: Context, store: ConnectionStore): void 
     path: '/api/agentops/connections/audit',
     methods: ['GET'],
     requestBody: 'buffered',
-    fetch: async (request) => {
+    fetch: (request) => {
       const limit = Math.min(Math.max(Number(new URL(request.url).searchParams.get('limit') ?? '20') || 20, 1), 100)
-      return json({ events: listCredentialAudit(limit) })
+      return Promise.resolve(json({ events: listCredentialAudit(limit) }))
     },
   }), 'agentops-vault: credential audit')
 
@@ -141,7 +141,7 @@ export function registerVaultRoutes(ctx: Context, store: ConnectionStore): void 
       } catch {
         return json({ ok: false, reason: '请求体不是合法 JSON' }, 400)
       }
-      const id = typeof (body as { id?: unknown })?.id === 'string' ? (body as { id: string }).id : ''
+      const id = typeof (body as { id?: unknown }).id === 'string' ? (body as { id: string }).id : ''
       const connection = id === '' ? null : store.get(id)
       if (connection === null) return json({ ok: false, reason: `未知连接：${id}` }, 404)
       let secret: string | null = null
