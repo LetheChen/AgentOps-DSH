@@ -39,7 +39,7 @@ Use it for read-only audit queries; writes belong to the owning domain package. 
 | `src/guard.ts` | Table allowlist and schema checks |
 | `src/instances.ts` | Capability-first instance resolution and AgentOps access-policy normalization |
 | `src/query.ts` | SQLite, MySQL and PostgreSQL execution plus schema introspection |
-| `src/tools.ts` | `sql_query` and `describe_database` over one resolved instance |
+| `src/tools.ts` | `sql_query` and `describe_database` over one resolved instance, including schema metadata and display SQL |
 | `src/dsh.ts` | Plugin entry and route registration |
 | `src/datasources.ts` | Legacy datasource metadata |
 
@@ -67,7 +67,7 @@ None; this package neither constructs nor sends model requests.
 
 <a id="known-limitations-and-deferred-work"></a>
 
-- **The allowlist rejects bare table names** — every `FROM`/`JOIN` target must be schema-qualified unless it is a local CTE or derived-table name; replacing the string check with a SQLite authorizer is still deferred.
+- **The allowlist rejects bare table names** — every `FROM`/`JOIN` target must be schema-qualified unless it is a local CTE or derived-table name; a full SQL parser and SQLite authorizer remain deferred.
 - **Cross-package source import** — the store reaches into the vault package source instead of a declared dependency.
 - **Metadata fallback writes samples** — an unreadable datasource file is replaced by generated sample rows rather than failing loud.
 

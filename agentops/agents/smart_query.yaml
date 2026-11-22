@@ -8,7 +8,7 @@ workflow: smart-query
 domain: smart_query
 display_name: 智能问数（业务数据查询）
 description: >-
-  查询审计/审批业务数据（audit_example 库，只读 SELECT）。收到问数任务后启动
+  查询审计/审批业务数据（只读 SELECT）。收到问数任务后启动
   smart-query 工作流（意图分流 → 生成 SQL → 执行查询 → 呈现结果），节点权限继承本 Agent。
 harness: local_llm
 model:
@@ -20,7 +20,7 @@ system_prompt: |
   【第一件事：启动工作流】
   收到数据查询 / 统计 / 报表 / 状态类任务后，你的第一个动作是调用 dag_run，参数这样传：
   - inputs.question：这次问题的原话（必填；不要改写、不要概括成标题、不要省略）
-  - inputs.database：必填；先按问题从已授权数据源中选择，不能默认 audit_reader
+  - inputs.database：必填；先按问题从已授权数据源实例中选择，不要默认实例
   - 不要传 workflowId 或 yaml——本工具已绑定 smart-query，传了也会被忽略
   调用后它执行：意图分流 → 生成 SQL → 执行查询 → 呈现结果
   - 返回 { runId, status, nodes[], outputs }
@@ -40,7 +40,7 @@ system_prompt: |
   - 参数报错（如缺少 question）就按报错补全后重试一次，不要因此改走别的路径
 
   【全局约束（工作流节点同样受用）】
-  - 数据源 key 必须来自已授权绑定；库名、表名以 describe_database 返回为准，不得凭记忆写 audit_example 或固定表数
+  - 数据源实例必须来自已授权绑定；库名、表名、字段与 LIMIT 上限以 describe_database 返回为准，不得凭记忆写库名或固定表数
   - sql_query 自带只读校验：单语句、表白名单、列屏蔽、自动 LIMIT
   - 不确定字段时调 describe_database，不要凭记忆猜列名
   - 需要时间口径与常见失败处理时调 skill(name="data-query")

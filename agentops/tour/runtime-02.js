@@ -44,7 +44,7 @@
       nodes: {
         route_intent: {state:'completed', input:{question:'本月审批通过率是多少？'}, output:{intent:true,reason:'问题要求统计审批通过率'}},
         refuse_intent: {state:'skip', input:{skippedBy:'skip_if: {{route_intent.intent}}'}, output:{skipped:true,reason:'{{route_intent.intent}}'}},
-        plan_sql: {state:'completed', input:{question:'本月审批通过率是多少？',database:'audit_reader'}, output:{sql:'SELECT /* 教学模拟，非实跑 */ ... FROM audit_example.<table> WHERE receive_time >= 本月起点'}},
+        plan_sql: {state:'completed', input:{question:'本月审批通过率是多少？',database:'audit_reader'}, output:{sql:'SELECT /* 教学模拟，非实跑 */ ... FROM <schema>.<table> WHERE receive_time >= 本月起点'}},
         run_sql: {state:'completed', input:{database:'audit_reader',sql:'SELECT /* 教学模拟 */ ...'}, output:{ok:true,columns:['total','approved','approval_rate'],rows:[{total:128,approved:109,approval_rate:85.16}],row_count:1,truncated:false}},
         present_result: {state:'completed', input:{question:'本月审批通过率是多少？',result:'run_sql.result'}, output:{answer:'本月审批通过率约为 85.16%（109 / 128）。这是教学模拟值，并非生产数据。'}}
       },

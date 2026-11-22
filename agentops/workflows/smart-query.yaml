@@ -15,7 +15,7 @@ inputs:
   - name: database
     type: string
     required: true
-    description: "必须选择已授权数据源实例；不能默认 audit_reader，库名与表名以 describe_database 为准"
+    description: "必须选择已授权数据源实例；不要默认实例，库名与表名以 describe_database 为准"
 nodes:
   route_intent:
     name: 意图分流
@@ -100,7 +100,7 @@ nodes:
       - sql 取上游 plan_sql 的 sql 端口
 
       查询成功后输出 result 端口，内容是 JSON：
-        {"ok": true, "columns": [...], "rows": [...], "row_count": N, "truncated": bool}
+        {"ok": true, "columns": [...], "rows": [...], "row_count": N, "truncated": bool, "executed_sql": "<工具返回的真实执行 SQL>", "display_sql": "<工具返回的展示 SQL>"}
       行数超过 50 时只保留前 50 行并把 truncated 置为 true。
 
       查询失败时先判断错误类型：
@@ -111,7 +111,7 @@ nodes:
       - 不能自修（权限、表白名单、连接失败、超时）：不要重试。
 
       自修一次仍失败，或属于不可自修的错误，输出 result 端口：
-        {"ok": false, "error": "工具返回的错误原文", "attempts": 1, "sql": "最后执行的那条 SQL"}
+        {"ok": false, "error": "工具返回的错误原文", "attempts": 1, "sql": "最后执行的那条展示 SQL", "executed_sql": "最后执行的那条真实 SQL"}
 
       不要改变业务口径来凑结果；不要编造数据。
     outputs:
@@ -128,6 +128,7 @@ nodes:
     role_prompt: |
       把 result 翻译成用户能看懂的回答（markdown）。
 
+      - 展示 SQL 一律使用 result 中的 display_sql，不要输出 executed_sql 或真实库名。
       - ok=false：如实回显 error，建议检查字段/表名/时间范围，不要编造
       - row_count=0：说明无匹配数据，提示可能的时间范围或筛选问题
       - 有数据：1-2 句结论 + 关键数字（含对比）+ 数据来源与时间范围标注 + 表格

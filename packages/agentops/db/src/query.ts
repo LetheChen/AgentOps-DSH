@@ -19,6 +19,8 @@ import type { DatasourceWhitelist } from './guard.ts'
 export interface QueryPolicy {
   /** Identifier used in rendered output and error messages. */
   readonly key: string
+  /** Human label used by schema and result rendering. */
+  readonly displayName: string
   /** Read-only guard policy. */
   readonly whitelist: DatasourceWhitelist
 }
@@ -53,6 +55,12 @@ export interface TableColumn {
 /** Column layout of a datasource's whitelisted tables. */
 export interface SchemaDescription {
   readonly datasource: string
+  /** Human-facing datasource label. */
+  readonly displayName: string
+  /** Schema or MySQL database the introspected tables belong to. */
+  readonly schema: string
+  /** Rows a single query may return. */
+  readonly maxRows: number
   readonly tables: Readonly<Record<string, readonly TableColumn[]>>
   readonly source: 'introspection' | 'unavailable'
   readonly note?: string
@@ -82,7 +90,7 @@ export async function runQuery(policy: QueryPolicy, target: Target, sql: string)
     try {
       const [rows, fields] = await handle.query(sql)
       const list = rows as Record<string, unknown>[]
-      const columns = (fields ?? []).map(field => field.name)
+      const columns = fields.map(field => field.name)
       return {
         columns: columns.length > 0 ? columns : (list[0] === undefined ? [] : Object.keys(list[0])),
         rows: list,
@@ -144,11 +152,11 @@ export async function describeSchema(policy: QueryPolicy, target: Target): Promi
   if (target.driver === 'mysql') {
     const database = target.database ?? policy.whitelist.schemas[0]
     if (database === undefined) {
-      return { datasource: policy.key, tables: {}, source: 'unavailable', note: '未指定默认库，无法读取字段结构' }
+      return { datasource: policy.key, displayName: policy.displayName, schema: '', maxRows: policy.whitelist.maxRows, tables: {}, source: 'unavailable', note: '未指定默认库，无法读取字段结构' }
     }
     const allowed = policy.whitelist.tables[database] ?? []
     if (allowed.length === 0) {
-      return { datasource: policy.key, tables: {}, source: 'unavailable', note: `白名单里没有 ${database} 的表` }
+      return { datasource: policy.key, displayName: policy.displayName, schema: database, maxRows: policy.whitelist.maxRows, tables: {}, source: 'unavailable', note: `白名单里没有 ${database} 的表` }
     }
     const handle = await createConnection({
       host: target.host,
@@ -177,7 +185,7 @@ export async function describeSchema(policy: QueryPolicy, target: Target): Promi
         })
         tables[row.t] = list
       }
-      return { datasource: policy.key, tables, source: 'introspection' }
+      return { datasource: policy.key, displayName: policy.displayName, schema: database, maxRows: policy.whitelist.maxRows, tables, source: 'introspection' }
     } finally {
       await handle.end().catch(() => undefined)
     }
@@ -186,11 +194,11 @@ export async function describeSchema(policy: QueryPolicy, target: Target): Promi
   if (target.driver === 'postgres') {
     const schema = policy.whitelist.schemas[0]
     if (schema === undefined) {
-      return { datasource: policy.key, tables: {}, source: 'unavailable', note: '未指定 schema，无法读取字段结构' }
+      return { datasource: policy.key, displayName: policy.displayName, schema: '', maxRows: policy.whitelist.maxRows, tables: {}, source: 'unavailable', note: '未指定 schema，无法读取字段结构' }
     }
     const allowed = policy.whitelist.tables[schema] ?? []
     if (allowed.length === 0) {
-      return { datasource: policy.key, tables: {}, source: 'unavailable', note: `白名单里没有 ${schema} 的表` }
+      return { datasource: policy.key, displayName: policy.displayName, schema, maxRows: policy.whitelist.maxRows, tables: {}, source: 'unavailable', note: `白名单里没有 ${schema} 的表` }
     }
     const client = new PgClient({
       host: target.host,
@@ -215,12 +223,13 @@ export async function describeSchema(policy: QueryPolicy, target: Target): Promi
         list.push({ name: row.c, type: row.ty, nullable: row.n === 'YES' })
         tables[row.t] = list
       }
-      return { datasource: policy.key, tables, source: 'introspection' }
+      return { datasource: policy.key, displayName: policy.displayName, schema, maxRows: policy.whitelist.maxRows, tables, source: 'introspection' }
     } finally {
       await client.end().catch(() => undefined)
     }
   }
 
+  const schema = policy.whitelist.schemas[0] ?? ''
   const db = new DatabaseSync(target.host, { readOnly: true })
   try {
     const allowed = Object.values(policy.whitelist.tables).flat()
@@ -233,7 +242,7 @@ export async function describeSchema(policy: QueryPolicy, target: Target): Promi
       }[]
       tables[table] = rows.map(row => ({ name: row.name, type: row.type, nullable: row.notnull === 0 }))
     }
-    return { datasource: policy.key, tables, source: 'introspection' }
+    return { datasource: policy.key, displayName: policy.displayName, schema, maxRows: policy.whitelist.maxRows, tables, source: 'introspection' }
   } finally {
     db.close()
   }

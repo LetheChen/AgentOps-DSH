@@ -32,6 +32,13 @@ const DATASOURCE: DatasourceConfig = {
   whitelist: WHITELIST,
 }
 
+/** The query policy shape expected by the query layer. */
+const DATASOURCE_POLICY = {
+  key: DATASOURCE.key,
+  displayName: DATASOURCE.label,
+  whitelist: DATASOURCE.whitelist,
+}
+
 const targetOf = (path: string): Target => ({
   driver: 'sqlite', host: path, port: null, username: '', password: null, database: null,
 })
@@ -177,14 +184,39 @@ void test('guard：referencedTables 提取 FROM/JOIN 目标', () => {
   )
 })
 
+
+void test('guard：标识符引号、CTE 与字符串分号不被误判', () => {
+  const mysql = { ...WHITELIST, driver: 'mysql' as const }
+  const backtick = String.fromCharCode(96)
+  assert.equal(guardSql('SELECT * FROM ' + backtick + 'audit_example' + backtick + '.' + backtick + 'audit_records' + backtick, mysql).ok, true)
+  assert.equal(guardSql('SELECT * FROM "audit_example"."audit_records"', mysql).ok, true)
+  assert.equal(guardSql('WITH x (a) AS (SELECT 1) SELECT a FROM x', mysql).ok, true)
+  assert.equal(guardSql('WITH x AS (SELECT 1), y AS (SELECT * FROM x) SELECT * FROM y', mysql).ok, true)
+  assert.equal(guardSql('WITH RECURSIVE x AS (SELECT 1) SELECT * FROM x', mysql).ok, true)
+  assert.equal(guardSql("SELECT 'a;b' AS x FROM audit_example.audit_records", mysql).ok, true)
+})
+
+void test('guard：schema 与表名错误回传可用值', () => {
+  const mysql = { ...WHITELIST, driver: 'mysql' as const }
+  const schema = guardSql('SELECT * FROM other.audit_records', mysql)
+  assert.equal(schema.ok, false)
+  assert.match(schema.reason ?? '', /schema 不在白名单：other/)
+  assert.match(schema.reason ?? '', /可用：audit_example/)
+
+  const table = guardSql('SELECT * FROM audit_records', mysql)
+  assert.equal(table.ok, false)
+  assert.match(table.reason ?? '', /表名必须带 schema 限定：audit_records/)
+  assert.match(table.reason ?? '', /可用 schema：audit_example/)
+})
+
 void test('执行：sqlite 只读查询返回列与行；describe 输出字段', async () => {
   await withDb(async (path) => {
-    const result = await runQuery(DATASOURCE, targetOf(path), 'SELECT doc_number, status FROM audit_records LIMIT 10')
+    const result = await runQuery(DATASOURCE_POLICY, targetOf(path), 'SELECT doc_number, status FROM audit_records LIMIT 10')
     assert.deepEqual(result.columns, ['doc_number', 'status'])
     assert.equal(result.rowCount, 2)
     assert.equal(result.truncated, false)
 
-    const schema = await describeSchema(DATASOURCE, targetOf(path))
+    const schema = await describeSchema(DATASOURCE_POLICY, targetOf(path))
     assert.equal(schema.source, 'introspection')
     assert.deepEqual(schema.tables.audit_records?.map(column => column.name), ['id', 'doc_number', 'status'])
   })
@@ -197,6 +229,7 @@ void test('工具：sql_query 走 guard 并返回行；被屏蔽列直接失败'
     const ok = await query.execute({ sql: 'SELECT doc_number FROM audit_records' })
     assert.equal(ok.ok, true)
     assert.equal(ok.rowCount, 2)
+    assert.match(String(ok.displaySql), /FROM audit_records/)
 
     const blocked = await query.execute({ sql: 'SELECT password_hash FROM users' })
     assert.equal(blocked.ok, false)
@@ -330,6 +363,7 @@ void test('render：模型能看到真实数据行（不是只有摘要）', () 
     rowCount: 2,
     elapsedMs: 159,
     executedSql: 'SELECT status, COUNT(*) AS total FROM audit_example.audit_records GROUP BY status',
+    displaySql: 'SELECT status, COUNT(*) AS total FROM <业务库>.audit_records GROUP BY status',
   })
   assert.match(text, /completed/)
   assert.match(text, /3304/)
@@ -338,13 +372,16 @@ void test('render：模型能看到真实数据行（不是只有摘要）', () 
 
 void test('render：超过 50 行时截断并说明', () => {
   const rows = Array.from({ length: 60 }, (_, index) => ({ id: index }))
-  const text = renderRows({ columns: ['id'], rows, rowCount: 60, elapsedMs: 1, executedSql: 'SELECT id FROM t' })
+  const text = renderRows({ columns: ['id'], rows, rowCount: 60, elapsedMs: 1, executedSql: 'SELECT id FROM t', displaySql: 'SELECT id FROM t' })
   assert.match(text, /仅列出前 50 行/)
 })
 
 void test('render：describe 输出表与字段清单', () => {
   const text = renderSchema({
     datasource: 'audit_reader',
+    displayName: '审计库',
+    schema: 'audit_example',
+    maxRows: 100,
     tables: {
       audit_records: [
         { name: 'id', type: 'bigint', nullable: false },
@@ -352,6 +389,8 @@ void test('render：describe 输出表与字段清单', () => {
       ],
     },
   })
-  assert.match(text, /audit_records（2 列）/)
+  assert.match(text, /审计库（audit_reader，schema audit_example）/)
+  assert.match(text, /LIMIT 上限：100/)
+  assert.match(text, /audit_example\.audit_records（2 列）/)
   assert.match(text, /status varchar/)
 })
