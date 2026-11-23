@@ -5,6 +5,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 
+import config from './config.json' with { type: 'json' }
+
 import { api, graphql, initializeIssueStartDate, issueSnapshot } from './github.mjs'
 import { auditIssue, initializePullRequestStartDates, repairIssueLabels, runLifecycle } from './lifecycle.mjs'
 import {
@@ -23,6 +25,16 @@ import {
   validateIssue,
   validatePullRequest,
 } from './rules.mjs'
+
+const repoPath = `/repos/${config.organization}/${config.repository}`
+const repoApiUrl = `https://api.github.com${repoPath}`
+const testProject = {
+  projectNumber: 1,
+  projectTitle: 'DSH Issue Management',
+  priorityField: 'Priority',
+  startDateField: 'Start Date',
+}
+
 
 const projectGraphqlData = ({
   projectItem = true,
@@ -333,9 +345,9 @@ test('ignores Issue title, body presentation, and assignee ownership', () => {
 })
 
 test('allows optional metadata in every open Status', () => {
-  assert.deepEqual(validateIssue(legalIssue), [])
+  assert.deepEqual(validateIssue(legalIssue, true), [])
   for (const status of ['Inbox', 'Backlog', 'Ready', 'In progress', 'In review']) {
-    assert.deepEqual(validateIssue({ ...legalIssue, status }), [])
+    assert.deepEqual(validateIssue({ ...legalIssue, status }, true), [])
   }
 })
 
@@ -346,13 +358,13 @@ test('reserves PR kind and legacy labels for pull requests', () => {
     ...legacyLabels,
   ]) {
     assert.ok(
-      validateIssue({ ...legalIssue, labels: [label] }).some((error) =>
+      validateIssue({ ...legalIssue, labels: [label] }, true).some((error) =>
         error.startsWith('Issue 不得使用 PR kind 或旧版标签：'),
       ),
       label,
     )
   }
-  assert.deepEqual(validateIssue({ ...legalIssue, labels: ['area/web', 'source/member'] }), [])
+  assert.deepEqual(validateIssue({ ...legalIssue, labels: ['area/web', 'source/member'] }, true), [])
 })
 
 test('removes reserved labels from Issues before validation', async (t) => {
@@ -381,14 +393,14 @@ test('removes reserved labels from Issues before validation', async (t) => {
 
   assert.deepEqual(repaired.labels, ['area/web', 'source/member'])
   assert.deepEqual(issue.labels, ['area/web', 'kind/bug-fix', 'bug-fix', 'source/member'])
-  assert.deepEqual(validateIssue(repaired), [])
+  assert.deepEqual(validateIssue(repaired, true), [])
   assert.deepEqual(requests, [
     {
-      url: 'https://api.github.com/repos/deepseek-harness/deepseek-harness/issues/42/labels/kind%2Fbug-fix',
+      url: `${repoApiUrl}/issues/42/labels/kind%2Fbug-fix`,
       method: 'DELETE',
     },
     {
-      url: 'https://api.github.com/repos/deepseek-harness/deepseek-harness/issues/42/labels/bug-fix',
+      url: `${repoApiUrl}/issues/42/labels/bug-fix`,
       method: 'DELETE',
     },
   ])
@@ -432,18 +444,17 @@ test('deletes a stale audit comment after repairing its only violation', async (
   assert.deepEqual(
     requests.map(({ url, method }) => ({ path: new URL(url).pathname + new URL(url).search, method })),
     [
-      { path: '/repos/deepseek-harness/deepseek-harness/issues/42', method: 'GET' },
-      { path: '/graphql', method: 'POST' },
+      { path: repoPath + '/issues/42', method: 'GET' },
       {
-        path: '/repos/deepseek-harness/deepseek-harness/issues/42/labels/kind%2Fbug-fix',
+        path: repoPath + '/issues/42/labels/kind%2Fbug-fix',
         method: 'DELETE',
       },
       {
-        path: '/repos/deepseek-harness/deepseek-harness/issues/42/comments?per_page=100',
+        path: repoPath + '/issues/42/comments?per_page=100',
         method: 'GET',
       },
       {
-        path: '/repos/deepseek-harness/deepseek-harness/issues/comments/99',
+        path: repoPath + '/issues/comments/99',
         method: 'DELETE',
       },
     ],
@@ -452,7 +463,7 @@ test('deletes a stale audit comment after repairing its only violation', async (
 
 test('keeps terminal Status aligned with the native close reason', () => {
   assert.deepEqual(
-    validateIssue({ ...legalIssue, status: 'Done', state: 'closed', stateReason: 'completed' }),
+    validateIssue({ ...legalIssue, status: 'Done', state: 'closed', stateReason: 'completed' }, true),
     [],
   )
   assert.deepEqual(
@@ -461,10 +472,10 @@ test('keeps terminal Status aligned with the native close reason', () => {
       status: 'No action',
       state: 'closed',
       stateReason: 'not_planned',
-    }),
+    }, true),
     [],
   )
-  assert.ok(validateIssue({ ...legalIssue, status: 'Done' }).includes('Done 必须对应 Completed 关闭原因'))
+  assert.ok(validateIssue({ ...legalIssue, status: 'Done' }, true).includes('Done 必须对应 Completed 关闭原因'))
 })
 
 test('separates resolving and informational references', () => {
@@ -540,12 +551,12 @@ test('reads Priority and Status from Project custom fields', async (t) => {
     return Response.json({ data: projectGraphqlData({ priority: 'P1' }) })
   })
 
-  const issue = await issueSnapshot(42)
+  const issue = await issueSnapshot(42, undefined, testProject)
 
   assert.equal(issue.priority, 'P1')
   assert.equal(issue.status, 'Inbox')
   assert.deepEqual(urls, [
-    'https://api.github.com/repos/deepseek-harness/deepseek-harness/issues/42',
+    `${repoApiUrl}/issues/42`,
     'https://api.github.com/graphql',
   ])
 })
@@ -556,7 +567,7 @@ test('writes an empty Project Start Date with the configured field', async (t) =
     return { updateProjectV2ItemFieldValue: { projectV2Item: { id: 'item-id' } } }
   })
 
-  await initializeIssueStartDate(42, '2026-08-28')
+  await initializeIssueStartDate(42, '2026-08-28', testProject)
 
   assert.equal(requests.length, 2)
   assert.match(requests[0].query, /isIssueField/)
@@ -577,7 +588,7 @@ test('writes an empty Project Start Date with the configured field', async (t) =
 test('preserves an existing Project Start Date', async (t) => {
   const requests = mockGraphql(t, () => projectGraphqlData({ startDate: '2026-08-01' }))
 
-  await initializeIssueStartDate(42, '2026-08-28')
+  await initializeIssueStartDate(42, '2026-08-28', testProject)
 
   assert.equal(requests.length, 1)
 })
@@ -591,7 +602,7 @@ test('adds a referenced Issue to the Project before setting Start Date', async (
     return { updateProjectV2ItemFieldValue: { projectV2Item: { id: 'new-item-id' } } }
   })
 
-  await initializeIssueStartDate(42, '2026-08-28')
+  await initializeIssueStartDate(42, '2026-08-28', testProject)
 
   assert.equal(requests.length, 3)
   assert.deepEqual(requests[1].variables, { projectId: 'project-id', contentId: 'issue-id' })
@@ -607,12 +618,12 @@ test('rejects a missing, non-Date, or Issue-level Start Date field', async (t) =
   let response = projectGraphqlData({ startDateField: false })
   const requests = mockGraphql(t, () => response)
 
-  await assert.rejects(initializeIssueStartDate(42, '2026-08-28'), /Project 缺少 Start Date 字段/)
+  await assert.rejects(initializeIssueStartDate(42, '2026-08-28', testProject), /Project 缺少 Start Date 字段/)
   response = projectGraphqlData({ startDateType: 'TEXT' })
-  await assert.rejects(initializeIssueStartDate(42, '2026-08-28'), /Start Date 字段必须为 Date/)
+  await assert.rejects(initializeIssueStartDate(42, '2026-08-28', testProject), /Start Date 字段必须为 Date/)
   response = projectGraphqlData({ startDateIsIssueField: true })
   await assert.rejects(
-    initializeIssueStartDate(42, '2026-08-28'),
+    initializeIssueStartDate(42, '2026-08-28', testProject),
     /Start Date 字段必须为 Project Date 字段/,
   )
   assert.equal(requests.length, 3)
@@ -622,15 +633,15 @@ test('rejects a missing, non-select, or Issue-level Priority field', async (t) =
   let response = projectGraphqlData({ priorityField: false })
   const requests = mockGraphql(t, () => response)
 
-  await assert.rejects(initializeIssueStartDate(42, '2026-08-28'), /Project 缺少 Priority 字段/)
+  await assert.rejects(initializeIssueStartDate(42, '2026-08-28', testProject), /Project 缺少 Priority 字段/)
   response = projectGraphqlData({ priorityType: 'TEXT' })
   await assert.rejects(
-    initializeIssueStartDate(42, '2026-08-28'),
+    initializeIssueStartDate(42, '2026-08-28', testProject),
     /Priority 字段必须为 Single Select/,
   )
   response = projectGraphqlData({ priorityIsIssueField: true })
   await assert.rejects(
-    initializeIssueStartDate(42, '2026-08-28'),
+    initializeIssueStartDate(42, '2026-08-28', testProject),
     /Priority 字段必须为 Project custom field/,
   )
   assert.equal(requests.length, 3)
@@ -942,17 +953,17 @@ test('requires a real Issue and explains why stacked PR references do not qualif
   assert.match(fixture.output.join(''), /PR 编号（包括堆叠依赖 PR）不算 Issue 引用/)
 })
 
-test('fetches Project Priority only for resolving Issues and enforces mismatch', async (t) => {
+test('skips Project Priority when Project management is disabled', async (t) => {
   const fixture = mockPolicyApi(t, { pull: { body: 'Fixes #2; Refs #4; Fixes #3' }, issues: { 2: {}, 4: {}, 3: { pull_request: {} } } })
   const event = { pull_request: { number: 10 } }
-  assert.deepEqual(await runPullRequestPreflight(event), { eligible: true, needsProject: true })
+  assert.deepEqual(await runPullRequestPreflight(event), { eligible: true, needsProject: false })
   assert.equal(fixture.requests.length, 6)
-  assert.equal(fixture.workflowOutput(), 'eligible=true\nexempt=false\nneeds-project=true\n')
+  assert.equal(fixture.workflowOutput(), 'eligible=true\nexempt=false\nneeds-project=false\n')
   assert.ok(!fixture.requests.includes('/graphql'))
-  await assert.rejects(runPullRequestCheck(event), /Issue policy 未通过/)
-  assert.equal(fixture.requests.length, 13)
-  assert.equal(fixture.requests.filter((path) => path === '/graphql').length, 1)
-  assert.match(fixture.output.join(''), /PR Priority 应为 p1/)
+  await runPullRequestCheck(event)
+  assert.equal(fixture.requests.length, 12)
+  assert.ok(!fixture.requests.includes('/graphql'))
+  assert.match(fixture.output.join(''), /Issue policy 通过/)
 })
 
 test('enforces current metadata on title edits and prior reviews without requested reviewers', async (t) => {
@@ -968,14 +979,16 @@ test('fails closed on missing referenced numbers and unavailable Project access'
   assert.equal(fixture.requests.length, 4)
 })
 
-test('fails closed when current resolving Issues need a Project token preflight did not mint', async (t) => {
+test('does not require a Project token when Project management is disabled', async (t) => {
   const pull = { draft: true, body: 'Fixes #2' }
-  const fixture = mockPolicyApi(t, { pull, issues: { 2: {} }, projectError: true })
+  const fixture = mockPolicyApi(t, { pull, issues: { 2: {} } })
   const event = { pull_request: { number: 10 } }
   assert.deepEqual(await runPullRequestPreflight(event), { eligible: false, needsProject: false })
   pull.draft = false
-  await assert.rejects(runPullRequestCheck(event), /Project access denied/)
-  assert.equal(fixture.requests.length, 6)
+  await runPullRequestCheck(event)
+  assert.equal(fixture.requests.length, 5)
+  assert.ok(!fixture.requests.includes('/graphql'))
+  assert.match(fixture.output.join(''), /Issue policy 通过/)
 })
 
 test('performs no lifecycle requests for removed signals or title-only edits', async (t) => {
@@ -1108,7 +1121,7 @@ test('keeps REST headers, null responses, and transport errors unchanged', async
   assert.equal(requests.length, 5)
 })
 
-test('reads policy snapshots in reference order and only resolving Project priorities', async (t) => {
+test('reads policy snapshots in reference order without disabled Project reads', async (t) => {
   const fixture = mockPolicyApi(t, {
     pull: { body: 'Refs #4; Fixes #3; Fixes #2' },
     issues: { 2: {}, 3: { pull_request: {} }, 4: {} },
@@ -1121,9 +1134,9 @@ test('reads policy snapshots in reference order and only resolving Project prior
     reviewCount: 0,
     labels: ['kind/cleanup', 'area/infra'],
     references: { all: [2, 4], resolving: [2], related: [4] },
-    issues: new Map([[2, { priority: 'P1' }], [4, { priority: null }]]),
+    issues: new Map([[2, { priority: null }], [4, { priority: null }]]),
   })
-  const repo = '/repos/deepseek-harness/deepseek-harness'
+  const repo = repoPath
   assert.deepEqual(fixture.requests, [
     repo + '/pulls/10',
     repo + '/pulls/10/requested_reviewers',
@@ -1131,7 +1144,6 @@ test('reads policy snapshots in reference order and only resolving Project prior
     repo + '/issues/2',
     repo + '/issues/3',
     repo + '/issues/4',
-    '/graphql',
   ])
   assert.deepEqual(fixture.output, [])
 })
@@ -1147,7 +1159,7 @@ test('reads lifecycle references for draft Bot PRs without review or Project req
     issues: new Map([[2, { priority: null }], [4, { priority: null }]]),
     createdAt: '2026-08-27T16:00:00Z',
   })
-  const repo = '/repos/deepseek-harness/deepseek-harness'
+  const repo = repoPath
   assert.deepEqual(fixture.requests, [repo + '/pulls/10', repo + '/issues/2', repo + '/issues/4'])
   assert.deepEqual(fixture.output, [])
 })

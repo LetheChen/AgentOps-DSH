@@ -30,6 +30,7 @@
 import { existsSync, globSync, readFileSync } from 'node:fs'
 import { dirname, relative, resolve, sep } from 'node:path'
 import ts from 'typescript'
+import { isForkOwnedPackagePath } from './fork-package-policy.ts'
 import { faceConfigs } from './ts-project.ts'
 
 const root = resolve(import.meta.dirname, '..')
@@ -277,6 +278,8 @@ export function browserFaceSources(projectRoot: string = root): string[] {
   for (const [configPath, parsed] of faceConfigs(projectRoot, 'client').byPath) {
     if (parsed.options.lib?.includes('lib.dom.d.ts') !== true) continue
     const configRoot = dirname(configPath).replaceAll('\\', '/')
+    const configDirectory = relative(projectRoot, configRoot).split(sep).join('/')
+    if (isForkOwnedPackagePath(configDirectory)) continue
     const sourceRoot = `${configRoot}/src/`
     // An aggregate or app shell (the root Client program) carries the compiler
     // shape but no `src/` tree of its own; its browser sources arrive through
@@ -300,7 +303,8 @@ export function browserFaceSources(projectRoot: string = root): string[] {
   }
 
   for (const file of globSync('packages/*/*/src/client/**/*.{ts,tsx}', { cwd: projectRoot })) {
-    add(relative(projectRoot, resolve(projectRoot, file)).split(sep).join('/'))
+    const normalized = relative(projectRoot, resolve(projectRoot, file)).split(sep).join('/')
+    if (!isForkOwnedPackagePath(normalized)) add(normalized)
   }
 
   return [...sources].sort()

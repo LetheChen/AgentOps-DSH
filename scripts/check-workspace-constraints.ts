@@ -17,6 +17,7 @@ import {
   EXPERIMENTAL_PACKAGE_NAME_PREFIX,
   PRIVATE_EXPERIMENTAL_PACKAGE_DIRECTORIES,
 } from './experimental-package-policy.ts'
+import { isForkOwnedPackagePath } from './fork-package-policy.ts'
 import { hasTypertRemoteNavigation, isForbiddenPublicationFile } from './publication-payload.ts'
 import type { DshBundleManifest } from '../packages/util/package-manifest/src/types.ts'
 import { detailPath } from '../packages/util/plugin-detail/src/document.ts'
@@ -448,6 +449,7 @@ export function checkExperimentalNameExceptions(manifests: readonly WorkspaceMan
 }
 
 function isReleaseMemberDirectory(dir: string): boolean {
+  if (isForkOwnedPackagePath(dir)) return false
   // The SSH carrier is distributed as executable archives, never as an npm application.
   if (dir === 'packages/ssh/ssh-helper-runtime') return false
   return standardReleaseMemberDirectory.test(dir) || isPublicExperimentalPackageDirectory(dir)
@@ -607,6 +609,7 @@ function checkHierarchyShape(): string[] {
   for (const group of readdirSync(packagesRoot, { withFileTypes: true })) {
     if (!group.isDirectory()) continue
     const groupRel = join('packages', group.name)
+    if (isForkOwnedPackagePath(groupRel)) continue
     if (existsSync(join(packagesRoot, group.name, 'package.json'))) {
       errors.push(`${groupRel}: a group dir must not contain a package.json — packages live at packages/<group>/<pkg>, not directly under packages/`)
       continue
@@ -652,6 +655,7 @@ export function checkExperimentalDependencyIsolation(
     .filter(name => name !== undefined))
   const errors: string[] = []
   for (const { dir, manifest } of manifests) {
+    if (isForkOwnedPackagePath(dir)) continue
     if (!standardReleaseMemberDirectory.test(dir) && dir !== 'python/sdk-runtime') continue
     const offered = manifest.name === '@deepseek-ai/dsh' ? new Set(optionalBundles) : new Set<string>()
     for (const section of runtimeDependencySections) {
