@@ -134,7 +134,8 @@ export function readJsonNumber(payload: unknown, path: string): number | null {
 
 function parseAuthJson(raw: string): Record<string, unknown> | null {
   try {
-    return asRecord(JSON.parse(raw) as unknown)
+    const value: unknown = JSON.parse(raw)
+    return asRecord(value)
   } catch {
     throw new CapabilityError('CAPABILITY_AUTH_INVALID', 'auth is not valid JSON')
   }

@@ -9,7 +9,7 @@
  */
 
 import { randomUUID } from 'node:crypto'
-import { DatabaseSync } from 'node:sqlite'
+import { DatabaseSync, type SQLOutputValue } from 'node:sqlite'
 
 import { BUILTIN_CAPABILITIES, listCapabilityTools } from './catalog.ts'
 import { openCapabilitySecret, sealCapabilitySecret, loadCapabilityMasterKey } from './crypto.ts'
@@ -26,7 +26,7 @@ import type {
   IntegrationInstanceView,
 } from './types.ts'
 
-interface DefinitionRow {
+interface DefinitionRow extends Record<string, SQLOutputValue> {
   capability_id: string
   name: string
   category: string
@@ -42,7 +42,7 @@ interface DefinitionRow {
   updated_at: string
 }
 
-interface InstanceRow {
+interface InstanceRow extends Record<string, SQLOutputValue> {
   instance_id: string
   capability_id: string
   name: string
@@ -60,7 +60,7 @@ interface InstanceRow {
   updated_at: string
 }
 
-interface BindingRow {
+interface BindingRow extends Record<string, SQLOutputValue> {
   agent_preset: string
   capability_id: string
   instance_id: string
@@ -87,7 +87,7 @@ function now(): string {
 
 function parseJsonObject(raw: string): Record<string, unknown> {
   try {
-    const value = JSON.parse(raw) as unknown
+    const value: unknown = JSON.parse(raw)
     return typeof value === 'object' && value !== null && !Array.isArray(value)
       ? value as Record<string, unknown>
       : {}
@@ -114,7 +114,7 @@ function definition(row: DefinitionRow): CapabilityDefinition {
 
 function parseJsonArray(raw: string): unknown[] {
   try {
-    const value = JSON.parse(raw) as unknown
+    const value: unknown = JSON.parse(raw)
     return Array.isArray(value) ? value : []
   } catch {
     return []
@@ -201,7 +201,7 @@ export class CapabilityStore {
   listCapabilities(): CapabilityDefinition[] {
     const rows = this.#db.prepare(
       'SELECT * FROM capability_definitions ORDER BY category, capability_id',
-    ).all() as unknown as DefinitionRow[]
+    ).all() as DefinitionRow[]
     return rows.map(definition)
   }
 
@@ -307,7 +307,7 @@ export class CapabilityStore {
       ? this.#db.prepare('SELECT * FROM capability_instances ORDER BY created_at DESC, instance_id').all()
       : this.#db.prepare(
         'SELECT * FROM capability_instances WHERE capability_id = ? ORDER BY created_at DESC, instance_id',
-      ).all(capabilityId)) as unknown as InstanceRow[]
+      ).all(capabilityId)) as InstanceRow[]
     return rows.map(view)
   }
 
@@ -481,7 +481,7 @@ export class CapabilityStore {
   listBindings(agentPreset: string): CapabilityBinding[] {
     const rows = this.#db.prepare(
       'SELECT * FROM capability_bindings WHERE agent_preset = ? ORDER BY capability_id, instance_id',
-    ).all(agentPreset) as unknown as BindingRow[]
+    ).all(agentPreset) as BindingRow[]
     return rows.map(binding)
   }
 
@@ -649,7 +649,7 @@ export class CapabilityStore {
   listAudit(limit: number = 50): readonly Record<string, unknown>[] {
     const rows = this.#db.prepare(
       'SELECT seq, actor, action, target, result, detail_json, at FROM capability_audit ORDER BY seq DESC LIMIT ?',
-    ).all(limit) as unknown as Record<string, unknown>[]
+    ).all(limit) as Record<string, unknown>[]
     return rows.map(row => ({
       seq: row.seq,
       actor: row.actor,

@@ -19,7 +19,7 @@ import { createHash } from 'node:crypto'
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, renameSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { DatabaseSync } from 'node:sqlite'
+import { DatabaseSync, type SQLOutputValue } from 'node:sqlite'
 
 import { TASK_TABLES } from './contracts.ts'
 import { P0_STATUSES } from './lifecycle/p0.ts'
@@ -70,7 +70,7 @@ export interface MigrationResult {
 
 const EMPTY_MANIFEST: MigrationManifest = { droppedTerminalReportPointers: [] }
 
-interface SourceTask {
+interface SourceTask extends Record<string, SQLOutputValue> {
   id: string
   project_id: string | null
   parent_id: string | null
@@ -86,7 +86,7 @@ interface SourceTask {
   closed_at: string | null
 }
 
-interface SourceStage {
+interface SourceStage extends Record<string, SQLOutputValue> {
   task_id: string
   seq: number
   name: string
@@ -96,7 +96,7 @@ interface SourceStage {
   left_at: string | null
 }
 
-interface SourceEvent {
+interface SourceEvent extends Record<string, SQLOutputValue> {
   seq: number
   task_id: string
   kind: string
@@ -204,9 +204,9 @@ export function planMigration(path: string): MigrationPlan {
  * @returns the plan.
  */
 function planSimplified(db: DatabaseSync, path: string): MigrationPlan {
-  const tasks = db.prepare('SELECT * FROM tasks ORDER BY id').all() as unknown as SourceTask[]
-  const stages = db.prepare('SELECT * FROM task_stages ORDER BY task_id, seq').all() as unknown as SourceStage[]
-  const events = db.prepare('SELECT * FROM task_events ORDER BY seq').all() as unknown as SourceEvent[]
+  const tasks = db.prepare('SELECT * FROM tasks ORDER BY id').all() as SourceTask[]
+  const stages = db.prepare('SELECT * FROM task_stages ORDER BY task_id, seq').all() as SourceStage[]
+  const events = db.prepare('SELECT * FROM task_events ORDER BY seq').all() as SourceEvent[]
   const issues: string[] = []
 
   for (const task of tasks) {
@@ -261,7 +261,7 @@ function planLegacy(db: DatabaseSync, path: string, shape: 'legacy-p0' | 'legacy
   }
 
   const issues: string[] = []
-  const tasks = db.prepare('SELECT task_id, status, version, project_id FROM tasks').all() as unknown as {
+  const tasks = db.prepare('SELECT task_id, status, version, project_id FROM tasks').all() as {
     task_id: string
     status: string
     version: number
@@ -276,7 +276,7 @@ function planLegacy(db: DatabaseSync, path: string, shape: 'legacy-p0' | 'legacy
     }
   }
   if (sourceTables.includes('task_stages')) {
-    const stages = db.prepare('SELECT task_id, stage_id, status FROM task_stages').all() as unknown as {
+    const stages = db.prepare('SELECT task_id, stage_id, status FROM task_stages').all() as {
       task_id: string
       stage_id: string
       status: string
@@ -380,9 +380,9 @@ export function applyMigration(
  * @param target - target handle with the schema already created.
  */
 function copySimplified(source: DatabaseSync, target: DatabaseSync): void {
-  const tasks = source.prepare('SELECT * FROM tasks ORDER BY id').all() as unknown as SourceTask[]
-  const stages = source.prepare('SELECT * FROM task_stages ORDER BY task_id, seq').all() as unknown as SourceStage[]
-  const events = source.prepare('SELECT * FROM task_events ORDER BY seq').all() as unknown as SourceEvent[]
+  const tasks = source.prepare('SELECT * FROM tasks ORDER BY id').all() as SourceTask[]
+  const stages = source.prepare('SELECT * FROM task_stages ORDER BY task_id, seq').all() as SourceStage[]
+  const events = source.prepare('SELECT * FROM task_events ORDER BY seq').all() as SourceEvent[]
 
   target.exec('BEGIN')
   try {
@@ -513,12 +513,12 @@ function copyLegacy(
     }
 
     const projects = sourceTables.has('projects')
-      ? (source.prepare('SELECT * FROM projects').all() as unknown as Record<string, unknown>[])
+      ? (source.prepare('SELECT * FROM projects').all() as Record<string, unknown>[])
       : []
     const projectIds = new Set(projects.map(project => String(project.project_id)))
     for (const project of projects) insertMapped(target, 'projects', project, { extraToMetadata: true })
 
-    const tasks = source.prepare('SELECT * FROM tasks').all() as unknown as Record<string, unknown>[]
+    const tasks = source.prepare('SELECT * FROM tasks').all() as Record<string, unknown>[]
     for (const task of tasks) {
       const projectId = typeof task.project_id === 'string' && task.project_id !== '' ? task.project_id : 'legacy_default'
       if (!projectIds.has(projectId)) {
@@ -546,7 +546,7 @@ function copyLegacy(
     }
 
     if (sourceTables.has('task_stages')) {
-      for (const stage of source.prepare('SELECT * FROM task_stages').all() as unknown as Record<string, unknown>[]) {
+      for (const stage of source.prepare('SELECT * FROM task_stages').all() as Record<string, unknown>[]) {
         const mapped = STAGE_STATUS_MAP[String(stage.status)]
         if (mapped === undefined) throw new Error(`unknown stage status ${JSON.stringify(stage.status)}`)
         insertMapped(target, 'task_stages', stage, { overrides: { status: mapped } })
@@ -554,7 +554,7 @@ function copyLegacy(
     }
 
     if (sourceTables.has('task_runs')) {
-      for (const run of source.prepare('SELECT * FROM task_runs').all() as unknown as Record<string, unknown>[]) {
+      for (const run of source.prepare('SELECT * FROM task_runs').all() as Record<string, unknown>[]) {
         insertMapped(target, 'task_runs', run, {
           overrides: { status: run.status === undefined || run.status === null ? 'unknown' : run.status },
         })
@@ -562,7 +562,7 @@ function copyLegacy(
     }
 
     if (sourceTables.has('task_reports')) {
-      for (const report of source.prepare('SELECT * FROM task_reports').all() as unknown as Record<string, unknown>[]) {
+      for (const report of source.prepare('SELECT * FROM task_reports').all() as Record<string, unknown>[]) {
         if (typeof report.terminal_session_id === 'string' && report.terminal_session_id !== '') {
           dropped.push({
             report_id: String(report.report_id),
@@ -579,7 +579,7 @@ function copyLegacy(
     const copied = new Set(['global_revision', 'projects', 'tasks', 'task_stages', 'task_runs', 'task_reports', 'ideas'])
     for (const table of TASK_TABLES) {
       if (copied.has(table) || !sourceTables.has(table)) continue
-      for (const row of source.prepare(`SELECT * FROM ${table}`).all() as unknown as Record<string, unknown>[]) {
+      for (const row of source.prepare(`SELECT * FROM ${table}`).all() as Record<string, unknown>[]) {
         insertMapped(target, table, row)
       }
     }
@@ -743,7 +743,7 @@ function copyLegacyIdeas(source: DatabaseSync, target: DatabaseSync): void {
      VALUES (?, ?, ?, ?, ?, 'idea', ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)`,
   )
   const asText = (value: unknown): string | null => (typeof value === 'string' ? value : null)
-  for (const row of source.prepare('SELECT * FROM ideas').all() as unknown as Record<string, unknown>[]) {
+  for (const row of source.prepare('SELECT * FROM ideas').all() as Record<string, unknown>[]) {
     const ideaId = asText(row.idea_id)
     if (ideaId === null) continue
     const mapped = sourceMap[asText(row.source) ?? 'manual'] ?? { channel: 'manual', system: null }

@@ -225,13 +225,13 @@ void test('执行：sqlite 只读查询返回列与行；describe 输出字段',
 void test('工具：sql_query 走 guard 并返回行；被屏蔽列直接失败', async () => {
   await withDb(async (path) => {
     const tools = createDbTools(resolveTo(targetOf(path)))
-    const query = tools[0] as unknown as { execute: (args: { sql: string }) => Promise<Record<string, unknown>> }
-    const ok = await query.execute({ sql: 'SELECT doc_number FROM audit_records' })
+    const query = tools[0]
+    const ok = await query.execute({ sql: 'SELECT doc_number FROM audit_records' }, {} as never) as Record<string, unknown>
     assert.equal(ok.ok, true)
     assert.equal(ok.rowCount, 2)
     assert.match(String(ok.displaySql), /FROM audit_records/)
 
-    const blocked = await query.execute({ sql: 'SELECT password_hash FROM users' })
+    const blocked = await query.execute({ sql: 'SELECT password_hash FROM users' }, {} as never) as Record<string, unknown>
     assert.equal(blocked.ok, false)
     assert.match(String(blocked.error), /屏蔽/)
   })
@@ -239,8 +239,8 @@ void test('工具：sql_query 走 guard 并返回行；被屏蔽列直接失败'
 
 void test('工具：未配置凭据时明确失败，不抛异常', async () => {
   const tools = createDbTools(resolveTo(null))
-  const query = tools[0] as unknown as { execute: (args: { sql: string }) => Promise<Record<string, unknown>> }
-  const result = await query.execute({ sql: 'SELECT 1 FROM audit_records' })
+  const query = tools[0]
+  const result = await query.execute({ sql: 'SELECT 1 FROM audit_records' }, {} as never) as Record<string, unknown>
   assert.equal(result.ok, false)
   assert.match(String(result.error), /未配置凭据/)
 })

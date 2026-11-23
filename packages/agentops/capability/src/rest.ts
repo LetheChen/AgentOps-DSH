@@ -64,7 +64,8 @@ function joinUrl(baseUrl: string, path: string): string {
 
 function parseJson(text: string): unknown {
   try {
-    return JSON.parse(text) as unknown
+    const value: unknown = JSON.parse(text)
+    return value
   } catch {
     return undefined
   }

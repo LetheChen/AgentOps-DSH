@@ -81,6 +81,6 @@ void test('环境变量可覆盖，且只读快照不可被外部修改', () => 
   assert.equal(first.database.latencyMs, 12)
   assert.deepEqual(first.warnings, [])
 
-  ;(first.warnings as unknown as string[]).push('tampered')
+  ;(first.warnings as string[]).push('tampered')
   assert.deepEqual(service.snapshot().warnings, [], '快照必须返回副本')
 })

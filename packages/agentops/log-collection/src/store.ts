@@ -5,7 +5,7 @@
 
 import { randomUUID } from 'node:crypto'
 import { isAbsolute, join, relative, resolve } from 'node:path'
-import type { DatabaseSync } from 'node:sqlite'
+import type { DatabaseSync, SQLOutputValue } from 'node:sqlite'
 
 import {
   LOG_COLLECTION_SCHEMA_VERSION,
@@ -22,7 +22,7 @@ import {
   type UpdateLogCollectionTaskInput,
 } from './types.ts'
 
-interface TaskRow {
+interface TaskRow extends Record<string, SQLOutputValue> {
   task_uid: string
   tenant_key: string
   task_id: string
@@ -39,7 +39,7 @@ interface TaskRow {
   updated_at: string
 }
 
-interface AclRow {
+interface AclRow extends Record<string, SQLOutputValue> {
   agent_preset: string
   can_pull: number
   can_query: number
@@ -149,7 +149,7 @@ export class LogCollectionStore {
       FROM log_collection_tasks
       WHERE tenant_key = ? AND deleted_at IS NULL
       ORDER BY task_id_normalized
-    `).all(tenant) as unknown as TaskRow[]
+    `).all(tenant) as TaskRow[]
     return rows.map(toTask)
   }
 
@@ -294,7 +294,7 @@ export class LogCollectionStore {
       SELECT agent_preset, can_pull, can_query, revoked_at
       FROM log_collection_task_acl WHERE task_uid = ? AND revoked_at IS NULL
       ORDER BY agent_preset
-    `).all(task.taskUid) as unknown as AclRow[]
+    `).all(task.taskUid) as AclRow[]
     return rows.map(row => ({
       agentPreset: row.agent_preset,
       canPull: row.can_pull === 1,

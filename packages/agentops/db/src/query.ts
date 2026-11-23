@@ -235,7 +235,7 @@ export async function describeSchema(policy: QueryPolicy, target: Target): Promi
     const allowed = Object.values(policy.whitelist.tables).flat()
     const tables: Record<string, TableColumn[]> = {}
     for (const table of allowed) {
-      const rows = db.prepare(`PRAGMA table_info(${table})`).all() as unknown as {
+      const rows = db.prepare(`PRAGMA table_info(${table})`).all() as {
         name: string
         type: string
         notnull: number

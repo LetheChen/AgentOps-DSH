@@ -66,7 +66,7 @@ async function postWebhook(url: string, payload: unknown, timeoutMs: number): Pr
 }
 
 function safeJson(text: string): unknown {
-  try { return JSON.parse(text) as unknown } catch { return undefined }
+  try { const value: unknown = JSON.parse(text); return value } catch { return undefined }
 }
 
 function feishuPayload(content: string, title: string, msgType: string): unknown {

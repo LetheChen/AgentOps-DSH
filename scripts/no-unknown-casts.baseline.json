@@ -283,8 +283,7 @@
     "9856a29b429bf05e7169c9eed9cffe18cdf17bb663a212615298c9844251dffc": 6
   },
   "packages/api/terminal-controller/tests/retention.client.spec.ts": {
-    "4a17ad415e8556830780e89cee49c549a01e82d90754af288f5b57214d8fca2c": 1,
-    "752fa554afd541f82ac34511802bec5f3cf52967db5ea470ee8160e1ffb0d606": 1
+    "4a17ad415e8556830780e89cee49c549a01e82d90754af288f5b57214d8fca2c": 1
   },
   "packages/attachment/attachment/tests/admission.spec.ts": {
     "d7dc9c349af8699fefcaffed26377443dd73ef95f1dc985f4de542ec133869f5": 1
@@ -555,9 +554,6 @@
     "bd4e8147a13bee681bd192d1558f4a79de23d5edeafb616e8acccd725465ef98": 1,
     "e01c2c40d53d557b621628de47a0a6677e11b4f151fbefd865c97be99a7b6c48": 1,
     "e69e0ec4368790661e1f7cae5c2059f757c213f0ebb0bd40ec23af982bc73d20": 1
-  },
-  "packages/client/ui-plan/tests/plan-resource.client.spec.ts": {
-    "fa53d5cd55d87b522c83a98968e3a2bf933b1cc1b84d2f009e79d6c702099786": 1
   },
   "packages/client/ui-primitives/tests/highlight-viewport.client.spec.tsx": {
     "6061de0a1e01547eb1abf9d4e1b5fa79fda112fa35dda980775491123413dcce": 1

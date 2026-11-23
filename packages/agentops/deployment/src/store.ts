@@ -4,12 +4,12 @@
  */
 
 import { randomUUID } from 'node:crypto'
-import type { DatabaseSync } from 'node:sqlite'
+import type { DatabaseSync, SQLOutputValue } from 'node:sqlite'
 
 import { DeploymentError, type DeploymentLease, type DeploymentRelease, type DeploymentReleaseState, type DeploymentStatus, type DeploymentStep, type ReleaseManifest } from './types.ts'
 import { DEPLOYMENT_SCHEMA_VERSION, createDeploymentSchema, readDeploymentSchemaVersion } from './schema.ts'
 
-interface ReleaseRow {
+interface ReleaseRow extends Record<string, SQLOutputValue> {
   release_uid: string
   instance_id: string
   tenant_key: string
@@ -29,7 +29,7 @@ interface ReleaseRow {
   finished_at: string | null
 }
 
-interface LeaseRow {
+interface LeaseRow extends Record<string, SQLOutputValue> {
   instance_id: string
   release_uid: string
   owner_preset: string
@@ -209,7 +209,7 @@ export class DeploymentStore {
       ).get(instanceId) as ReleaseRow | undefined
     const journalRows = this.#db.prepare(
       'SELECT * FROM deployment_releases WHERE instance_id = ? ORDER BY started_at DESC LIMIT 20',
-    ).all(instanceId) as unknown as ReleaseRow[]
+    ).all(instanceId) as ReleaseRow[]
     return {
       current: currentRow === undefined ? null : toRelease(currentRow),
       previousHealthy: previousRow === undefined ? null : toRelease(previousRow),

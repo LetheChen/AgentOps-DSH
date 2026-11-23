@@ -6,7 +6,7 @@
  */
 
 import { createHash } from 'node:crypto'
-import { DatabaseSync } from 'node:sqlite'
+import { DatabaseSync, type SQLOutputValue } from 'node:sqlite'
 
 import { summarizeUsage } from './types.ts'
 import type {
@@ -104,11 +104,11 @@ export class SecurityStore {
     this.#db = new DatabaseSync(path)
     this.#db.exec(SCHEMA)
     // Older security.db files predate the version column; add it in place.
-    const columns = this.#db.prepare('PRAGMA table_info(users)').all() as unknown as { name: string }[]
+    const columns = this.#db.prepare('PRAGMA table_info(users)').all() as { name: string }[]
     if (!columns.some(column => column.name === 'version')) {
       this.#db.exec('ALTER TABLE users ADD COLUMN version INTEGER NOT NULL DEFAULT 1')
     }
-    const usageColumns = this.#db.prepare('PRAGMA table_info(usage_records)').all() as unknown as { name: string }[]
+    const usageColumns = this.#db.prepare('PRAGMA table_info(usage_records)').all() as { name: string }[]
     if (!usageColumns.some(column => column.name === 'session_id')) {
       this.#db.exec('ALTER TABLE usage_records ADD COLUMN session_id TEXT')
     }
@@ -159,7 +159,7 @@ export class SecurityStore {
    * @returns the user, or null when it does not exist.
    */
   getUser(id: string): User | null {
-    const row = this.#db.prepare('SELECT * FROM users WHERE id = ?').get(id) as unknown as UserRow | undefined
+    const row = this.#db.prepare('SELECT * FROM users WHERE id = ?').get(id) as UserRow | undefined
     return row === undefined ? null : toUser(row)
   }
 
@@ -172,7 +172,7 @@ export class SecurityStore {
     const rows = filter.status === undefined
       ? this.#db.prepare('SELECT * FROM users ORDER BY created_at').all()
       : this.#db.prepare('SELECT * FROM users WHERE status = ? ORDER BY created_at').all(filter.status)
-    return (rows as unknown as UserRow[]).map(toUser)
+    return (rows as UserRow[]).map(toUser)
   }
 
   /**
@@ -236,7 +236,7 @@ export class SecurityStore {
    * @returns the role, or null when it does not exist.
    */
   getRole(id: string): Role | null {
-    const row = this.#db.prepare('SELECT * FROM roles WHERE id = ?').get(id) as unknown as RoleRow | undefined
+    const row = this.#db.prepare('SELECT * FROM roles WHERE id = ?').get(id) as RoleRow | undefined
     return row === undefined ? null : toRole(row)
   }
 
@@ -245,7 +245,7 @@ export class SecurityStore {
    * @returns every stored role, ordered by id.
    */
   listRoles(): Role[] {
-    return (this.#db.prepare('SELECT * FROM roles ORDER BY id').all() as unknown as RoleRow[]).map(toRole)
+    return (this.#db.prepare('SELECT * FROM roles ORDER BY id').all() as RoleRow[]).map(toRole)
   }
 
   /**
@@ -276,7 +276,7 @@ export class SecurityStore {
    * @returns the user's role assignments.
    */
   listAssignments(userId: string): RoleAssignment[] {
-    return (this.#db.prepare('SELECT * FROM user_roles WHERE user_id = ? ORDER BY granted_at').all(userId) as unknown as {
+    return (this.#db.prepare('SELECT * FROM user_roles WHERE user_id = ? ORDER BY granted_at').all(userId) as {
       user_id: string
       role_id: string
       granted_at: string
@@ -294,7 +294,7 @@ export class SecurityStore {
   permissionsOf(userId: string): string[] {
     const rows = this.#db.prepare(`
       SELECT r.permissions AS permissions FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = ?
-    `).all(userId) as unknown as { permissions: string }[]
+    `).all(userId) as { permissions: string }[]
     const set = new Set<string>()
     for (const row of rows) {
       for (const permission of JSON.parse(row.permissions) as string[]) set.add(permission)
@@ -326,7 +326,7 @@ export class SecurityStore {
    * @returns the most recent calls, newest first.
    */
   recentUsage(limit = 20): UsageRecord[] {
-    return (this.#db.prepare('SELECT * FROM usage_records ORDER BY at DESC LIMIT ?').all(limit) as unknown as UsageRow[])
+    return (this.#db.prepare('SELECT * FROM usage_records ORDER BY at DESC LIMIT ?').all(limit) as UsageRow[])
       .map(toUsage)
   }
 
@@ -347,7 +347,7 @@ export class SecurityStore {
   usageRecords(since?: string): UsageRecord[] {
     const rows = (since === undefined
       ? this.#db.prepare('SELECT * FROM usage_records ORDER BY at').all()
-      : this.#db.prepare('SELECT * FROM usage_records WHERE datetime(at) >= datetime(?) ORDER BY at').all(since)) as unknown as UsageRow[]
+      : this.#db.prepare('SELECT * FROM usage_records WHERE datetime(at) >= datetime(?) ORDER BY at').all(since)) as UsageRow[]
     return rows.map(toUsage)
   }
 
@@ -359,7 +359,7 @@ export class SecurityStore {
   listSessions(userId?: string): SessionRecord[] {
     const rows = (userId === undefined
       ? this.#db.prepare('SELECT * FROM sessions ORDER BY started_at DESC').all()
-      : this.#db.prepare('SELECT * FROM sessions WHERE user_id = ? ORDER BY started_at DESC').all(userId)) as unknown as SessionRow[]
+      : this.#db.prepare('SELECT * FROM sessions WHERE user_id = ? ORDER BY started_at DESC').all(userId)) as SessionRow[]
     return rows.map(toSession)
   }
 
@@ -426,7 +426,7 @@ export class SecurityStore {
   listTokens(userId?: string): ApiToken[] {
     const rows = (userId === undefined
       ? this.#db.prepare('SELECT * FROM api_tokens ORDER BY created_at DESC').all()
-      : this.#db.prepare('SELECT * FROM api_tokens WHERE user_id = ? ORDER BY created_at DESC').all(userId)) as unknown as TokenRow[]
+      : this.#db.prepare('SELECT * FROM api_tokens WHERE user_id = ? ORDER BY created_at DESC').all(userId)) as TokenRow[]
     return rows.map(toToken)
   }
 
@@ -438,7 +438,7 @@ export class SecurityStore {
   verifyToken(secret: string): ApiToken | null {
     const hash = createHash('sha256').update(secret).digest('hex')
     const row = this.#db.prepare('SELECT * FROM api_tokens WHERE hash = ? AND revoked_at IS NULL')
-      .get(hash) as unknown as TokenRow | undefined
+      .get(hash) as TokenRow | undefined
     return row === undefined ? null : toToken(row)
   }
 
@@ -465,7 +465,7 @@ export class SecurityStore {
    * @returns the newest audit events.
    */
   listAudit(limit = 100): AuditEvent[] {
-    return (this.#db.prepare('SELECT * FROM audit_events ORDER BY seq DESC LIMIT ?').all(limit) as unknown as AuditRow[])
+    return (this.#db.prepare('SELECT * FROM audit_events ORDER BY seq DESC LIMIT ?').all(limit) as AuditRow[])
       .map(row => ({
         seq: row.seq, actor: row.actor, action: row.action, target: row.target, at: row.at,
         detail: JSON.parse(row.detail) as Record<string, unknown>,
@@ -486,7 +486,7 @@ export class SecurityStore {
   }
 }
 
-interface UserRow {
+interface UserRow extends Record<string, SQLOutputValue> {
   id: string
   name: string
   email: string | null
@@ -495,13 +495,13 @@ interface UserRow {
   metadata: string
   version: number
 }
-interface RoleRow {
+interface RoleRow extends Record<string, SQLOutputValue> {
   id: string
   name: string
   description: string
   permissions: string
 }
-interface SessionRow {
+interface SessionRow extends Record<string, SQLOutputValue> {
   id: string
   user_id: string
   agent: string
@@ -509,7 +509,7 @@ interface SessionRow {
   ended_at: string | null
   status: string
 }
-interface UsageRow {
+interface UsageRow extends Record<string, SQLOutputValue> {
   id: string
   user_id: string
   session_id: string | null
@@ -521,7 +521,7 @@ interface UsageRow {
   total_tokens: number
   at: string
 }
-interface TokenRow {
+interface TokenRow extends Record<string, SQLOutputValue> {
   id: string
   user_id: string
   name: string
@@ -538,7 +538,14 @@ function toToken(row: TokenRow): ApiToken {
   }
 }
 
-interface AuditRow { seq: number; actor: string; action: string; target: string; at: string; detail: string }
+interface AuditRow extends Record<string, SQLOutputValue> {
+  seq: number
+  actor: string
+  action: string
+  target: string
+  at: string
+  detail: string
+}
 
 function toUser(row: UserRow): User {
   return {

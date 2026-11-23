@@ -9,7 +9,8 @@ import { createSubagentExecutor, deliveryText, inputsParameter, nodeOutputSchema
 import type { ObjectValueSchemaSpec } from '@deepseek-ai/dsh-tools'
 import { apply } from '../src/tools.ts'
 import { SqliteRunStore } from '../src/run-store.ts'
-import type { SubagentActivationSpec, SubagentRuntime } from '@deepseek-ai/dsh-subagent'
+import { SessionId } from '@deepseek-ai/dsh-session'
+import type { SubagentActivationSpec, SubagentRuntime, SubagentStopReason } from '@deepseek-ai/dsh-subagent'
 
 // Test isolation: `resolveRunDbPath` falls back to `$DSH_HOME/agentops/runs.db`,
 // which is the developer's real run history. Point that fallback at a throwaway
@@ -54,7 +55,7 @@ nodes:
 type FakeBehaviour = (label: string, spec: SubagentActivationSpec) => {
   text?: string
   structured?: unknown
-  stop?: string
+  stop?: SubagentStopReason
   diagnostic?: string
 }
 
@@ -64,7 +65,7 @@ function fakeRuntime(
   const labels: string[] = []
   const prompts: string[] = []
   const specs: SubagentActivationSpec[] = []
-  const runtime = {
+  const runtime = Object.assign({} as SubagentRuntime, {
     startActivation: async (spec: SubagentActivationSpec) => {
       specs.push(spec)
       labels.push(spec.label)
@@ -74,7 +75,7 @@ function fakeRuntime(
       const generatedText = JSON.stringify(Object.fromEntries(ports.map(port => [port, `done:${spec.label}`])))
       const text = outcome.text ?? generatedText
       return {
-        childId: `child-${spec.label}`,
+        childId: SessionId(`child-${spec.label}`),
         result: Promise.resolve({
           output: text.length === 0 ? [] : [{ type: 'text', text }],
           stopReason: outcome.stop === undefined ? 'completed' : outcome.stop,
@@ -84,7 +85,7 @@ function fakeRuntime(
         dispose: async () => {},
       }
     },
-  } as unknown as SubagentRuntime
+  })
   return { runtime, labels, prompts, specs }
 }
 

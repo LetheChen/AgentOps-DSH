@@ -120,7 +120,8 @@ export function parseOaJson(raw: string): unknown {
     return `"${value}"`
   })
   try {
-    return JSON.parse(quoted) as unknown
+    const value: unknown = JSON.parse(quoted)
+    return value
   } catch {
     return undefined
   }

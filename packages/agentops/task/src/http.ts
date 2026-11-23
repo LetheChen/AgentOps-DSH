@@ -630,7 +630,7 @@ export class TaskHttpApi {
             `SELECT p.*, (SELECT COUNT(*) FROM tasks t WHERE t.project_id = p.project_id) AS task_count
              FROM projects p ORDER BY p.created_at`,
           )
-          .all() as unknown as Record<string, unknown>[]).map((project) => {
+          .all() as Record<string, unknown>[]).map((project) => {
           const workspaceId = typeof project.workspace_id === 'string' ? project.workspace_id : ''
           const workspace = workspaces.get(workspaceId)
           return {
@@ -1027,10 +1027,10 @@ export class TaskHttpApi {
     const detail = this.#service.getTask(taskId)
     const stageRows = this.#db
       .prepare('SELECT * FROM task_stages WHERE task_id = ? ORDER BY COALESCE(started_at, committed_at)')
-      .all(taskId) as unknown as Record<string, unknown>[]
+      .all(taskId) as Record<string, unknown>[]
     const eventRows = this.#db
       .prepare('SELECT * FROM task_events WHERE task_id = ? ORDER BY created_at')
-      .all(taskId) as unknown as Record<string, unknown>[]
+      .all(taskId) as Record<string, unknown>[]
     return {
       ...detail,
       stages: stageRows.map((row, index) => ({

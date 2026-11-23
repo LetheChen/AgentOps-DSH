@@ -12,20 +12,13 @@ interface SystemValue {
   instances: { mode: string }
 }
 
-interface SystemTool {
-  name: string
-  parameters: { type: string; properties: Record<string, unknown> }
-  description: string
-  output: {
-    schema: { type: string; additionalProperties: boolean }
-    render: (args: Record<string, unknown>, value: SystemValue) => { type: string; text: string }[]
-    presentationMeta: (args: Record<string, unknown>, value: SystemValue) => { warningCount: number; dshVersion: string }
-  }
-  execute: (args: Record<string, unknown>, exec: unknown) => Promise<SystemValue>
-}
+const systemTool = (service: AgentOpsSystemService) => createSystemTool(service)
 
-const systemTool = (service: AgentOpsSystemService): SystemTool =>
-  createSystemTool(service) as unknown as SystemTool
+function firstText(blocks: readonly { readonly type: string; readonly text?: string }[]): string {
+  const block = blocks[0]
+  if (block?.type !== 'text' || block.text === undefined) throw new Error('expected a text block')
+  return block.text
+}
 
 
 function serviceFor(input: Parameters<typeof buildDeploymentSnapshot>[0]): AgentOpsSystemService {
@@ -71,15 +64,16 @@ void test('execute 返回完整快照，render 输出一行摘要', async () => 
     database: { engine: 'postgres', latencyMs: 12 },
     rollback: { snapshotAt: '2026-10-25T03:00:00+08:00' },
   }))
-  const value = await tool.execute({}, {})
+  const value = await tool.execute({}, {} as never) as SystemValue
   assert.equal(value.dshVersion, '0.2.1-rc.3')
   assert.equal(value.instances.mode, 'single')
 
-  const blocks = tool.output.render({}, value)
+  const blocks = tool.output.render({}, value as never)
   assert.equal(blocks.length, 1)
-  assert.match(blocks[0]!.text, /DSH 0\.2\.1-rc\.3 on Node 24\.9\.0/)
-  assert.match(blocks[0]!.text, /DSH /)
-  assert.match(blocks[0]!.text, /no warnings/)
+  const text = firstText(blocks)
+  assert.match(text, /DSH 0\.2\.1-rc\.3 on Node 24\.9\.0/)
+  assert.match(text, /DSH /)
+  assert.match(text, /no warnings/)
 })
 
 void test('告警进入摘要与展示元数据', async () => {
@@ -89,14 +83,17 @@ void test('告警进入摘要与展示元数据', async () => {
     database: { engine: 'postgres', latencyMs: 12 },
     rollback: { snapshotAt: '2026-10-25T03:00:00+08:00' },
   }))
-  const value = await tool.execute({}, {})
-  const blocks = tool.output.render({}, value)
-  assert.match(blocks[0]!.text, /1 warning\(s\)/)
-  assert.match(blocks[0]!.text, /会话粘性/)
+  const value = await tool.execute({}, {} as never) as SystemValue
+  const blocks = tool.output.render({}, value as never)
+  const text = firstText(blocks)
+  assert.match(text, /1 warning\(s\)/)
+  assert.match(text, /会话粘性/)
 
-  const meta = tool.output.presentationMeta({}, value)
-  assert.equal(meta.warningCount, 1)
-  assert.equal(meta.dshVersion, '0.2.1-rc.3')
+  const meta = tool.output.presentationMeta?.({}, value as never)
+  if (typeof meta !== 'object' || meta === null || Array.isArray(meta)) throw new Error('expected presentation metadata')
+  const record = meta as Record<string, unknown>
+  assert.equal(record.warningCount, 1)
+  assert.equal(record.dshVersion, '0.2.1-rc.3')
 })
 
 void test('summarize 对未知延迟给出占位而不断言', () => {

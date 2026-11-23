@@ -127,7 +127,7 @@ export function apply(ctx: Context, config: DbPluginConfig = {}): void {
     } catch {
       // Vault unavailable: fall through to the other sources.
     }
-    const credentials = ctx.get('credentials') as unknown as {
+    const credentials = ctx.get('credentials') as {
       describeRecord?: (key: string) => Promise<{ present: boolean }>
     } | undefined
     if (credentials?.describeRecord === undefined || datasource.credentialId === null) return false

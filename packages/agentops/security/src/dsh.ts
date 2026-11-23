@@ -67,7 +67,7 @@ export function apply(ctx: Context, config: SecurityPluginConfig = DEFAULT_CONFI
   // `llm/stream` is a waterfall, so the listener receives (options, next).
   ctx.inject(['llm'], (llmCtx) => {
     const tap = createUsageTap(store)
-    const events = llmCtx as unknown as {
+    const events = llmCtx as {
       on(name: string, listener: (...args: never[]) => unknown): () => void
       effect(factory: () => () => void): void
     }

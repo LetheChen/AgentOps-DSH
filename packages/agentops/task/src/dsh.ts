@@ -121,9 +121,9 @@ export function apply(ctx: Context, config: TaskPluginConfig = DEFAULT_CONFIG): 
       requestBody: 'buffered',
       fetch: createTaskExecutionHandler(
         service,
-        (executionCtx as unknown as { sessionController: TaskSessionController | undefined }).sessionController,
-        (executionCtx as unknown as { permissionPresets?: TaskPermissionController }).permissionPresets,
-        (executionCtx as unknown as { agents?: TaskAgentRegistry }).agents,
+        (executionCtx.get as (name: string) => unknown)('sessionController') as TaskSessionController | undefined,
+        (executionCtx.get as (name: string) => unknown)('permissionPresets') as TaskPermissionController | undefined,
+        (executionCtx.get as (name: string) => unknown)('agents') as TaskAgentRegistry | undefined,
         resolveExecutionBackend,
       ),
     }), 'agentops-task: /api/agentops/task-execute')

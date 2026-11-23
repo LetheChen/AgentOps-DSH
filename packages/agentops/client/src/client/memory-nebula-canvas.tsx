@@ -501,7 +501,7 @@ export function MemoryNebulaCanvas({
       element.removeEventListener('dblclick', double)
       element.removeEventListener('wheel', wheel)
       scene.traverse((object) => {
-        const mesh = object as unknown as { geometry?: THREE.BufferGeometry; material?: THREE.Material | THREE.Material[] }
+        const mesh = object as { geometry?: THREE.BufferGeometry; material?: THREE.Material | THREE.Material[] }
         const texture = (object.userData as { texture?: THREE.Texture }).texture
         texture?.dispose()
         mesh.geometry?.dispose()

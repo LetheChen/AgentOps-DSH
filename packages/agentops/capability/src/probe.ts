@@ -59,7 +59,7 @@ async function pg(): Promise<typeof import('pg')> {
 /** Load MySQL only when a MySQL capability instance is actually probed. */
 async function mysql(): Promise<{ readonly createConnection: MysqlCreateConnection }> {
   const specifier = 'mysql2/promise'
-  mysqlDriver ??= (await import(specifier)) as unknown as { readonly createConnection: MysqlCreateConnection }
+  mysqlDriver ??= (await import(specifier)) as { readonly createConnection: MysqlCreateConnection }
   return mysqlDriver
 }
 

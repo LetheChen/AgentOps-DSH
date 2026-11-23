@@ -102,7 +102,7 @@ export function listCredentialAudit(limit = 20, path = resolveSecurityDbPath()):
   try {
     return (db.prepare(
       "SELECT * FROM audit_events WHERE action LIKE 'connection.%' ORDER BY seq DESC LIMIT ?",
-    ).all(limit) as unknown as {
+    ).all(limit) as {
       seq: number
       actor: string
       action: string

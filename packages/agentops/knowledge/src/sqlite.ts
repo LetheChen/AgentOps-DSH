@@ -6,7 +6,7 @@
  * derived from a version and cascade away with their document.
  */
 
-import { DatabaseSync } from 'node:sqlite'
+import { DatabaseSync, type SQLOutputValue } from 'node:sqlite'
 
 import { KnowledgeStore } from './store.js'
 import type { AddDocumentResult } from './store.js'
@@ -163,7 +163,7 @@ export interface IngestionDocumentRecord {
   error?: string
 }
 
-interface JobRow {
+interface JobRow extends Record<string, SQLOutputValue> {
   id: string
   status: string
   created_at: string
@@ -174,10 +174,21 @@ interface JobRow {
   failed: number
 }
 
-interface JobDocRow { document_id: string | null; path: string; action: string; error: string | null }
+interface JobDocRow extends Record<string, SQLOutputValue> {
+  document_id: string | null
+  path: string
+  action: string
+  error: string | null
+}
 
-interface SpaceRow { id: string; name: string; description: string; visibility: string; readers: string }
-interface DocumentRow {
+interface SpaceRow extends Record<string, SQLOutputValue> {
+  id: string
+  name: string
+  description: string
+  visibility: string
+  readers: string
+}
+interface DocumentRow extends Record<string, SQLOutputValue> {
   id: string
   space_id: string
   category_path: string
@@ -189,7 +200,7 @@ interface DocumentRow {
   status: string
   updated_at: string
 }
-interface ChunkRow {
+interface ChunkRow extends Record<string, SQLOutputValue> {
   id: string
   document_id: string
   version: number
@@ -202,7 +213,7 @@ interface ChunkRow {
   section: string | null
 }
 
-interface WikiDraftRow {
+interface WikiDraftRow extends Record<string, SQLOutputValue> {
   id: string
   title: string
   content: string
@@ -221,7 +232,7 @@ interface WikiDraftRow {
   updated_at: string
 }
 
-interface WikiPageRow {
+interface WikiPageRow extends Record<string, SQLOutputValue> {
   id: string
   draft_id: string
   document_id: string
@@ -237,7 +248,7 @@ interface WikiPageRow {
   updated_at: string
 }
 
-interface WikiCategoryRow {
+interface WikiCategoryRow extends Record<string, SQLOutputValue> {
   space_id: string
   path: string
   review_status: string
@@ -245,7 +256,7 @@ interface WikiCategoryRow {
   updated_at: string
 }
 
-interface WikiOperationRow {
+interface WikiOperationRow extends Record<string, SQLOutputValue> {
   id: number
   action: string
   draft_id: string | null
@@ -360,7 +371,7 @@ export class SqliteKnowledgeRepository {
    */
   load(): KnowledgeStore {
     const store = new KnowledgeStore()
-    for (const row of this.#db.prepare('SELECT * FROM spaces ORDER BY id').all() as unknown as SpaceRow[]) {
+    for (const row of this.#db.prepare('SELECT * FROM spaces ORDER BY id').all() as SpaceRow[]) {
       store.addSpace({
         id: row.id,
         name: row.name,
@@ -370,12 +381,12 @@ export class SqliteKnowledgeRepository {
       })
     }
 
-    const docs = this.#db.prepare('SELECT * FROM documents ORDER BY id').all() as unknown as DocumentRow[]
+    const docs = this.#db.prepare('SELECT * FROM documents ORDER BY id').all() as DocumentRow[]
     const chunkStmt = this.#db.prepare('SELECT * FROM chunks WHERE document_id = ? ORDER BY version, ordinal')
     const versionStmt = this.#db.prepare('SELECT * FROM document_versions WHERE document_id = ? ORDER BY version')
 
     for (const doc of docs) {
-      const rows = chunkStmt.all(doc.id) as unknown as ChunkRow[]
+      const rows = chunkStmt.all(doc.id) as ChunkRow[]
       const byVersion = new Map<number, Chunk[]>()
       for (const row of rows) {
         const list = byVersion.get(row.version) ?? []
@@ -395,7 +406,7 @@ export class SqliteKnowledgeRepository {
         })
         byVersion.set(row.version, list)
       }
-      const versions = (versionStmt.all(doc.id) as unknown as {
+      const versions = (versionStmt.all(doc.id) as {
         document_id: string
         version: number
         checksum: string
@@ -524,7 +535,7 @@ export class SqliteKnowledgeRepository {
       SELECT c.* FROM chunks c
       JOIN documents d ON d.id = c.document_id AND d.current_version = c.version
       WHERE c.space_id IN (${placeholders})
-    `).all(...allowedSpaces) as unknown as ChunkRow[]
+    `).all(...allowedSpaces) as ChunkRow[]
 
     const chunks: Chunk[] = rows.map(row => ({
       id: row.id,
@@ -552,7 +563,7 @@ export class SqliteKnowledgeRepository {
    * @returns the document metadata, newest first.
    */
   listDocuments(): DocumentMeta[] {
-    return (this.#db.prepare('SELECT * FROM documents ORDER BY updated_at DESC').all() as unknown as DocumentRow[])
+    return (this.#db.prepare('SELECT * FROM documents ORDER BY updated_at DESC').all() as DocumentRow[])
       .map(row => ({
         id: row.id,
         spaceId: row.space_id,
@@ -607,7 +618,7 @@ export class SqliteKnowledgeRepository {
    * @returns the job records, newest first.
    */
   listIngestionJobs(): IngestionJobRecord[] {
-    return (this.#db.prepare('SELECT * FROM ingestion_jobs ORDER BY created_at DESC').all() as unknown as JobRow[])
+    return (this.#db.prepare('SELECT * FROM ingestion_jobs ORDER BY created_at DESC').all() as JobRow[])
       .map(row => ({
         id: row.id,
         status: normalizeJobStatus(row.status),
@@ -623,7 +634,7 @@ export class SqliteKnowledgeRepository {
    * @returns the per-file records of that job.
    */
   listIngestionDocuments(jobId: string): IngestionDocumentRecord[] {
-    return (this.#db.prepare('SELECT * FROM ingestion_documents WHERE job_id = ? ORDER BY path').all(jobId) as unknown as JobDocRow[])
+    return (this.#db.prepare('SELECT * FROM ingestion_documents WHERE job_id = ? ORDER BY path').all(jobId) as JobDocRow[])
       .map(row => ({
         ...(row.document_id === null ? {} : { documentId: row.document_id }),
         path: row.path, action: row.action,
@@ -663,7 +674,7 @@ export class SqliteKnowledgeRepository {
    * @returns the draft, or undefined when it does not exist.
    */
   getWikiDraft(draftId: string): WikiDraft | undefined {
-    const row = this.#db.prepare('SELECT * FROM wiki_drafts WHERE id = ?').get(draftId) as unknown as WikiDraftRow | undefined
+    const row = this.#db.prepare('SELECT * FROM wiki_drafts WHERE id = ?').get(draftId) as WikiDraftRow | undefined
     return row === undefined ? undefined : draftFromRow(row)
   }
 
@@ -672,7 +683,7 @@ export class SqliteKnowledgeRepository {
    * @returns all draft records.
    */
   listWikiDrafts(): WikiDraft[] {
-    return (this.#db.prepare('SELECT * FROM wiki_drafts ORDER BY updated_at DESC').all() as unknown as WikiDraftRow[])
+    return (this.#db.prepare('SELECT * FROM wiki_drafts ORDER BY updated_at DESC').all() as WikiDraftRow[])
       .map(draftFromRow)
   }
 
@@ -704,7 +715,7 @@ export class SqliteKnowledgeRepository {
    * @returns all page records.
    */
   listWikiPages(): WikiPage[] {
-    return (this.#db.prepare('SELECT * FROM wiki_pages ORDER BY updated_at DESC').all() as unknown as WikiPageRow[])
+    return (this.#db.prepare('SELECT * FROM wiki_pages ORDER BY updated_at DESC').all() as WikiPageRow[])
       .map(pageFromRow)
   }
 
@@ -729,7 +740,7 @@ export class SqliteKnowledgeRepository {
    */
   getWikiCategory(spaceId: string, path: string): WikiCategory | undefined {
     const row = this.#db.prepare('SELECT * FROM wiki_categories WHERE space_id = ? AND path = ?')
-      .get(spaceId, path) as unknown as WikiCategoryRow | undefined
+      .get(spaceId, path) as WikiCategoryRow | undefined
     return row === undefined ? undefined : categoryFromRow(row, 0, 0)
   }
 
@@ -738,7 +749,7 @@ export class SqliteKnowledgeRepository {
    * @returns category records ordered by space and path.
    */
   listWikiCategories(): WikiCategory[] {
-    return (this.#db.prepare('SELECT * FROM wiki_categories ORDER BY space_id, path').all() as unknown as WikiCategoryRow[])
+    return (this.#db.prepare('SELECT * FROM wiki_categories ORDER BY space_id, path').all() as WikiCategoryRow[])
       .map(row => categoryFromRow(row, 0, 0))
   }
 
@@ -761,7 +772,7 @@ export class SqliteKnowledgeRepository {
    * @returns the operation timeline.
    */
   listWikiOperations(limit = 50): WikiOperation[] {
-    return (this.#db.prepare('SELECT * FROM wiki_operations ORDER BY created_at DESC, id DESC LIMIT ?').all(limit) as unknown as WikiOperationRow[])
+    return (this.#db.prepare('SELECT * FROM wiki_operations ORDER BY created_at DESC, id DESC LIMIT ?').all(limit) as WikiOperationRow[])
       .map(operationFromRow)
   }
 
@@ -771,7 +782,7 @@ export class SqliteKnowledgeRepository {
    * @returns the version records, oldest first.
    */
   listVersions(documentId: string): DocumentVersion[] {
-    const rows = this.#db.prepare('SELECT * FROM document_versions WHERE document_id = ? ORDER BY version').all(documentId) as unknown as {
+    const rows = this.#db.prepare('SELECT * FROM document_versions WHERE document_id = ? ORDER BY version').all(documentId) as {
       document_id: string
       version: number
       checksum: string

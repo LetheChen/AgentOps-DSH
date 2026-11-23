@@ -240,7 +240,7 @@ export function buildPreset(
       // authoring tools belong to operators, not to the Agent under test.
       only: ['dag_run', 'list_runs'],
     }
-    if (config.workflowDir !== undefined) dagConfig.workflowDir = config.workflowDir as unknown as string
+    if (config.workflowDir !== undefined) dagConfig.workflowDir = config.workflowDir as string
     if (config.provider !== undefined) dagConfig.provider = config.provider
     if (config.concurrency !== undefined) dagConfig.concurrency = config.concurrency
     if (config.maxUpstreamChars !== undefined) dagConfig.maxUpstreamChars = config.maxUpstreamChars
@@ -386,7 +386,7 @@ function main(): void {
   const delegablePresets = agents.map(agent => agent.agent_id).filter(id => id !== dispatcherId)
 
   const presets = agents.map(agent => buildPreset(agent, toolMap, kbMap, {
-    workflowDir: { __js: "dshHomePath('agentops', 'workflows')" } as unknown as string,
+    workflowDir: { __js: "dshHomePath('agentops', 'workflows')" } as string,
     provider: 'spawn',
     concurrency: 4,
   }, delegablePresets))

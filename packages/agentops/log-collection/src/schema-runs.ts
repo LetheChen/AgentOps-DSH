@@ -9,7 +9,7 @@
  * @module @agentops/dsh-log-collection/schema-runs
  */
 
-import type { DatabaseSync } from 'node:sqlite'
+import type { DatabaseSync, SQLOutputValue } from 'node:sqlite'
 
 /** Current schema version after adding the run history. */
 export const LOG_COLLECTION_RUN_SCHEMA_VERSION = 2
@@ -78,7 +78,7 @@ export interface LogCollectionRun {
   readonly errorMessage: string | null
 }
 
-interface RunRow {
+interface RunRow extends Record<string, SQLOutputValue> {
   run_id: string
   tenant_key: string
   task_id: string
@@ -142,7 +142,7 @@ export class LogCollectionRuns {
       : this.#db.prepare(`
           SELECT * FROM log_collection_runs WHERE tenant_key = ? AND task_id = ?
           ORDER BY finished_at DESC LIMIT ?
-        `).all(tenantKey, taskId, bounded)) as unknown as RunRow[]
+        `).all(tenantKey, taskId, bounded)) as RunRow[]
     return rows.map(row => ({
       runId: row.run_id,
       tenantKey: row.tenant_key,

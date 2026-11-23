@@ -83,7 +83,8 @@ function tokenScopeKey(runtime: CapabilityRuntime, spec: AuthSpec, subject: Auth
 
 function parseJson(text: string): unknown {
   try {
-    return JSON.parse(text) as unknown
+    const value: unknown = JSON.parse(text)
+    return value
   } catch {
     return undefined
   }

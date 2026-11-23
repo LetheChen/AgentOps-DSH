@@ -50,7 +50,7 @@ void test('reopening refreshes built-in definitions without touching deployment 
   const reopened = new CapabilityStore(path, key)
   try {
     const database = reopened.getCapability('database')
-    const engine = (database?.configSchema as unknown as Array<{ key: string; options?: string[] }>).find(field => field.key === 'engine')
+    const engine = database?.configSchema.find(field => field.key === 'engine')
     assert.deepEqual(engine?.options, ['mysql', 'postgres', 'sqlite'])
     assert.equal(reopened.getInstance('db_a')?.name, 'Keep me')
     assert.equal(reopened.listBindings('manager').length, 1)

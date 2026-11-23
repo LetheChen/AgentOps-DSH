@@ -27,12 +27,23 @@ interface QueryTable {
   readonly displaySql: string
 }
 
-interface SchemaPayload {
+interface SchemaColumn {
+  readonly name: string
+  readonly type: string
+  readonly nullable: boolean
+}
+
+/** JSON carried by the tool result before render-time validation. */
+interface RenderableSchemaPayload {
   readonly datasource: string
   readonly displayName: string
   readonly schema: string
   readonly maxRows: number
-  readonly tables: Readonly<Record<string, readonly { name: string; type: string; nullable: boolean }[]>>
+  readonly tables: unknown
+}
+
+interface SchemaPayload extends Omit<RenderableSchemaPayload, 'tables'> {
+  readonly tables: Readonly<Record<string, readonly SchemaColumn[]>>
 }
 
 const MAX_RENDERED_ROWS = 50
@@ -108,18 +119,38 @@ export function renderRows(table: QueryTable): string {
   return lines.join('\n')
 }
 
+/** Normalize the JSON table map before rendering. */
+function schemaTables(value: unknown): SchemaPayload['tables'] {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return {}
+  const entries: [string, readonly SchemaColumn[]][] = []
+  for (const [name, columns] of Object.entries(value)) {
+    if (!Array.isArray(columns)) continue
+    const valid = columns.flatMap((column): SchemaColumn[] => {
+      if (typeof column !== 'object' || column === null || Array.isArray(column)) return []
+      const candidate = column as Record<string, unknown>
+      return typeof candidate.name === 'string' && typeof candidate.type === 'string'
+        && typeof candidate.nullable === 'boolean'
+        ? [{ name: candidate.name, type: candidate.type, nullable: candidate.nullable }]
+        : []
+    })
+    entries.push([name, valid])
+  }
+  return Object.fromEntries(entries)
+}
+
 /**
  * Same rule for the schema: list tables and their columns instead of a count.
  * @param payload - the described schema.
  * @returns the schema rendered as text.
  */
-export function renderSchema(payload: SchemaPayload): string {
-  const names = Object.keys(payload.tables)
+export function renderSchema(payload: RenderableSchemaPayload): string {
+  const tables = schemaTables(payload.tables)
+  const names = Object.keys(tables)
   const qualifier = payload.schema === '' ? '' : `${payload.schema}.`
   const lines = [`数据源 ${payload.displayName}（${payload.datasource}，schema ${payload.schema}）：${names.length} 张表（字段来自 information_schema）`]
   if (payload.maxRows > 0) lines.push(`LIMIT 上限：${payload.maxRows}`)
   for (const name of names) {
-    const columns = payload.tables[name] ?? []
+    const columns = tables[name] ?? []
     lines.push(`${qualifier}${name}（${columns.length} 列）：${columns.map(column => `${column.name} ${column.type.split(' — ')[0]}`).join(', ')}`)
   }
   return lines.join('\n')
@@ -162,7 +193,7 @@ export function createDbTools(resolve: DatabaseResolver): readonly [ToolDefiniti
       render: (_args, value) => [{
         type: 'text',
         text:  value.ok
-          ? renderRows(value as unknown as QueryTable)
+          ? renderRows(value as QueryTable)
           : `查询失败：${value.error ?? '未知原因'}`,
       }],
     },
@@ -235,7 +266,7 @@ export function createDbTools(resolve: DatabaseResolver): readonly [ToolDefiniti
         type: 'text',
         text: value.source === 'unavailable'
           ? `无法获取结构：${value.note ?? ''}`
-          : renderSchema(value as unknown as SchemaPayload),
+          : renderSchema(value),
       }],
     },
     async execute(args, exec) {
