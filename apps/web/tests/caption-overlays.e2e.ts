@@ -82,13 +82,15 @@ it('keeps settings and expanded plugin dialogs clear of the Windows caption acro
       await page.keyboard.press('Escape')
       await plugin.waitFor({ state: 'hidden' })
       for (const platform of ['darwin', 'browser']) {
+        // Reopen while the Windows caption controls are still fixed; removing
+        // the caption first leaves the toggle inside the zero-width rail.
+        if (await reopenSidebar.isVisible()) await reopenSidebar.click()
         await page.evaluate((value) => {
           document.documentElement.removeAttribute('data-windows-titlebar')
           document.documentElement.removeAttribute('data-fullscreen')
           if (value === 'darwin') document.documentElement.setAttribute('data-platform', value)
           else document.documentElement.removeAttribute('data-platform')
         }, platform)
-        if (await reopenSidebar.isVisible()) await reopenSidebar.click()
         await openSettings(page, 'zh')
         await expect.poll(async () => (await settings.boundingBox())?.y).toBe(platform === 'darwin' ? 68 : 0)
         expect((await settingsMask.boundingBox())?.y).toBe(0)
