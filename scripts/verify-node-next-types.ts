@@ -8,7 +8,8 @@
 
 import { execFileSync } from 'node:child_process'
 import { existsSync, globSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { dirname, resolve, sep } from 'node:path'
+import { FORK_OWNED_PACKAGE_ROOT } from './fork-package-policy.ts'
 
 const root = resolve(import.meta.dirname, '..')
 
@@ -39,6 +40,9 @@ function workspacePackages(): WorkspacePackage[] {
     ...globSync('vendor/*/package.json', { cwd: root }),
     ...globSync('packages/*/*/package.json', { cwd: root }),
   ]
+    // Fork-owned packages stay private and outside the upstream release contract;
+    // their declarations are not part of the NodeNext consumer check.
+    .filter(path => !path.split(sep).join('/').startsWith(`${FORK_OWNED_PACKAGE_ROOT}/`))
     .map(path => readPackage(resolve(root, path)))
     .filter(pkg => pkg !== null)
     .sort((a, b) => a.name.localeCompare(b.name))
