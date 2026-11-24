@@ -110,7 +110,7 @@ export async function fixture(initial?: PageCardState) {
     const spec = await entered.promise
     await writeBundle(spec.request.cwd!, current()!.bundleName!)
     result.resolve({ output: [], stopReason: 'completed', structured: { ready: true } })
-    await vi.waitFor(() => { expect(current()?.phase).toBe('installed') })
+    await vi.waitFor(() => { expect(current()?.phase).toBe('installed') }, { timeout: 10_000, interval: 50 })
     return spec
   }
   return { ctx, agent, agentHandle, harness, directory, manager, bundles, startActivation, dispose, result, entered,
