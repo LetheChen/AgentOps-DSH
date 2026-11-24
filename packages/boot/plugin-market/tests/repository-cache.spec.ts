@@ -15,37 +15,20 @@ const probeGate = vi.hoisted(() => ({ slowVersionProbe: false }))
 vi.mock('execa', async (importOriginal) => {
   const actual = await importOriginal<typeof import('execa')>()
   const realExeca = actual.execa
-  type ExecaOptions = Parameters<typeof realExeca>[2]
-  type ExecaResult = Awaited<ReturnType<typeof realExeca>>
   // A real 1 ms deadline races Git's process startup and flaked under CI concurrency
   // (run 45317753974): the probe sometimes answered before the kill fired, so the
   // deadline failure surfaced as a plain `git init` error instead. The synthetic
-  // deadline kill keeps the probe failure deterministic on every platform.
-  const timeoutFailure: ExecaResult = {
-    command: 'git --version',
-    escapedCommand: 'git --version',
-    exitCode: undefined,
+  // deadline failure keeps the probe failure deterministic on every platform.
+  const timeoutFailure = {
     failed: true,
-    isCanceled: false,
-    isDeadlySignal: false,
-    isForcefullyTerminated: false,
     isMaxBuffer: false,
-    isTerminated: true,
-    isTimedOut: true,
-    killed: false,
-    originalMessage: '',
-    shortMessage: 'Command timed out after 1 milliseconds',
-    signal: 'SIGKILL',
-    signalDescription: 'Killed forcefully',
-    stderr: Buffer.alloc(0),
     stdout: Buffer.alloc(0),
-    stdio: [undefined, Buffer.alloc(0), Buffer.alloc(0)],
-    timedOut: true,
-    durationMs: 1,
-  } as ExecaResult
+    stderr: Buffer.alloc(0),
+    shortMessage: 'Command timed out after 1 milliseconds',
+  }
   return {
     ...actual,
-    async execa(command: string, args: readonly string[], options?: ExecaOptions): Promise<ExecaResult> {
+    async execa(command: string, args: readonly string[], options?: import('execa').Options) {
       if (!probeGate.slowVersionProbe || command !== 'git' || args.at(-1) !== '--version') {
         return realExeca(command, args, options)
       }
