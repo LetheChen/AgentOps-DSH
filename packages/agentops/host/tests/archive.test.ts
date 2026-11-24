@@ -6,13 +6,13 @@ import { join } from 'node:path'
 
 import { scanArchive } from '../src/archive.ts'
 
-test('scanArchive：目录缺失返回 missing', () => {
+void test('scanArchive：目录缺失返回 missing', () => {
   const result = scanArchive(join(tmpdir(), 'agentops-no-archive-xyz'))
   assert.equal(result.missing, true)
   assert.deepEqual(result.entries, [])
 })
 
-test('scanArchive：递归列出文件，路径用正斜杠，按时间倒序', () => {
+void test('scanArchive：递归列出文件，路径用正斜杠，按时间倒序', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentops-archive-'))
   try {
     mkdirSync(join(dir, 'report'), { recursive: true })
@@ -33,7 +33,7 @@ test('scanArchive：递归列出文件，路径用正斜杠，按时间倒序', 
   }
 })
 
-test('scanArchive：超过上限截断并标记 truncated', () => {
+void test('scanArchive：超过上限截断并标记 truncated', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentops-archive-cap-'))
   try {
     for (let index = 0; index < 5; index += 1) writeFileSync(join(dir, `f${index}.txt`), 'x')
@@ -45,7 +45,7 @@ test('scanArchive：超过上限截断并标记 truncated', () => {
   }
 })
 
-test('scanArchive：深度超限不再下钻', () => {
+void test('scanArchive：深度超限不再下钻', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentops-archive-depth-'))
   try {
     const deep = join(dir, 'a', 'b', 'c', 'd')

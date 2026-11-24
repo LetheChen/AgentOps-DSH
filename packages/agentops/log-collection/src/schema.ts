@@ -8,7 +8,10 @@ import type { DatabaseSync } from 'node:sqlite'
 /** Current schema version. */
 export const LOG_COLLECTION_SCHEMA_VERSION = 1
 
-/** Create the initial task and ACL tables. */
+/**
+ * Create the initial task and ACL tables.
+ * @param db - the SQLite database to create the schema in.
+ */
 export function createLogCollectionSchema(db: DatabaseSync): void {
   db.exec(`
     PRAGMA foreign_keys = ON;
@@ -62,7 +65,11 @@ export function createLogCollectionSchema(db: DatabaseSync): void {
   `)
 }
 
-/** Read an existing schema version. */
+/**
+ * Read an existing schema version.
+ * @param db - the SQLite database to read the version from.
+ * @returns the stored `user_version` value.
+ */
 export function readLogCollectionSchemaVersion(db: DatabaseSync): number {
   const row = db.prepare('PRAGMA user_version').get() as { user_version: number }
   return row.user_version

@@ -1,0 +1,43 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/agentops/deployment/README.md
+/:
+  en: d1c6ad298150f728
+  zh: a5511bce890dc6e2
+/agentops-dsh-deployment:
+  en: 99cba1db3d42bb89
+  zh: e17f9773f39070e7
+/agentops-dsh-deployment/summary:
+  en: eb7e7b0a22bd5df3
+  zh: 3cc7dddf17962310
+/agentops-dsh-deployment/table-of-contents:
+  en: 9531d7aa7d92cfba
+  zh: b77cf56572399803
+/agentops-dsh-deployment/use-this-package:
+  en: b2b0a23d45e5b2dc
+  zh: 33c2b6bc0579812c
+/agentops-dsh-deployment/configuration:
+  en: 0f5f07f8bdee87f9
+  zh: 508582c3100c2b57
+/agentops-dsh-deployment/model-experience:
+  en: 215e7ba838619b7b
+  zh: 215e7ba838619b7b
+/agentops-dsh-deployment/model-experience/model-visible-tools-and-results:
+  en: 7dfc188ce20f56b7
+  zh: 7dfc188ce20f56b7
+/agentops-dsh-deployment/model-experience/model-visible-tools-and-results/what-the-model-sees:
+  en: b649b24ad244f4c3
+  zh: dd6338b7cfcc7f82
+/agentops-dsh-deployment/model-experience/model-visible-tools-and-results/token-effect:
+  en: 4f37340f1a573ffb
+  zh: b512db0cb1f6cde6
+/agentops-dsh-deployment/model-experience/model-visible-tools-and-results/kv-cache-effect:
+  en: fa610b46559ddd1d
+  zh: f0530e187cdf30d3
+/agentops-dsh-deployment/known-limitations-and-deferred-work:
+  en: 3cc98db4af5bc8fa
+  zh: 37c293fe6a136f37
+/agentops-dsh-deployment/known-limitations-and-deferred-work/dev-note:
+  en: 5067fa9863a8aae0
+  zh: eb33094c4527b1ae

@@ -11,6 +11,7 @@ import { bundlePatchPaths, composeEntries, loadOverlayPatches } from '../package
 import type { DshBundleManifest } from '../packages/util/package-manifest/src/types.ts'
 import { assertNever } from '../packages/util/values/src/index.ts'
 import { isAgentPresetEntry, isCordisGroupEntry, loadCordisYaml } from './cordis-yaml.ts'
+import { isForkOwnedPackagePath } from './fork-package-policy.ts'
 import { PRODUCT_PACKAGE_POLICY, type ProductPackagePolicy } from './product-package-policy.ts'
 import { collectRuntimeLocalSourceSpecifiers, collectRuntimeSourceSpecifiers } from './verify-client-packages.ts'
 
@@ -244,6 +245,7 @@ export function verifyProductUse(
     }
   }
   for (const pkg of packages.values()) {
+    if (isForkOwnedPackagePath(pkg.directory)) continue
     if (!pkg.directory.startsWith('packages/') || pkg.directory.startsWith('packages/experimental/')) continue
     if (!defaults.packages.has(pkg.directory) && !optional.packages.has(pkg.directory) && policy[pkg.directory] === undefined) {
       failures.push(`${pkg.directory} (${pkg.name}): no product runtime use; mount it, declare its maintained role, or move it to experimental`)

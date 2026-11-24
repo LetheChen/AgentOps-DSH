@@ -44,9 +44,9 @@ export function openSurfaceScreen(): boolean {
  * @param ctx - client context carrying `slots`, `sidebarRightTabs` and `sidebarRight`.
  */
 export function registerSurfaceScreen(ctx: ClientContext): void {
-  const tabs = ctx.get('sidebarRightTabs') as unknown as TabRegistryLike | undefined
-  const right = ctx.get('sidebarRight') as unknown as SidebarRightLike | undefined
-  const slots = ctx.get('slots') as unknown as SlotsLike | undefined
+  const tabs = ctx.get('sidebarRightTabs') as TabRegistryLike | undefined
+  const right = ctx.get('sidebarRight') as SidebarRightLike | undefined
+  const slots = ctx.get('slots') as SlotsLike | undefined
   if (tabs === undefined || slots === undefined) return
 
   ctx.effect(() => tabs.register(surfaceTabDefinition()), 'agentops: surface tab type')

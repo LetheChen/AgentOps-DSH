@@ -10,8 +10,8 @@ const NOW = '2026-10-25T00:00:00+08:00'
 
 function seed() {
   const store = new KnowledgeStore()
-  store.addSpace({ id: 'finance', name: '财务与审批', visibility: 'shared', readers: [] })
-  store.addSpace({ id: 'personal-u1', name: '个人', visibility: 'restricted', readers: ['user:u1'] })
+  store.addSpace({ id: 'finance', name: '财务与审批', description: '', visibility: 'shared', readers: [] })
+  store.addSpace({ id: 'personal-u1', name: '个人', description: '', visibility: 'restricted', readers: ['user:u1'] })
   store.addDocument({
     id: 'doc-travel', spaceId: 'finance', title: '差旅费用管理办法',
     mime: 'application/pdf', parser: 'pdftotext@1',
@@ -27,11 +27,11 @@ function seed() {
   return store
 }
 
-test('normalize 统一行尾与空行', () => {
+void test('normalize 统一行尾与空行', () => {
   assert.equal(normalizeText('a\r\nb\r\n\r\n\r\n\r\nc   '), 'a\nb\n\nc')
 })
 
-test('chunk 保留定位与标题分段，且确定性', () => {
+void test('chunk 保留定位与标题分段，且确定性', () => {
   const text = normalizeText('# 一\n\n' + '甲'.repeat(300) + '\n\n# 二\n\n' + '乙'.repeat(300))
   const a = chunkText(text, { maxChars: 200, overlap: 20 })
   const b = chunkText(text, { maxChars: 200, overlap: 20 })
@@ -43,11 +43,11 @@ test('chunk 保留定位与标题分段，且确定性', () => {
   assert.ok(a.every(c => c.text.length <= 200))
 })
 
-test('tokenize：英文整词 + 中文二元组', () => {
+void test('tokenize：英文整词 + 中文二元组', () => {
   assert.deepEqual(tokenize('API Key 差旅标准'), ['api', 'key', '差旅', '旅标', '标准'])
 })
 
-test('检索按可见空间过滤，且中文命中', () => {
+void test('检索按可见空间过滤，且中文命中', () => {
   const store = seed()
   const hits = store.search('住宿标准', ['finance'])
   assert.ok(hits.length > 0)
@@ -58,13 +58,13 @@ test('检索按可见空间过滤，且中文命中', () => {
   assert.equal(store.search('住宿标准', []).length, 0)
 })
 
-test('空查询与零结果返回空数组，不做模糊兜底', () => {
+void test('空查询与零结果返回空数组，不做模糊兜底', () => {
   const store = seed()
   assert.deepEqual(store.search('   ', ['finance']), [])
   assert.deepEqual(store.search('完全不存在的词', ['finance']), [])
 })
 
-test('删除文档后其切片不可检索，历史版本不再参与', () => {
+void test('删除文档后其切片不可检索，历史版本不再参与', () => {
   const store = seed()
   assert.ok(store.search('住宿标准', ['finance']).length > 0)
   const updated = store.addDocument({
@@ -81,7 +81,7 @@ test('删除文档后其切片不可检索，历史版本不再参与', () => {
   assert.equal(store.search('700', ['finance']).length, 0)
 })
 
-test('引用可解析到确切版本，删除后解析失败', () => {
+void test('引用可解析到确切版本，删除后解析失败', () => {
   const store = seed()
   const hit = store.search('实报实销', ['finance'])[0]!
   const citation = {
@@ -96,7 +96,7 @@ test('引用可解析到确切版本，删除后解析失败', () => {
   assert.equal(store.resolveCitation(citation), undefined)
 })
 
-test('导入计划：越界、超限、重复、缺映射、敏感命中分别标注', () => {
+void test('导入计划：越界、超限、重复、缺映射、敏感命中分别标注', () => {
   const plan = planImport([
     { path: 'E:/Docs/a.md', size: 100, mime: 'text/markdown', contentHash: 'h1', sample: '普通内容' },
     { path: 'E:/Other/b.md', size: 100, mime: 'text/markdown', contentHash: 'h2' },
@@ -125,7 +125,7 @@ test('导入计划：越界、超限、重复、缺映射、敏感命中分别�
   assert.equal(summary.sensitiveFiles, 1)
 })
 
-test('导入计划：未匹配知识域时要求人工映射，不默认落库', () => {
+void test('导入计划：未匹配知识域时要求人工映射，不默认落库', () => {
   const plan = planImport(
     [{ path: 'E:/Docs/x.md', size: 10, mime: 'text/markdown', contentHash: 'hx' }],
     { allowedRoots: ['E:/Docs'] },
@@ -134,9 +134,9 @@ test('导入计划：未匹配知识域时要求人工映射，不默认落库',
   assert.equal(plan[0]!.spaceId, undefined)
 })
 
-test('空文本拒绝入域，未知空间拒绝写入', () => {
+void test('空文本拒绝入域，未知空间拒绝写入', () => {
   const store = new KnowledgeStore()
-  store.addSpace({ id: 's', name: 'S', visibility: 'shared', readers: [] })
+  store.addSpace({ id: 's', name: 'S', description: '', visibility: 'shared', readers: [] })
   assert.throws(() => store.addDocument({
     id: 'd', spaceId: 's', title: 't', mime: 'text/plain', parser: 'p', contentHash: 'h', now: NOW, text: '   ',
   }), /empty/)
@@ -145,7 +145,7 @@ test('空文本拒绝入域，未知空间拒绝写入', () => {
   }), /unknown space/)
 })
 
-test('BM25 排序：更匹配的切片排前', () => {
+void test('BM25 排序：更匹配的切片排前', () => {
   const chunks = [
     { id: 'c1', documentId: 'd', version: 1, spaceId: 's', ordinal: 0, text: '差旅住宿标准 600 元', locator: { start: 0, end: 10 } },
     { id: 'c2', documentId: 'd', version: 1, spaceId: 's', ordinal: 1, text: '差旅住宿标准 住宿标准 住宿标准 700 元', locator: { start: 10, end: 20 } },

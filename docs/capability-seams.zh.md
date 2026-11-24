@@ -312,6 +312,12 @@ flowchart LR
   pkg_workflow_catalog["workflow-catalog"]
   svc_workflowCatalog["ctx.workflowCatalog<br/>Workflow definition catalogue"]
   pkg_dag["dag"]
+  pkg_capability["capability"]
+  svc_capabilityRuntime["ctx.capabilityRuntime<br/>Capability runtime bindings"]
+  pkg_deployment["deployment"]
+  svc_deployment["ctx.deployment<br/>Deployment service"]
+  pkg_log_collection["log-collection"]
+  svc_logCollection["ctx.logCollection<br/>Log collection service"]
   pkg_action_cards --> svc_actionCards
   pkg_agent --> svc_agents
   pkg_agent_default_model --> svc_agentDefaultModel
@@ -336,6 +342,7 @@ flowchart LR
   pkg_bash_local --> svc_shell
   pkg_bash_sandbox --> svc_shell
   pkg_browser_use --> svc_browserUse
+  pkg_capability --> svc_capabilityRuntime
   pkg_client_connection --> svc_connection
   pkg_client_file_upload --> svc_fileUploads
   pkg_client_modules --> svc_clientModules
@@ -356,6 +363,7 @@ flowchart LR
   pkg_deepseek_account --> svc_deepseekAccount
   pkg_deepseek_account_platform --> svc_deepseekAccount
   pkg_deepseek_llm_api_extensions --> svc_deepseekLlmApiExtensions
+  pkg_deployment --> svc_deployment
   pkg_experimental_agent_team --> svc_agentTeams
   pkg_experimental_api_speech_to_text --> svc_speechController
   pkg_experimental_browser_use_chrome_devtools_mcp --> svc_browserUse
@@ -391,6 +399,7 @@ flowchart LR
   pkg_llm_deepseek --> svc_llm
   pkg_llm_pi_ai --> svc_llm
   pkg_llm_replay --> svc_llm
+  pkg_log_collection --> svc_logCollection
   pkg_lsp --> svc_lsp
   pkg_lsp_stdio --> svc_lsp
   pkg_mcp_client --> svc_mcpResources
@@ -746,5 +755,8 @@ flowchart LR
 | `ctx.cordisInspect` | `core` | [`cordis-host-runner`](../packages/extensions/cordis-host-runner) | - | [`tool-cordis`](../packages/extensions/tool-cordis) | - | 注册 Host inspect 提供方、镜像 Client 提供方 manifest，并通过动态 Cordis 传输路由 Client 查询。 |
 | `ctx.workspaceLayout` | `service` | `workspace-layout` | `workspace-layout` | - | - | 解析 AgentOps 产物路径，并把执行策略收窄到它创建的 scope 目录。 |
 | `ctx.workflowCatalog` | `service` | `workflow-catalog` | `workflow-catalog` | `dag` | - | 拥有工作流定义文件：列出、读取、校验、编译与 compare-and-swap 写入。 |
+| `ctx.capabilityRuntime` | `service` | `capability` | `capability` | - | - | 解析绑定到 preset 的已启用 capability 实例，并把运行时交给 preset 作用域的工具。 |
+| `ctx.deployment` | `service` | `deployment` | `deployment` | - | - | 针对已解析的 SSH capability 实例执行构建与部署流程，并记录每次发布。 |
+| `ctx.logCollection` | `service` | `log-collection` | `log-collection` | - | - | 拥有日志采集任务记录、它们的访问控制授权，以及拉取远端文件的执行记录。 |
 
 维护模式：混合模式。服务从 Cordis 声明中发现；接口、实现和消费方角色在 `scripts/gen-doc-graphs.ts` 中分类，并设有完整性守卫。

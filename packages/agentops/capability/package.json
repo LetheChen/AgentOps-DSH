@@ -16,6 +16,14 @@
     "./tools": {
       "default": "./lib/types/notify-tools.js",
       "types": "./lib/types/notify-tools.d.ts"
+    },
+    "./oa-tools": {
+      "default": "./lib/types/oa-tools.js",
+      "types": "./lib/types/oa-tools.d.ts"
+    },
+    "./feishu-tools": {
+      "default": "./lib/types/feishu-tools.js",
+      "types": "./lib/types/feishu-tools.d.ts"
     }
   },
   "scripts": {

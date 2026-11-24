@@ -1,6 +1,6 @@
 ---
 name: data-query
-description: 数据查询规范——直查 audit_example 的表结构获取、只读 SQL 写法、时间口径与安全边界。smart_query 子代理执行问数任务时使用。
+description: 数据查询规范——按已授权数据源实例读取表结构、只读 SQL 写法、时间口径与安全边界。smart_query 子代理执行问数任务时使用。
 ---
 
 # 数据查询规范
@@ -23,26 +23,11 @@ description: 数据查询规范——直查 audit_example 的表结构获取、�
 
 ## 二、数据源
 
-| key | 库 | 说明 |
-|---|---|---|
-| `audit_reader` | `audit_example`（MySQL） | 智能审批业务数据，只读账号 |
+选择已授权数据源实例。库名、表名、字段、LIMIT 上限一律以 `describe_database` 返回为准（字段来自 `information_schema`，含 COMMENT 里的枚举含义），禁止凭记忆写库名或固定表数。
 
-字段以 `describe_database` 返回为准（来自 `information_schema`，含 COMMENT 里的枚举含义）。
-**表名写全限定**：`audit_example.audit_records`。
+**表名写全限定**：使用 `describe_database` 返回的 schema 和表名，例如 `<schema>.<table>`。
 
-核心表：
-
-| 表 | 用途 | 关键字段 |
-|---|---|---|
-| `audit_records` | 审批记录 | request_id / agent_id / agent_name / doc_number / status / decision / applicant_id / receive_time / complete_time |
-| `audit_item_results` | 审核条目结果 | request_id / item_id / item_name / agent_id / status / decision / opinion / reason / start_time / end_time / duration_ms |
-| `audit_step_logs` | 管线步骤日志 | request_id / step_id / step_name / action / status / input_data / output_data |
-| `access_logs` | 平台接口访问日志 | request_id / method / path / status_code / client_ip / username / duration_ms |
-| `llm_call_logs` | 模型调用日志 | agent_id / model_name / provider / status / tokens / latency_ms / cost_rmb |
-| `llm_model_pricing` | 模型定价 | model_name / model_category / input_price_per_1k / output_price_per_1k |
-| `users` | 用户 | username / role / user_type / is_active |
-
-> `users.password_hash` 等敏感列已被白名单屏蔽；查它会被直接拒绝。
+> 敏感列由数据源访问策略屏蔽；查它会被 guard 直接拒绝。
 
 ---
 
@@ -75,7 +60,7 @@ description: 数据查询规范——直查 audit_example 的表结构获取、�
 结论数字：单量 582，通过 314（54.0%），转人工 163（28.0%），驳回 105（18.0%），平均耗时 18.8s
 口径：decision ∈ {pass, manual, reject}；耗时 = complete_time - receive_time
 时间范围：2026-10-19 00:00 ~ 2026-10-25 24:00（按 receive_time）
-SQL：<实际执行的那条>
+SQL：<sql_query 返回的 displaySql，不展示真实库名>
 ```
 
 不要写业务建议、不要下结论、不要发布看板——那是 manager 的事。
@@ -86,9 +71,9 @@ SQL：<实际执行的那条>
 
 | 症状 | 原因 | 修法 |
 |---|---|---|
-| `表不在白名单` | 表名不在 datasource 白名单 | 只用上表 7 张 |
+| `表不在白名单` | 表名不在 datasource 白名单 | 改用 `describe_database` 返回的表 |
 | `列被屏蔽` | 查了 `password_hash` 等 | 换成非敏感列 |
-| `schema 不在白名单` | 写了别的库前缀，或**用了没声明的表别名** | 只用 `audit_example`；别名必须紧跟在 `FROM/JOIN <表>` 之后 |
+| `schema 不在白名单` | 写了别的库前缀，或**用了没声明的表别名** | 使用 `describe_database` 返回的 schema；别名必须紧跟在 `FROM/JOIN <表>` 之后 |
 | `Expression #N … only_full_group_by` | SELECT 表达式与 GROUP BY 表达式不逐字一致（典型：`GROUP BY DATE(t)` 配 `SELECT CAST(DATE(t) AS CHAR)`） | 两边逐字一致，或把非分组列包进 `ANY_VALUE()`/`MIN()` |
 | `Unknown column` | 字段名凭记忆写的 | 先 `describe_database`，再改 |
 | 结果 0 行 | 时间范围写错 | 先查 `MIN/MAX(receive_time)` 看数据实际覆盖区间 |
@@ -113,5 +98,5 @@ SQL：<实际执行的那条>
 
 执行失败先按错误自修一次（只改写法，不改口径），自修后再失败就如实回报错误原文与最后执行的 SQL。
 
-> 别名写法：`FROM audit_example.audit_records r` 之后用 `r.status` 是允许的（guard 会识别 `r` 是别名）。
+> 别名写法：`FROM <schema>.<table> r` 之后用 `r.status` 是允许的（guard 会识别 `r` 是别名）。
 > 但**只写 `WHERE r.status = …` 而没有 `r` 别名**，或把 CTE 名写错，会被判成 `schema 不在白名单`。

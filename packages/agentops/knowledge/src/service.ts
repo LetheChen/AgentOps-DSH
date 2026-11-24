@@ -1,5 +1,6 @@
 import { KnowledgeStore } from './store.js'
 import type { AddDocumentInput, AddDocumentResult } from './store.js'
+import { isFlatWikiSpace } from './wiki.js'
 import type { SqliteKnowledgeRepository } from './sqlite.js'
 import type { Chunk, Citation, DocumentMeta, KnowledgeSpace, SearchHit, SpaceId } from './types.js'
 
@@ -40,10 +41,11 @@ export class KnowledgeService {
    * @returns whether the space was created, changed, or already current.
    */
   ensureSpace(space: KnowledgeSpace): 'created' | 'updated' | 'unchanged' {
-    const current = this.store.listSpaces().find(item => item.id === space.id)
-    if (current !== undefined && sameSpace(current, space)) return 'unchanged'
-    this.store.upsertSpace(space)
-    this.repository.saveSpace(space)
+    const normalized = { ...space }
+    const current = this.store.listSpaces().find(item => item.id === normalized.id)
+    if (current !== undefined && sameSpace(current, normalized)) return 'unchanged'
+    this.store.upsertSpace(normalized)
+    this.repository.saveSpace(normalized)
     return current === undefined ? 'created' : 'updated'
   }
 
@@ -53,9 +55,25 @@ export class KnowledgeService {
    * @returns the accepted metadata, version and chunks.
    */
   addDocument(input: AddDocumentInput): AddDocumentResult {
-    const result = this.store.addDocument(input)
+    const result = this.store.addDocument(isFlatWikiSpace(input.spaceId) ? { ...input, categoryPath: '' } : input)
     this.repository.saveDocument(result)
     return result
+  }
+
+  /**
+   * Change document classification metadata without creating a content version.
+   * @param documentId - document to move.
+   * @param categoryPath - category path inside its space; empty means the root.
+   * @param tags - optional replacement cross-cutting tags.
+   * @returns whether the document exists.
+   */
+  updateDocumentMetadata(documentId: string, categoryPath: string, tags?: readonly string[]): boolean {
+    const meta = this.store.getDocument(documentId)
+    if (meta === undefined) return false
+    const normalized = isFlatWikiSpace(meta.spaceId) ? '' : categoryPath
+    if (!this.store.updateDocumentMetadata(documentId, normalized, tags)) return false
+    this.repository.updateDocumentMetadata(documentId, normalized, tags)
+    return true
   }
 
   /**
@@ -142,6 +160,7 @@ export class KnowledgeService {
 
 function sameSpace(left: KnowledgeSpace, right: KnowledgeSpace): boolean {
   return left.name === right.name
+    && left.description === right.description
     && left.visibility === right.visibility
     && left.readers.length === right.readers.length
     && left.readers.every((reader, index) => reader === right.readers[index])

@@ -182,7 +182,7 @@ export function apply(ctx: Context, config: HostPluginConfig = {}): void {
 
     // Session replay reads DSH's own sessionQuery service; absent means the
     // deployment has no session persistence, which the page must show as empty.
-    const query = ctx.get('sessionQuery') as unknown as SessionQueryLike | undefined
+    const query = ctx.get('sessionQuery') as SessionQueryLike | undefined
     if (query !== undefined) registerSessionRoutes(connectionCtx, query)
 
     const dir = config.agentDir?.trim() ?? process.env.AGENTOPS_AGENT_DIR?.trim() ?? ''

@@ -24,6 +24,9 @@
       "path": "../capability"
     },
     {
+      "path": "../vault"
+    },
+    {
       "path": "../../preset/agent-preset-registry"
     }
   ]

@@ -9,7 +9,7 @@
  * @module @agentops/dsh-log-collection/schema-state
  */
 
-import type { DatabaseSync } from 'node:sqlite'
+import type { DatabaseSync, SQLOutputValue } from 'node:sqlite'
 
 /** Current schema version after adding local layout and file state. */
 export const LOG_COLLECTION_STATE_SCHEMA_VERSION = 4
@@ -25,7 +25,7 @@ export interface LogCollectionFileState {
   readonly lastPulledAt: string
 }
 
-interface FileStateRow {
+interface FileStateRow extends Record<string, SQLOutputValue> {
   remote_path: string
   local_name: string
   last_size: number
@@ -88,7 +88,7 @@ export class LogCollectionFileStates {
     const rows = this.#db.prepare(`
       SELECT remote_path, local_name, last_size, last_mtime_ms, analyzed_size, last_pulled_at
       FROM log_collection_file_state WHERE tenant_key = ? AND task_id = ?
-    `).all(tenantKey, taskId) as unknown as FileStateRow[]
+    `).all(tenantKey, taskId) as FileStateRow[]
     return new Map(rows.map(row => [row.remote_path, {
       remotePath: row.remote_path,
       localName: row.local_name,

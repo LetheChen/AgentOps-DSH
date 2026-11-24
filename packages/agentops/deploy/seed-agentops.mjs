@@ -16,6 +16,7 @@ import { fileURLToPath } from 'node:url'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const assetRoot = resolve(here, '..', '..', '..', 'agentops')
+const skillsRoot = resolve(here, '..', 'skills')
 const ASSET_DIRS = ['agents', 'workflows', 'mappings', 'domains']
 const ASSET_TREES = ['actors']
 
@@ -91,7 +92,42 @@ export function seedAgentOps(options = {}) {
     }
   }
 
+  const skillFiles = listFilesRecursive(skillsRoot)
+  if (skillFiles.length === 0) throw new Error(`AgentOps skill 目录为空：${skillsRoot}`)
+  const skillTargetRoot = join(targetRoot, 'skills')
+  if (!dryRun) mkdirSync(skillTargetRoot, { recursive: true })
+  for (const relative of skillFiles) {
+    const target = join(skillTargetRoot, relative)
+    const display = `skills/${relative.replaceAll('\\', '/')}`
+    if (existsSync(target) && !force) {
+      skipped.push(display)
+      continue
+    }
+    if (!dryRun) {
+      mkdirSync(dirname(target), { recursive: true })
+      copyFileSync(join(skillsRoot, relative), target)
+    }
+    copied.push(display)
+  }
+
   return { copied, skipped }
+}
+
+/** List regular files below a directory as sorted relative paths. */
+function listFilesRecursive(root) {
+  if (!existsSync(root)) throw new Error(`缺少 AgentOps skill 目录：${root}`)
+  const files = []
+  const visit = (relativeDir) => {
+    const entries = readdirSync(join(root, relativeDir), { withFileTypes: true })
+      .sort((left, right) => left.name.localeCompare(right.name))
+    for (const entry of entries) {
+      const relative = join(relativeDir, entry.name)
+      if (entry.isDirectory()) visit(relative)
+      else if (entry.isFile()) files.push(relative)
+    }
+  }
+  visit('')
+  return files
 }
 
 function arg(name) {

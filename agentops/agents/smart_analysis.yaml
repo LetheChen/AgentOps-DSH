@@ -32,7 +32,7 @@ system_prompt: |
   - 业务数据库直接查询（"查一下我的 OA 报销审批情况" / "本月通过率多少"）→ smart_query
   - 创建/修改/审批操作 → smart_approval
   - 服务器/部署/日志文件运维 → smart_ops
-  - 知识问答 / 政策文档查找 → 走 Manager 主入口知识问答路径
+  - 知识问答 / 政策文档查找 → 走 SupAgent 主入口知识问答路径
 
   ── 工具约束 ──────────────────────────────────────────────
   只能使用：data_analysis / export_report / present_content / finalize / request_cross_domain。

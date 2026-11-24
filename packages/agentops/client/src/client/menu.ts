@@ -100,7 +100,7 @@ export const CAPABILITY_CENTER_SECTION_ID = 'capability-center'
 export const AGENTOPS_MENU_SECTIONS: readonly AgentOpsMenuSection[] = [
   {
     id: AGENT_MANAGEMENT_SECTION_ID,
-    order: 52,
+    order: 50,
     defaultOpen: true,
     label: { namespace: 'agentopsAgents', key: 'section.agentManagement' },
   },
@@ -242,6 +242,13 @@ export const AGENTOPS_MENU_ROWS: readonly AgentOpsMenuRow[] = [
     order: 52.65,
     section: CAPABILITY_CENTER_SECTION_ID,
     label: { namespace: 'agentopsMenu', key: 'panel.logs' },
+    icon: 'capability',
+  },
+  {
+    id: 'agentops-deployments',
+    order: 52.66,
+    section: CAPABILITY_CENTER_SECTION_ID,
+    label: { namespace: 'agentopsMenu', key: 'panel.deployments' },
     icon: 'capability',
   },
   {

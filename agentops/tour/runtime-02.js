@@ -44,14 +44,14 @@
       nodes: {
         route_intent: {state:'completed', input:{question:'本月审批通过率是多少？'}, output:{intent:true,reason:'问题要求统计审批通过率'}},
         refuse_intent: {state:'skip', input:{skippedBy:'skip_if: {{route_intent.intent}}'}, output:{skipped:true,reason:'{{route_intent.intent}}'}},
-        plan_sql: {state:'completed', input:{question:'本月审批通过率是多少？',database:'audit_reader'}, output:{sql:'SELECT /* 教学模拟，非实跑 */ ... FROM audit_example.<table> WHERE receive_time >= 本月起点'}},
+        plan_sql: {state:'completed', input:{question:'本月审批通过率是多少？',database:'audit_reader'}, output:{sql:'SELECT /* 教学模拟，非实跑 */ ... FROM <schema>.<table> WHERE receive_time >= 本月起点'}},
         run_sql: {state:'completed', input:{database:'audit_reader',sql:'SELECT /* 教学模拟 */ ...'}, output:{ok:true,columns:['total','approved','approval_rate'],rows:[{total:128,approved:109,approval_rate:85.16}],row_count:1,truncated:false}},
         present_result: {state:'completed', input:{question:'本月审批通过率是多少？',result:'run_sql.result'}, output:{answer:'本月审批通过率约为 85.16%（109 / 128）。这是教学模拟值，并非生产数据。'}}
       },
       timeline: [
-        {stage:0,type:'request',message:'用户提交原话；Manager 收到完整问题。',actor:['user','completed']},
-        {stage:1,type:'manager',message:'Manager 识别为智能问数任务，准备调用 subagent。',actor:['manager','running']},
-        {stage:1,type:'delegate',message:'subagent 立即返回句柄；Manager 不等待阻塞，也不持有 sql_query。',actor:['manager','running'],dispatch:true},
+        {stage:0,type:'request',message:'用户提交原话；SupAgent 收到完整问题。',actor:['user','completed']},
+        {stage:1,type:'manager',message:'SupAgent 识别为智能问数任务，准备调用 subagent。',actor:['manager','running']},
+        {stage:1,type:'delegate',message:'subagent 立即返回句柄；SupAgent 不等待阻塞，也不持有 sql_query。',actor:['manager','running'],dispatch:true},
         {stage:2,type:'agent',message:'smart_query 在自身轮次启动；它只被允许运行 smart-query。',actor:['smart_query','running']},
         {stage:3,type:'dag',message:'dag_run 创建教学 runId；固定工作流共有 5 个 agent 节点声明。',dag:true},
         {stage:3,type:'node',message:'route_intent 节点 subagent 开始判定意图。',node:['route_intent','running']},
@@ -63,7 +63,7 @@
         {stage:3,type:'node',message:'run_sql 交付 result 端口，truncated=false。',node:['run_sql','completed']},
         {stage:4,type:'node',message:'present_result 节点 subagent 生成最终 answer。',node:['present_result','running']},
         {stage:4,type:'result',message:'present_result 交付 answer；DAG 整体 status=completed。',node:['present_result','completed']},
-        {stage:5,type:'manager',message:'结果自动回到 smart_query，再回投 Manager；Manager 汇总并回复用户。',actor:['smart_query','completed'],managerFinal:true}
+        {stage:5,type:'manager',message:'结果自动回到 smart_query，再回投 SupAgent；SupAgent 汇总并回复用户。',actor:['smart_query','completed'],managerFinal:true}
       ]
     },
     limitation: {
@@ -83,8 +83,8 @@
         present_result: {state:'completed', input:{question:'你好，帮我总结一下今天的工作',result:'run_sql.result'}, output:{answer:'本次查询未执行：上游 SQL 生成节点被跳过，没有可执行 SQL。'}}
       },
       timeline: [
-        {stage:0,type:'request',message:'用户提交非问数请求；Manager 根据职责判断需交给业务 Agent。',actor:['user','completed']},
-        {stage:1,type:'manager',message:'Manager 发起 subagent 委派；它不感知工作流内部。',actor:['manager','running']},
+        {stage:0,type:'request',message:'用户提交非问数请求；SupAgent 根据职责判断需交给业务 Agent。',actor:['user','completed']},
+        {stage:1,type:'manager',message:'SupAgent 发起 subagent 委派；它不感知工作流内部。',actor:['manager','running']},
         {stage:1,type:'delegate',message:'subagent 立即返回句柄；后续结果自动回投。',actor:['manager','running'],dispatch:true},
         {stage:2,type:'agent',message:'smart_query 接收任务并调用被钉定的 dag_run。',actor:['smart_query','running']},
         {stage:3,type:'dag',message:'固定 smart-query 工作流启动，5 个节点进入调度。',dag:true},
@@ -97,7 +97,7 @@
         {stage:3,type:'node',message:'run_sql 输出 ok=false；注意它的节点状态仍是 completed。',node:['run_sql','completed']},
         {stage:4,type:'node',message:'present_result 仍被调度并解释上游缺少 SQL。',node:['present_result','running']},
         {stage:4,type:'result',message:'present_result 输出 answer；任一点失败均未发生，整次 run=completed。',node:['present_result','completed']},
-        {stage:5,type:'manager',message:'smart_query 与 Manager 逐层回投；最终回答仍是“无法查询”。',actor:['smart_query','completed'],managerFinal:true}
+        {stage:5,type:'manager',message:'smart_query 与 SupAgent 逐层回投；最终回答仍是“无法查询”。',actor:['smart_query','completed'],managerFinal:true}
       ]
     },
     failure: {
@@ -107,7 +107,7 @@
       runStatus: 'failed',
       subagentState: 'failed',
       finalTitle: 'run failed · 失败被如实回投',
-      finalDesc: 'run_sql 失败；present_result 被跳过；Manager 不替代执行，也不改用 sql_query。',
+      finalDesc: 'run_sql 失败；present_result 被跳过；SupAgent 不替代执行，也不改用 sql_query。',
       warning: '<b>失败边界：</b><code>run_sql</code> 节点异常结算为 <code>failed</code>。依赖它的 <code>present_result</code> 被 <code>blockedByUpstream</code> 标为 <code>skipped</code>，整次 run=failed。DAG 引擎没有自动节点 retry。',
       nodes: {
         route_intent: {state:'completed', input:{question:'统计本月各审批节点的平均处理时长'}, output:{intent:true,reason:'属于审批业务统计'}},
@@ -118,8 +118,8 @@
       },
       timeline: [
         {stage:0,type:'request',message:'用户提交审批数据分析请求。',actor:['user','completed']},
-        {stage:1,type:'manager',message:'Manager 选择 smart_query preset 并派发自包含任务。',actor:['manager','running']},
-        {stage:1,type:'delegate',message:'subagent 立即返回句柄；Manager 等待结果自动回投。',actor:['manager','running'],dispatch:true},
+        {stage:1,type:'manager',message:'SupAgent 选择 smart_query preset 并派发自包含任务。',actor:['manager','running']},
+        {stage:1,type:'delegate',message:'subagent 立即返回句柄；SupAgent 等待结果自动回投。',actor:['manager','running'],dispatch:true},
         {stage:2,type:'agent',message:'smart_query 启动固定工作流，不自行写 SQL 取数。',actor:['smart_query','running']},
         {stage:3,type:'dag',message:'dag_run 启动 run；各节点按依赖层调度。',dag:true},
         {stage:3,type:'node',message:'route_intent 判定 intent=true。',node:['route_intent','running']},
@@ -131,7 +131,7 @@
         {stage:3,type:'error',message:'run_sql 执行异常 → status=failed。DAG 不会自动重试该节点。',node:['run_sql','failed'],stageState:'error'},
         {stage:3,type:'error',message:'present_result 依赖失败节点 → blockedByUpstream → status=skipped，未启动 subagent。',node:['present_result','skipped']},
         {stage:4,type:'agent',message:'DAG 整体 status=failed；smart_query 收到失败节点与 error。',actor:['smart_query','failed'],stageState:'error'},
-        {stage:5,type:'manager',message:'Manager 收到失败回执，如实告知用户；不绕开工作流替代执行。',actor:['manager','completed'],managerFinal:true}
+        {stage:5,type:'manager',message:'SupAgent 收到失败回执，如实告知用户；不绕开工作流替代执行。',actor:['manager','completed'],managerFinal:true}
       ]
     }
   };
@@ -256,15 +256,15 @@
         user: {
           title: '业务用户', sub: '请求入口 · natural language',
           input: { question: current().question },
-          output: { delegated: 'Manager Agent receives the request' },
+          output: { delegated: 'SupAgent receives the request' },
           hint: '用户只提交业务问题；不会直接接触 DAG、SQL 或节点权限。',
           evidence: ['agentops/agents/manager.yaml:15-40']
         },
         manager: {
-          title: 'Manager Agent · 入口 Agent', sub: 'depth 0 · 只负责识别、派发与汇总',
+          title: 'SupAgent · 入口 Agent', sub: 'depth 0 · 只负责识别、派发与汇总',
           input: { message: current().question, mode: 'task dispatch' },
           output: state.dispatchAt >= 0 ? { subagentId: state.subagentId, status: 'started' } : { pending: true },
-          hint: 'Manager 持有 subagent 等编排工具，但 denied_tools 明确禁止 sql_query、describe_database 等业务工具。',
+          hint: 'SupAgent 持有 subagent 等编排工具，但 denied_tools 明确禁止 sql_query、describe_database 等业务工具。',
           evidence: ['agentops/agents/manager.yaml:25-40,52-73', 'packages/agentops/bundle/presets/agents.generated.patch.yml:138-149']
         },
         smart_query: {
@@ -403,7 +403,7 @@
       state.subagentId = newSimId('sa');
       $('subagentId').textContent = state.subagentId;
       $('subagentState').textContent = 'running · 句柄已返回';
-      $('userToManager').classList.add('active');
+      $('userToSupAgent').classList.add('active');
       document.querySelector('.delegate-link')?.classList.add('active');
     }
     if (item.dag) {

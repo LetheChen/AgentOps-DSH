@@ -7,6 +7,7 @@
  * @module @agentops/dsh-client/task-center-model
  */
 
+/** One task as the task API reports it. */
 export interface TaskCenterTask {
   taskId: string
   projectId: string
@@ -23,6 +24,7 @@ export interface TaskCenterTask {
   closedAt: string | null
 }
 
+/** One project the task center groups tasks under. */
 export interface TaskCenterProject {
   project_id: string
   name: string
@@ -35,14 +37,17 @@ export interface TaskCenterProject {
   ownership_state?: 'active' | 'ownership_pending'
 }
 
-export type TaskCenterView = 'dashboard' | 'board' | 'list' | 'gantt' | 'nebula' | 'report'
+/** Layout the user selects in the task center. */
+export type TaskCenterView = 'dashboard' | 'board' | 'list' | 'gantt' | 'report'
 
+/** One pipeline stage with its display label and accent color. */
 export interface StageDefinition {
   readonly key: string
   readonly label: string
   readonly color: string
 }
 
+/** Pipeline stages in board order. */
 export const TASK_STAGES: readonly StageDefinition[] = [
   { key: 'idea', label: '灵感', color: '#60A5FA' },
   { key: 'discussing', label: '讨论中', color: '#22D3EE' },
@@ -54,6 +59,7 @@ export const TASK_STAGES: readonly StageDefinition[] = [
   { key: 'closed', label: '已关闭', color: '#10B981' },
 ]
 
+/** Display labels for every task status the API can report. */
 export const STATUS_LABELS: Readonly<Record<string, string>> = {
   idea: '灵感',
   backlog: '待办',
@@ -71,12 +77,19 @@ export const STATUS_LABELS: Readonly<Record<string, string>> = {
   abandoned: '已归档',
 }
 
+/** Display labels for the three risk levels. */
 export const RISK_LABELS: Readonly<Record<string, string>> = {
   high: '高风险',
   medium: '中风险',
   low: '低风险',
 }
 
+/**
+ * Keep the tasks that pass every active filter.
+ * @param tasks - the tasks to filter.
+ * @param options - filters to apply: a search string, a stage key, and a risk level; an empty string matches every task.
+ * @returns the tasks that pass every filter.
+ */
 export function filterTaskCenterTasks(
   tasks: readonly TaskCenterTask[],
   options: { search?: string; stage?: string; risk?: string } = {},
@@ -92,6 +105,11 @@ export function filterTaskCenterTasks(
   })
 }
 
+/**
+ * Count tasks per stage.
+ * @param tasks - the tasks to count.
+ * @returns the task count per stage key, with every stage of `TASK_STAGES` present.
+ */
 export function stageCounts(tasks: readonly TaskCenterTask[]): Record<string, number> {
   const counts: Record<string, number> = {}
   for (const stage of TASK_STAGES) counts[stage.key] = 0
@@ -99,23 +117,39 @@ export function stageCounts(tasks: readonly TaskCenterTask[]): Record<string, nu
   return counts
 }
 
+/**
+ * Count tasks per risk level.
+ * @param tasks - the tasks to count.
+ * @returns the task count per risk level, with `unknown` holding tasks that carry no known level.
+ */
 export function riskCounts(tasks: readonly TaskCenterTask[]): Record<string, number> {
   const counts: Record<string, number> = { high: 0, medium: 0, low: 0, unknown: 0 }
   for (const task of tasks) counts[task.riskLevel] = (counts[task.riskLevel] ?? 0) + 1
   return counts
 }
 
+/**
+ * Measure how much of the task list is closed.
+ * @param tasks - the tasks to measure.
+ * @returns the share of closed tasks as a rounded percentage.
+ */
 export function completionPercent(tasks: readonly TaskCenterTask[]): number {
   if (tasks.length === 0) return 0
   return Math.round((tasks.filter(task => task.status === 'closed').length / tasks.length) * 100)
 }
 
+/** One task placed on the Gantt timeline. */
 export interface GanttRow {
   readonly task: TaskCenterTask
   readonly start: number
   readonly end: number
 }
 
+/**
+ * Place tasks on a shared timeline.
+ * @param tasks - the tasks to place.
+ * @returns the positioned rows plus the timeline bounds in epoch milliseconds.
+ */
 export function buildGanttRows(tasks: readonly TaskCenterTask[]): { rows: readonly GanttRow[]; min: number; max: number } {
   const rows = tasks.map((task) => {
     const created = Date.parse(task.createdAt)
@@ -134,6 +168,11 @@ export function buildGanttRows(tasks: readonly TaskCenterTask[]): { rows: readon
   return { rows, min, max }
 }
 
+/**
+ * Render a task timestamp for the task center.
+ * @param value - the timestamp to render, or null when the task carries none.
+ * @returns the formatted date and time, an em dash for a missing value, or the raw text when it is not a date.
+ */
 export function formatTimestamp(value: string | null): string {
   if (value === null || value === '') return '—'
   const date = new Date(value)

@@ -64,9 +64,9 @@ export function tokenizeExpression(source: string): Token[] {
       const quote = ch
       let j = i + 1
       let value = ''
-      while (j < source.length && source[j] !== quote) {
-        if (source[j] === '\\' && j + 1 < source.length) { value += source[j + 1]; j += 2; continue }
-        value += source[j]; j += 1
+      while (j < source.length && source.charAt(j) !== quote) {
+        if (source.charAt(j) === '\\' && j + 1 < source.length) { value += source.charAt(j + 1); j += 2; continue }
+        value += source.charAt(j); j += 1
       }
       if (j >= source.length) throw new ExpressionError('未闭合的字符串字面量')
       tokens.push({ kind: 'string', value })

@@ -11,7 +11,7 @@
 
 import { createHash } from 'node:crypto'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
-import { basename, extname, join, relative } from 'node:path'
+import { basename, dirname, extname, join, relative } from 'node:path'
 
 import { parse as parseYaml } from 'yaml'
 
@@ -46,6 +46,10 @@ export interface CorpusSpace {
 export interface CorpusDocument {
   readonly id: string
   readonly spaceId: string
+  /** Slash-separated directory path below the space; empty means the root. */
+  readonly categoryPath: string
+  /** Cross-cutting content tags declared in front matter. */
+  readonly tags: readonly string[]
   readonly title: string
   /** Absolute file path. */
   readonly path: string
@@ -103,7 +107,7 @@ export function loadCorpus(root: string): Corpus {
     spaces.push(space)
 
     for (const file of listMarkdown(directory)) {
-      const document = readDocument(file, space.id, problems)
+      const document = readDocument(file, space.id, space.directory, problems)
       if (document === undefined) continue
       if (documentIds.has(document.id)) {
         problems.push({ path: file, reason: `文档标识重复：${document.id}` })
@@ -134,10 +138,12 @@ export interface CorpusSyncReport {
 export interface CorpusSyncTarget {
   /** Register or replace a space, reporting what changed. */
   ensureSpace(space: KnowledgeSpace): SpaceWrite
-  /** Current document metadata, used to detect unchanged content. */
+  /** Current document metadata, used to detect unchanged content and category moves. */
   listDocuments(): DocumentMeta[]
   /** Accept one document version. */
   addDocument(input: AddDocumentInput): unknown
+  /** Update classification metadata without creating a content version. */
+  updateDocumentMetadata(documentId: string, categoryPath: string, tags?: readonly string[]): boolean
 }
 
 /**
@@ -161,6 +167,7 @@ export function syncCorpus(target: CorpusSyncTarget, corpus: Corpus, now: string
     const outcome = target.ensureSpace({
       id: space.id,
       name: space.name,
+      description: space.description,
       visibility: space.visibility,
       readers: [...space.readers],
     })
@@ -177,12 +184,19 @@ export function syncCorpus(target: CorpusSyncTarget, corpus: Corpus, now: string
       && current.title === document.title
       && current.contentHash === document.contentHash
     ) {
-      documentsUnchanged.push(document.id)
+      if (current.categoryPath !== document.categoryPath || !sameTags(current.tags, document.tags)) {
+        target.updateDocumentMetadata(document.id, document.categoryPath, document.tags)
+        documentsUpdated.push(document.id)
+      } else {
+        documentsUnchanged.push(document.id)
+      }
       continue
     }
     target.addDocument({
       id: document.id,
       spaceId: document.spaceId,
+      categoryPath: document.categoryPath,
+      tags: document.tags,
       title: document.title,
       mime: 'text/markdown',
       parser: CORPUS_PARSER,
@@ -256,7 +270,18 @@ function readSpace(directory: string, problems: CorpusProblem[]): CorpusSpace | 
   }
 }
 
-function readDocument(file: string, spaceId: string, problems: CorpusProblem[]): CorpusDocument | undefined {
+function readDocument(
+  file: string,
+  spaceId: string,
+  spaceDirectory: string,
+  problems: CorpusProblem[],
+): CorpusDocument | undefined {
+  const categoryPath = relative(spaceDirectory, dirname(file)).replace(/\\/g, '/')
+  const categoryParts = categoryPath === '' || categoryPath === '.' ? [] : categoryPath.split('/')
+  if (categoryParts.length > 2) {
+    problems.push({ path: file, reason: '分类目录最多两级' })
+    return undefined
+  }
   const raw = readFileSync(file, 'utf8')
   const split = splitFrontMatter(raw)
   if (split === undefined) {
@@ -283,14 +308,23 @@ function readDocument(file: string, spaceId: string, problems: CorpusProblem[]):
   }
   const declaredTitle = typeof record.title === 'string' ? record.title.trim() : ''
   const title = declaredTitle.length > 0 ? declaredTitle : (firstHeading(text) ?? basename(file, extname(file)))
+  const tags = Array.isArray(record.tags)
+    ? [...new Set(record.tags.filter((tag): tag is string => typeof tag === 'string').map(tag => tag.trim()).filter(tag => tag.length > 0))]
+    : []
   return {
     id,
     spaceId,
+    categoryPath: categoryParts.join('/'),
+    tags,
     title,
     path: file,
     text,
     contentHash: createHash('sha256').update(normalizeText(text)).digest('hex'),
   }
+}
+
+function sameTags(left: readonly string[], right: readonly string[]): boolean {
+  return left.length === right.length && left.every((tag, index) => tag === right[index])
 }
 
 function splitFrontMatter(raw: string): { front: string; body: string } | undefined {

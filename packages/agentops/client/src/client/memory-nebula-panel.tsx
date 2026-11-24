@@ -17,6 +17,7 @@ import { layoutNebula } from './memory-nebula-3d.ts'
 
 import {
   MEMORY_CATEGORY_LABELS,
+  MEMORY_KIND_LABELS,
   MEMORY_STATUS_LABELS,
   buildMemoryNebula,
   modeVisible,
@@ -25,10 +26,11 @@ import {
   precheckTask,
   type DecisionMemory,
   type MemoryGraphEdge,
+  type MemoryKind,
   type MemoryMode,
   type NebulaNode,
 } from './memory-nebula-model.ts'
-import type { TaskCenterTask } from './task-center-model.ts'
+import type { TaskCenterProject, TaskCenterTask } from './task-center-model.ts'
 import { createTaskRpcClient } from './task-rpc-api.ts'
 import { fetchKnowledgeMemory, type KnowledgeMemoryNode } from './knowledge-wiki-api.ts'
 
@@ -49,19 +51,15 @@ function formatDate(timestamp: number): string {
 }
 
 /**
- * Render the memory nebula for one project.
- * @param props - project identity, project tasks and task-open callback.
+ * Render the memory nebula workbench inside knowledge management.
+ * It selects a project, loads admitted tasks, durable decisions and searchable
+ * knowledge nodes, and keeps the star-field interaction in one place.
  * @returns the nebula panel.
  */
-export function MemoryNebulaPanel({
-  projectId,
-  tasks,
-  onOpenTask,
-}: {
-  projectId: string
-  tasks: readonly TaskCenterTask[]
-  onOpenTask: (taskId: string) => void
-}): ReactElement {
+export function MemoryNebulaPanel(): ReactElement {
+  const [projects, setProjects] = useState<readonly TaskCenterProject[]>([])
+  const [projectId, setProjectId] = useState('')
+  const [tasks, setTasks] = useState<readonly TaskCenterTask[]>([])
   const [edges, setEdges] = useState<readonly MemoryGraphEdge[]>([])
   const [decisions, setDecisions] = useState<readonly DecisionMemory[]>([])
   const [knowledge, setKnowledge] = useState<readonly KnowledgeMemoryNode[]>([])
@@ -69,7 +67,7 @@ export function MemoryNebulaPanel({
   const [error, setError] = useState('')
   const [mode, setMode] = useState<MemoryMode>('overview')
   const [query, setQuery] = useState('')
-  const [kind, setKind] = useState<'all' | 'task' | 'memory' | 'knowledge'>('all')
+  const [kind, setKind] = useState<'all' | MemoryKind>('all')
   const [maxAgeDays, setMaxAgeDays] = useState(365)
   const [stress, setStress] = useState(false)
   const [opacity, setOpacity] = useState(1)
@@ -78,23 +76,39 @@ export function MemoryNebulaPanel({
   const [detailId, setDetailId] = useState<string | null>(null)
   const [decisionDetail, setDecisionDetail] = useState<DecisionDetail | null>(null)
   const [precheck, setPrecheck] = useState<Array<{ level: 'block' | 'warn' | 'info'; text: string }> | null>(null)
+  const loadProjects = useCallback(async (): Promise<void> => {
+    const result = await client.listProjects()
+    if (!result.ok) throw new Error(`${result.error.code}: ${result.error.message}`)
+    const rows = result.value as { projects: readonly TaskCenterProject[] }
+    setProjects(rows.projects)
+    setProjectId(current => rows.projects.some(project => project.project_id === current)
+      ? current
+      : rows.projects[0]?.project_id ?? '')
+  }, [])
 
   const load = useCallback(async () => {
-    if (projectId === '') return
+    if (projectId === '') {
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
-      const [graphResult, decisionResult, knowledgeNodes] = await Promise.all([
+      const [graphResult, decisionResult, knowledgeNodes, tasksResult] = await Promise.all([
         client.getGraph({ project_id: projectId }),
         client.searchDecisions({ project_id: projectId, collection: 'all', limit: '500' }),
         fetchKnowledgeMemory().catch(() => []),
+        client.listTasks({ projectId }),
       ])
       if (!graphResult.ok) throw new Error(`${graphResult.error.code}: ${graphResult.error.message}`)
       if (!decisionResult.ok) throw new Error(`${decisionResult.error.code}: ${decisionResult.error.message}`)
+      if (!tasksResult.ok) throw new Error(`${tasksResult.error.code}: ${tasksResult.error.message}`)
       const graph = graphResult.value as { edges: MemoryGraphEdge[] }
       const memory = decisionResult.value as { decisions: DecisionMemory[] }
+      const projectTasks = tasksResult.value as { tasks: readonly TaskCenterTask[] }
       setEdges(graph.edges)
       setDecisions(memory.decisions)
       setKnowledge(knowledgeNodes)
+      setTasks(projectTasks.tasks)
       setError('')
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason))
@@ -103,6 +117,12 @@ export function MemoryNebulaPanel({
     }
   }, [projectId])
 
+  useEffect(() => {
+    void loadProjects().catch((reason: unknown) => {
+      setError(reason instanceof Error ? reason.message : String(reason))
+      setLoading(false)
+    })
+  }, [loadProjects])
   useEffect(() => { void load() }, [load])
 
   const taskIds = useMemo(() => new Set(tasks.map(task => task.taskId)), [tasks])
@@ -139,6 +159,9 @@ export function MemoryNebulaPanel({
       tasks: fullGraph.nodes.filter(node => node.kind === 'task').length,
       memories: memoryNodes.length,
       knowledge: fullGraph.nodes.filter(node => node.kind === 'knowledge').length,
+      domains: fullGraph.nodes.filter(node => node.kind === 'domain').length,
+      subdomains: fullGraph.nodes.filter(node => node.kind === 'subdomain').length,
+      tags: fullGraph.nodes.filter(node => node.kind === 'tag').length,
       active: memoryNodes.filter(node => node.status === 'implemented').length,
       candidate: memoryNodes.filter(node => node.status === 'proposed').length,
       links: fullGraph.links.length,
@@ -178,6 +201,17 @@ export function MemoryNebulaPanel({
       {!immersive ? (
         <header className="mn-toolbar">
           <span className="mn-brand"><Sparkles size={15} /> 记忆星云</span>
+          <label className="mn-project">
+            <span>项目</span>
+            <select
+              value={projectId}
+              onChange={(event) => {
+                setProjectId(event.target.value); setFocusId(null); setDetailId(null); setPrecheck(null)
+              }}
+            >
+              {projects.map(project => <option key={project.project_id} value={project.project_id}>{project.name}</option>)}
+            </select>
+          </label>
           <div className="mn-modes">
             {([['overview', '全景'], ['tasks', '任务'], ['memories', '记忆']] as const).map(([value, label]) => (
               <button key={value} type="button" className={mode === value ? 'is-active' : ''} onClick={() => { setMode(value) }}>{label}</button>
@@ -189,6 +223,9 @@ export function MemoryNebulaPanel({
             <option value="task">任务</option>
             <option value="memory">记忆</option>
             <option value="knowledge">知识</option>
+            <option value="domain">知识域</option>
+            <option value="subdomain">细分领域</option>
+            <option value="tag">标签</option>
           </select>
           <label className="mn-age">时间 <input type="range" min={7} max={730} value={maxAgeDays} onChange={(event) => { setMaxAgeDays(Number(event.target.value)) }} /><b>{maxAgeDays}天</b></label>
           <label className="mn-check"><input type="checkbox" checked={stress} onChange={(event) => { setStress(event.target.checked) }} />压力模式</label>
@@ -205,6 +242,9 @@ export function MemoryNebulaPanel({
               <div className="mn-metric"><b>{stats.tasks}</b><span>任务节点</span></div>
               <div className="mn-metric"><b>{stats.memories}</b><span>记忆节点</span></div>
               <div className="mn-metric"><b>{stats.knowledge}</b><span>知识节点</span></div>
+              <div className="mn-metric"><b>{stats.domains}</b><span>知识域</span></div>
+              <div className="mn-metric"><b>{stats.subdomains}</b><span>细分领域</span></div>
+              <div className="mn-metric"><b>{stats.tags}</b><span>标签节点</span></div>
               <div className="mn-metric"><b>{stats.links}</b><span>关系边</span></div>
               <div className="mn-mix-bar">
                 {Object.entries(stats.categories).map(([category, count]) => (
@@ -254,9 +294,9 @@ export function MemoryNebulaPanel({
             <div className="mn-panel">
               <div className="mn-panel-head"><span>关联内核</span><em>RETRIEVAL</em></div>
               <div className="mn-retrieval">
-                <div><b>{fullGraph.links.filter(link => link.kind === 'parent').length}</b><span>父子</span></div>
-                <div><b>{fullGraph.links.filter(link => link.kind === 'blocks').length}</b><span>阻断</span></div>
-                <div><b>{fullGraph.links.filter(link => link.kind === 'related').length}</b><span>关联</span></div>
+                <div><b>{fullGraph.links.filter(link => link.kind === 'contains').length}</b><span>结构</span></div>
+                <div><b>{fullGraph.links.filter(link => link.kind === 'tagged').length}</b><span>标签</span></div>
+                <div><b>{fullGraph.links.filter(link => link.kind === 'related' || link.kind === 'originated_from').length}</b><span>关联</span></div>
               </div>
             </div>
           </div>
@@ -269,18 +309,17 @@ export function MemoryNebulaPanel({
         {shown !== null ? (
           <article className="mn-memory-card">
             <header>
-              <div><span className="mn-card-kicker">{shown.kind === 'task' ? 'TASK' : shown.kind === 'knowledge' ? 'KNOWLEDGE' : 'MEMORY'} · {shown.cluster}</span><h3>{shown.title}</h3></div>
+              <div><span className="mn-card-kicker">{MEMORY_KIND_LABELS[shown.kind].toUpperCase()} · {shown.cluster}</span><h3>{shown.title}</h3></div>
               <button type="button" onClick={() => { setFocusId(null); setDetailId(null); setPrecheck(null); setDecisionDetail(null) }} aria-label="关闭"><X size={16} /></button>
             </header>
             <div className="mn-card-meta">
               <span>{formatDate(shown.timestamp)}</span>
-              <span>{shown.kind === 'memory' ? MEMORY_CATEGORY_LABELS[shown.category] ?? shown.category : shown.kind === 'knowledge' ? shown.category : shown.status}</span>
+              <span>{shown.kind === 'memory' ? MEMORY_CATEGORY_LABELS[shown.category] ?? shown.category : shown.kind === 'knowledge' ? shown.category : shown.kind === 'tag' ? shown.summary : shown.status}</span>
               {shown.kind === 'memory' ? <span>{MEMORY_STATUS_LABELS[shown.status] ?? shown.status}</span> : <span>{shown.kind === 'knowledge' ? shown.status : shown.risk}</span>}
               <span>重要度 {Math.round(shown.importance * 100)}%</span>
             </div>
             <p>{shown.summary || '（无摘要）'}</p>
             <div className="mn-card-actions">
-              {shown.kind === 'task' && shown.taskId !== undefined ? <button type="button" className="btn-primary btn-sm" onClick={() => { onOpenTask(shown.taskId as string) }}>查看任务详情</button> : null}
               {shown.kind === 'task' ? <button type="button" className="btn-secondary btn-sm" onClick={runPrecheck}>执行预检</button> : null}
               {shown.kind === 'memory' ? <button type="button" className="btn-secondary btn-sm" onClick={() => { void openDetail(shown) }}>查看决策详情</button> : null}
             </div>

@@ -197,7 +197,7 @@ export function loadReportForExport(db: DatabaseSync, taskId: string, reportId: 
        FROM task_reports r JOIN tasks t ON t.task_id = r.task_id
        WHERE r.report_id = ? AND r.task_id = ?`,
     )
-    .get(reportId, taskId) as unknown as ReportJoinRow | undefined
+    .get(reportId, taskId) as ReportJoinRow | undefined
   if (row === undefined) return undefined
   return {
     reportId: row.report_id,

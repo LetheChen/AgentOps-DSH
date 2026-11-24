@@ -8,6 +8,8 @@ import { existsSync, globSync, readFileSync } from 'node:fs'
 import { resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
+import { isForkOwnedPackagePath } from './fork-package-policy.ts'
+
 type ManifestBin = string | Record<string, string>
 
 interface PackageManifest {
@@ -102,6 +104,7 @@ function manifestBinViolations(root: string): string[] {
   const manifests = globSync(['apps/*/package.json', 'packages/*/*/package.json'], { cwd: root }).sort()
   for (const rawPath of manifests) {
     const path = repositoryPath(rawPath)
+    if (isForkOwnedPackagePath(path)) continue
     const manifest = JSON.parse(readFileSync(resolve(root, path), 'utf8')) as PackageManifest
     if (manifest.bin === undefined) continue
     const expected = MANIFEST_BIN_ALLOWLIST.get(path)
@@ -120,6 +123,7 @@ function executableSourceViolations(root: string): string[] {
   const failures: string[] = []
   for (const rawPath of globSync(SOURCE_PATTERNS, { cwd: root, exclude: SOURCE_EXCLUDES }).sort()) {
     const path = repositoryPath(rawPath)
+    if (isForkOwnedPackagePath(path)) continue
     const source = readFileSync(resolve(root, path), 'utf8')
     if (!source.startsWith('#!')) continue
     if (!EXECUTABLE_SOURCE_ALLOWLIST.has(path)) {

@@ -310,6 +310,12 @@ flowchart LR
   pkg_workflow_catalog["workflow-catalog"]
   svc_workflowCatalog["ctx.workflowCatalog<br/>Workflow definition catalogue"]
   pkg_dag["dag"]
+  pkg_capability["capability"]
+  svc_capabilityRuntime["ctx.capabilityRuntime<br/>Capability runtime bindings"]
+  pkg_deployment["deployment"]
+  svc_deployment["ctx.deployment<br/>Deployment service"]
+  pkg_log_collection["log-collection"]
+  svc_logCollection["ctx.logCollection<br/>Log collection service"]
   pkg_action_cards --> svc_actionCards
   pkg_agent --> svc_agents
   pkg_agent_default_model --> svc_agentDefaultModel
@@ -334,6 +340,7 @@ flowchart LR
   pkg_bash_local --> svc_shell
   pkg_bash_sandbox --> svc_shell
   pkg_browser_use --> svc_browserUse
+  pkg_capability --> svc_capabilityRuntime
   pkg_client_connection --> svc_connection
   pkg_client_file_upload --> svc_fileUploads
   pkg_client_modules --> svc_clientModules
@@ -354,6 +361,7 @@ flowchart LR
   pkg_deepseek_account --> svc_deepseekAccount
   pkg_deepseek_account_platform --> svc_deepseekAccount
   pkg_deepseek_llm_api_extensions --> svc_deepseekLlmApiExtensions
+  pkg_deployment --> svc_deployment
   pkg_experimental_agent_team --> svc_agentTeams
   pkg_experimental_api_speech_to_text --> svc_speechController
   pkg_experimental_browser_use_chrome_devtools_mcp --> svc_browserUse
@@ -389,6 +397,7 @@ flowchart LR
   pkg_llm_deepseek --> svc_llm
   pkg_llm_pi_ai --> svc_llm
   pkg_llm_replay --> svc_llm
+  pkg_log_collection --> svc_logCollection
   pkg_lsp --> svc_lsp
   pkg_lsp_stdio --> svc_lsp
   pkg_mcp_client --> svc_mcpResources
@@ -744,5 +753,8 @@ flowchart LR
 | `ctx.cordisInspect` | `core` | [`cordis-host-runner`](../packages/extensions/cordis-host-runner) | - | [`tool-cordis`](../packages/extensions/tool-cordis) | - | Registers host inspect providers, mirrors the client provider manifest, and routes client queries through the dynamic Cordis transport. |
 | `ctx.workspaceLayout` | `service` | `workspace-layout` | `workspace-layout` | - | - | Resolves AgentOps artifact paths and narrows an execution policy to the scope directory it creates. |
 | `ctx.workflowCatalog` | `service` | `workflow-catalog` | `workflow-catalog` | `dag` | - | Owns the workflow definition files: listing, reading, validation, compilation, and compare-and-swap writes. |
+| `ctx.capabilityRuntime` | `service` | `capability` | `capability` | - | - | Resolves the enabled capability instances bound to a preset and hands preset-scoped tools their runtime. |
+| `ctx.deployment` | `service` | `deployment` | `deployment` | - | - | Runs the build and deployment workflow against a resolved SSH capability instance and records each release. |
+| `ctx.logCollection` | `service` | `log-collection` | `log-collection` | - | - | Owns log collection task records, their access-control grants, and the pull runs that fetch remote files. |
 
 Maintenance mode: hybrid: services are discovered from Cordis declarations; interface/implementation/consumer roles are classified in `scripts/gen-doc-graphs.ts` with a completeness guard.

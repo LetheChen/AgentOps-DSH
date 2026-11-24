@@ -5,6 +5,9 @@ apps/desktop/.env.macos
 apps/desktop/*.p12
 node_modules/
 lib/
+# The A2UI renderer keeps its source under a directory named lib/, so the
+# build-output rule above would leave these files out of the repository.
+!packages/agentops/client/src/client/a2ui/lib/
 *.tsbuildinfo
 pnpm-debug.log
 .pnpm-store/
@@ -51,6 +54,12 @@ worktrees/
 .agents/worktrees/
 .typert-*/
 native/system/test/bin/
+
+# Local tool artifacts and internal reports
+.playwright-cli/
+.workbuddy/
+assets/supagent-video-script-illustrations/
+reports/
 
 # Runtime databases, logs, and credentials
 *.db

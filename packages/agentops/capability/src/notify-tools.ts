@@ -66,7 +66,7 @@ async function postWebhook(url: string, payload: unknown, timeoutMs: number): Pr
 }
 
 function safeJson(text: string): unknown {
-  try { return JSON.parse(text) as unknown } catch { return undefined }
+  try { const value: unknown = JSON.parse(text); return value } catch { return undefined }
 }
 
 function feishuPayload(content: string, title: string, msgType: string): unknown {
@@ -138,7 +138,7 @@ function createTool(
  * @param config - preset binding and optional fixed instance.
  */
 export function apply(ctx: Context, config: NotifyToolsConfig): void {
-  const agentPreset = config.agentPreset?.trim() ?? ''
+  const agentPreset = config.agentPreset.trim()
   if (agentPreset === '') {
     throw new Error('@agentops/dsh-capability/tools requires config.agentPreset; add it to the preset plugin row')
   }

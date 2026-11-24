@@ -15,7 +15,6 @@ This directory is the single entry point for the AgentOps project inside the DSH
 | [`DSH-BASELINE.md`](./DSH-BASELINE.md) | Baseline coordinates, how the baseline was obtained, how to deepen history |
 | [`DSH-CORE-CHANGES.md`](./DSH-CORE-CHANGES.md) | Ledger of CORE changes and INTEGRATION wiring |
 | [`UPGRADE.md`](./UPGRADE.md) | DSH upgrade procedure (no wholesale copying) |
-| [`PARITY-THREE-PAGES.md`](./PARITY-THREE-PAGES.md) | Per-endpoint comparison of Agent management, workflow management, and collaboration with the legacy UI |
 | [`scripts/check-owned-paths.mjs`](./scripts/check-owned-paths.mjs) | Five-category change check; exits 1 when UNEXPECTED is not 0 |
 
 ## Migrated assets

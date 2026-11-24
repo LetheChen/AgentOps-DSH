@@ -16,8 +16,8 @@
  * | 交叉 | agent 的工具在 `tool-map.yaml` 里有条目 | 不兼容项 |
  * | 交叉 | agent 的 KB 键在 `kb-map.yaml` 里有条目 | 不兼容项 |
  *
- * 硬失败说明资产本身在 DSH 侧不可用；不兼容项说明资产能读但能力有缺口，
- * 两类都要写进 `agentops/MIGRATION-INCOMPATIBILITIES.md`。
+ * 硬失败说明资产本身在 DSH 侧不可用；不兼容项说明资产能读但能力有缺口。
+ * 两类都由本脚本的输出报告，修复前不得视为通过。
  */
 
 import { readFileSync, readdirSync } from 'node:fs'

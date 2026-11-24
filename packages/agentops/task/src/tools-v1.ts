@@ -1009,7 +1009,7 @@ export function createServiceTaskTools(service: TaskService): readonly ToolDefin
             decision: { ...detail.decision },
             evidence: detail.evidence.map(row => ({ ...row })),
             relations: detail.relations.map(row => ({ ...row })),
-            audit: detail.audit.map(row => ({ ...row, payload: JSON.parse(JSON.stringify(row.payload)) })),
+            audit: detail.audit.map(row => ({ ...row, payload: JSON.parse(JSON.stringify(row.payload)) as JsonValue })),
           },
         })
       } catch (error) {
@@ -1036,7 +1036,7 @@ export function createServiceTaskTools(service: TaskService): readonly ToolDefin
       && tool.name !== 'task_list' && tool.name !== 'decision_get' && tool.name !== 'idea_triage') {
       return tool
     }
-    const originalExecute = tool.execute
+    const originalExecute = tool.execute.bind(tool)
     const wrappedExecute = async (args: unknown, exec: ToolRunContext): Promise<unknown> => {
       const context = getTaskToolExecutionContext(exec.agent?.id)
       if (context === undefined) return originalExecute(args, exec)
@@ -1071,7 +1071,8 @@ export function createServiceTaskTools(service: TaskService): readonly ToolDefin
       }
       if (tool.name === 'decision_get') {
         try {
-          const detail = service.decisionGet(String(parsed.decisionId ?? ''))
+          const decisionId = typeof parsed.decisionId === 'string' ? parsed.decisionId : ''
+          const detail = service.decisionGet(decisionId)
           if (detail.decision.projectId !== context.projectId) {
             return contextMismatch('decision belongs to another project')
           }
@@ -1081,7 +1082,8 @@ export function createServiceTaskTools(service: TaskService): readonly ToolDefin
         return originalExecute(parsed, exec)
       }
       try {
-        const task = service.getTask(String(parsed.id ?? ''))
+        const taskId = typeof parsed.id === 'string' ? parsed.id : ''
+        const task = service.getTask(taskId)
         if (task.task.projectId !== context.projectId) {
           return contextMismatch('task belongs to another project')
         }

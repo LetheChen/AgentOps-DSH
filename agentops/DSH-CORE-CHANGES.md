@@ -60,6 +60,16 @@
 - 为何不能只改 AgentOps：生成器与生成产物在 DSH 仓库内，AgentOps 包无法自行登记。
 - 验证：`pnpm run verify-cordis-inspect-catalog`、`verify-client-catalog`、`verify-config-catalog`、`verify-plugin-packages`、`verify-type-equiv`、`pnpm run doc-sync`。
 - 回滚：回退上述脚本里的条目，并重跑四个生成器。
+
+### 7. 仓库根 README 增加 AgentOps 产品说明（CORE）
+
+- 改动路径：`README.md`、`README.zh.md`、`README.i18n.yaml`。
+- 改动：在上游 README 的 AgentOps 衍生说明之后插入 “Product overview” 段，写明 AgentOps-DSH 的定位、能力清单、快速开始与当前完成度。
+- 原因：仓库根 README 是上游 DSH 的入口文档，衍生项目必须在这里声明自己的身份、定位与限制，否则使用者会把它当成原版 DSH。
+- 为何不能只改 AgentOps：根 README 属于上游文件，AgentOps 包无法在其中增补段落。
+- 验证：`pnpm run doc-sync` 的双语行对齐与链接检查。
+- 回滚：删除该段并同步删除 `README.i18n.yaml` 中对应的键。
+
 ## 构建接入（INTEGRATION，不是 DSH 核心源码）
 
 > 以下文件位于 DSH 构建配置中，但只负责把 AgentOps workspace 接入 DSH 的编译图；它们不是产品运行逻辑，也不应伪装成 CORE。
@@ -98,6 +108,7 @@
 |---|---|---|
 | 2026-10-26 | 上述 3 项 INTEGRATION | 基线接入时的首次登记 |
 | 2026-10-29 | collapsible sidebar sections | AgentOps 菜单分组所需的通用 DSH 侧栏能力 |
+| 2026-11-16 | 仓库根 README 三件套 | 衍生项目的身份、定位与完成度声明 |
 
 ## 不该出现在这里的东西
 

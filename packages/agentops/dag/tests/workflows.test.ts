@@ -10,13 +10,13 @@ import { parseWorkflowYaml } from '../src/load.ts'
 import { validateWorkflow } from '../src/validate.ts'
 import { scanWorkflows } from '../src/workflows.ts'
 
-test('scanWorkflows：目录不存在返回空目录，不抛错', () => {
+void test('scanWorkflows：目录不存在返回空目录，不抛错', () => {
   const result = scanWorkflows(join(tmpdir(), 'agentops-no-such-dir-xyz'))
   assert.equal(result.missing, true)
   assert.deepEqual(result.entries, [])
 })
 
-test('scanWorkflows：合法与非法文件一起报，非法带错误', () => {
+void test('scanWorkflows：合法与非法文件一起报，非法带错误', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentops-wf-'))
   try {
     writeFileSync(join(dir, 'ok.yaml'), [
@@ -71,7 +71,7 @@ test('scanWorkflows：合法与非法文件一起报，非法带错误', () => {
   }
 })
 
-test('边契约：outputs 多目标只形成数据边，摘要图只画 after 调度边', () => {
+void test('边契约：outputs 多目标只形成数据边，摘要图只画 after 调度边', () => {
   const source = [
     'workflow_id: edge-contract',
     'nodes:',

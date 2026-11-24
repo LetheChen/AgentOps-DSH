@@ -15,13 +15,22 @@ import type { KnowledgeService } from './service.ts'
 import { WikiService, WikiServiceError } from './wiki-service.ts'
 import type { CreateWikiDraftInput, WikiPageType } from './wiki.ts'
 
-/** One domain card, matching the legacy `DomainSummary` fields the card reads. */
+const BUILTIN_SPACE_ORDER = ['finance', 'hr', 'ops', 'office_docs', 'project_analysis', 'technical_docs', 'learning', 'smart_query', 'content_creation', 'review'] as const
+
+/** One category below a professional knowledge domain. */
+export interface DomainCategorySummary {
+  path: string
+  page_count: number
+}
+
+/** One domain card, including its business description and populated categories. */
 export interface DomainSummary {
   id: string
   name: string
   display_name: string
   description: string
   page_count: number
+  categories: readonly DomainCategorySummary[]
   last_ingest_at: string | null
   supports_lint: boolean
   lint_summary: { critical: number; warning: number; info: number; total: number }
@@ -34,8 +43,13 @@ export interface DomainSummary {
  */
 export function domainSummaries(service: KnowledgeService): DomainSummary[] {
   const documents = service.listDocuments()
-  return service.listSpaces().map((space) => {
+  return sortSpaces(service.listSpaces()).map((space) => {
     const owned = documents.filter(document => document.spaceId === space.id)
+    const categoryCounts = new Map<string, number>()
+    for (const document of owned) {
+      if (document.categoryPath === '') continue
+      categoryCounts.set(document.categoryPath, (categoryCounts.get(document.categoryPath) ?? 0) + 1)
+    }
     const latest = owned.reduce<string | null>((current, document) => {
       const stamp = document.updatedAt || null
       if (stamp === null) return current
@@ -45,12 +59,24 @@ export function domainSummaries(service: KnowledgeService): DomainSummary[] {
       id: space.id,
       name: space.name,
       display_name: space.name,
-      description: '',
+      description: space.description,
       page_count: owned.length,
+      categories: [...categoryCounts.entries()]
+        .map(([path, page_count]) => ({ path, page_count }))
+        .sort((left, right) => left.path.localeCompare(right.path)),
       last_ingest_at: latest,
       supports_lint: false,
       lint_summary: { critical: 0, warning: 0, info: 0, total: 0 },
     }
+  })
+}
+
+function sortSpaces<T extends { id: string }>(spaces: readonly T[]): T[] {
+  const order = new Map<string, number>(BUILTIN_SPACE_ORDER.map((id, index) => [id, index]))
+  return [...spaces].sort((left, right) => {
+    const leftOrder = order.get(left.id) ?? BUILTIN_SPACE_ORDER.length
+    const rightOrder = order.get(right.id) ?? BUILTIN_SPACE_ORDER.length
+    return leftOrder - rightOrder || left.id.localeCompare(right.id)
   })
 }
 
@@ -87,7 +113,13 @@ export function registerKnowledgeRoute(
         }
         const visibility = body.visibility === 'restricted' ? 'restricted' : 'shared'
         const readers = visibility === 'restricted' ? stringArray(body, 'readers') : []
-        const space = { id, name: stringField(body, 'name'), visibility, readers } as const
+        const space = {
+          id,
+          name: stringField(body, 'name'),
+          description: optionalString(body, 'description') ?? '',
+          visibility,
+          readers,
+        } as const
         service.addSpace(space)
         return json({ space }, 201)
       } catch (error) {
@@ -111,14 +143,18 @@ export function registerKnowledgeRoute(
       const limit = Math.min(Math.max(Number(url.searchParams.get('limit') ?? '50') || 50, 1), 100)
       // Visibility is closed by configuration: no granted space, no hit.
       const hits = service.search(query, service.readableSpaces(readableSpaces), limit)
+      const documents = new Map(service.listDocuments().map(document => [document.id, document]))
       return Promise.resolve(json({
         total: hits.length,
-        matches: hits.map(hit => ({
-          path: `${hit.chunk.spaceId}/${hit.chunk.documentId}`,
-          line: hit.chunk.locator.section ?? undefined,
-          context: hit.chunk.text.slice(0, 240),
-          score: Number(hit.score.toFixed(3)),
-        })),
+        matches: hits.map((hit) => {
+          const document = documents.get(hit.chunk.documentId)
+          return {
+            path: [hit.chunk.spaceId, document?.categoryPath, hit.chunk.documentId].filter(Boolean).join('/'),
+            line: hit.chunk.locator.section ?? undefined,
+            context: hit.chunk.text.slice(0, 240),
+            score: Number(hit.score.toFixed(3)),
+          }
+        }),
       }))
     },
   }), 'agentops-knowledge: /api/agentops/knowledge/search')
@@ -144,7 +180,7 @@ export function registerVaultRoutes(
     requestBody: 'buffered',
     fetch: () => {
       const documents = service.listDocuments().filter(doc => visible(doc.spaceId))
-      const spaces = service.listSpaces().filter(space => visible(space.id))
+      const spaces = sortSpaces(service.listSpaces().filter(space => visible(space.id)))
       return Promise.resolve(json({
         spaces: spaces.map(space => ({
           id: space.id,
@@ -153,6 +189,7 @@ export function registerVaultRoutes(
             .filter(doc => doc.spaceId === space.id)
             .map(doc => ({
               id: doc.id,
+              categoryPath: doc.categoryPath,
               title: doc.title,
               version: doc.currentVersion,
               updatedAt: doc.updatedAt,
@@ -176,6 +213,7 @@ export function registerVaultRoutes(
       return Promise.resolve(json({
         id: meta.id,
         spaceId: meta.spaceId,
+        categoryPath: meta.categoryPath,
         title: meta.title,
         version: meta.currentVersion,
         updatedAt: meta.updatedAt,

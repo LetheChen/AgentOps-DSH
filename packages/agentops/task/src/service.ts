@@ -17,7 +17,7 @@
 import { realpathSync } from 'node:fs'
 import { isAbsolute } from 'node:path'
 import { createHash, randomUUID } from 'node:crypto'
-import type { DatabaseSync } from 'node:sqlite'
+import type { DatabaseSync, SQLOutputValue } from 'node:sqlite'
 
 import { P0_STATUSES, P0_TERMINAL, P0_TRANSITIONS } from './lifecycle/p0.ts'
 import { assertSchemaVersion } from './schema.ts'
@@ -163,7 +163,7 @@ export type CandidateStatus =
   | 'deferred'
   | 'merged'
 
-/** Accepted provenance classes for a Candidate. */
+/** Accepted source classes for a Candidate. */
 export type CandidateSourceType = 'manual' | 'idea' | 'agent' | 'connector' | 'external' | 'legacy_task'
 
 /** One Candidate as returned by the service. */
@@ -759,7 +759,7 @@ interface DesignNoteRow {
   version: number
 }
 
-interface IdeaRow {
+interface IdeaRow extends Record<string, SQLOutputValue> {
   idea_id: string
   project_id: string | null
   channel: string
@@ -835,7 +835,7 @@ interface AdmissionSnapshotRow {
   created_at: string
 }
 
-interface DecisionRow {
+interface DecisionRow extends Record<string, SQLOutputValue> {
   decision_id: string
   project_id: string
   workspace_id: string
@@ -883,7 +883,7 @@ interface DecisionRow {
   updated_at: string
 }
 
-interface DecisionEvidenceRow {
+interface DecisionEvidenceRow extends Record<string, SQLOutputValue> {
   evidence_id: string
   decision_id: string
   kind: DecisionEvidenceKind
@@ -894,7 +894,7 @@ interface DecisionEvidenceRow {
   created_at: string
 }
 
-interface DecisionRelationRow {
+interface DecisionRelationRow extends Record<string, SQLOutputValue> {
   relation_id: string
   source_decision_id: string
   target_decision_id: string
@@ -904,7 +904,7 @@ interface DecisionRelationRow {
   created_at: string
 }
 
-interface DecisionAuditRow {
+interface DecisionAuditRow extends Record<string, SQLOutputValue> {
   audit_id: string
   decision_id: string
   event_type: string
@@ -916,7 +916,7 @@ interface DecisionAuditRow {
   created_at: string
 }
 
-interface CommentRow {
+interface CommentRow extends Record<string, SQLOutputValue> {
   comment_id: string
   task_id: string
   report_id: string | null
@@ -927,7 +927,7 @@ interface CommentRow {
   created_at: string
 }
 
-interface CriteriaRow {
+interface CriteriaRow extends Record<string, SQLOutputValue> {
   criteria_id: string
   task_id: string
   description: string
@@ -936,7 +936,7 @@ interface CriteriaRow {
   checked_at: string | null
 }
 
-interface ReportRow {
+interface ReportRow extends Record<string, SQLOutputValue> {
   report_id: string
   task_id: string
   agent_id: string | null
@@ -949,7 +949,7 @@ interface ReportRow {
   submitted_at: string
 }
 
-interface LeaseRow {
+interface LeaseRow extends Record<string, SQLOutputValue> {
   lease_id: string
   task_id: string
   link_id: string
@@ -980,7 +980,7 @@ interface ProjectRow {
   updated_at: string
 }
 
-interface RunRow {
+interface RunRow extends Record<string, SQLOutputValue> {
   link_id: string
   task_id: string
   run_id: string | null
@@ -1029,7 +1029,8 @@ function toRun(row: RunRow): RunRecord {
 }
 
 function parseJson(value: string): unknown {
-  return JSON.parse(value) as unknown
+  const parsed: unknown = JSON.parse(value)
+  return parsed
 }
 
 function canonicalize(value: unknown): unknown {
@@ -1347,7 +1348,7 @@ function errorText(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
 
-interface TaskRow {
+interface TaskRow extends Record<string, SQLOutputValue> {
   task_id: string
   project_id: string
   source_candidate_id: string
@@ -1412,12 +1413,20 @@ export class TaskService {
     this.#allowedSourceSystems = new Set(options.allowedSourceSystems ?? DEFAULT_SOURCE_SYSTEMS)
   }
 
-  /** Read one project and its execution workspace. */
+  /**
+   * Read one project and its execution workspace.
+   * @param projectId - the project to read.
+   * @returns the project record.
+   */
   getProject(projectId: string): ProjectRecord {
     return toProject(this.#loadProject(projectId))
   }
 
-  /** Resolve the project workspace and active execution scope for one task. */
+  /**
+   * Resolve the project workspace and active execution scope for one task.
+   * @param taskId - the task whose execution scope is requested.
+   * @returns the task's execution context.
+   */
   getTaskExecutionContext(taskId: string): TaskExecutionContext {
     return this.#assertExecutionReady(taskId)
   }
@@ -1432,7 +1441,7 @@ export class TaskService {
     const now = this.#now()
     const type = input.type ?? 'code'
     const workspaceId = input.workspaceId?.trim() ?? ''
-    const localPath = input.localPath?.trim() === undefined || input.localPath?.trim() === ''
+    const localPath = input.localPath?.trim() === undefined || input.localPath.trim() === ''
       ? null
       : canonicalProjectLocalPath(input.localPath.trim())
     const githubUrl = input.githubUrl?.trim() ?? ''
@@ -1475,7 +1484,7 @@ export class TaskService {
       throw new TaskServiceError('user_approval_required', 'only a user may rebind a project workspace', {}, 403)
     }
     const workspaceId = input.workspaceId?.trim() ?? ''
-    const localPath = input.localPath?.trim() === undefined || input.localPath?.trim() === ''
+    const localPath = input.localPath?.trim() === undefined || input.localPath.trim() === ''
       ? null
       : canonicalProjectLocalPath(input.localPath.trim())
     if ((workspaceId === '' && localPath === null) || (workspaceId !== '' && localPath !== null)) {
@@ -1556,7 +1565,7 @@ export class TaskService {
     }
     const existing = this.#db
       .prepare('SELECT * FROM task_candidates WHERE candidate_id = ?')
-      .get(candidateId) as unknown as CandidateRow | undefined
+      .get(candidateId) as CandidateRow | undefined
     if (existing !== undefined) return toCandidate(existing)
     const ownerUserId = input.ownerUserId
       ?? (input.actor.type === 'user' ? (input.actor.id ?? input.actor.name ?? 'unknown') : 'unknown')
@@ -2210,7 +2219,7 @@ export class TaskService {
             409,
           )
         }
-        if ((input.evidence?.length ?? 0) === 0) {
+        if (input.evidence.length === 0) {
           throw new TaskServiceError(
             'decision_validation_failed',
             'implement requires at least one evidence item',
@@ -2447,7 +2456,7 @@ export class TaskService {
     const limit = Math.min(Math.max(Math.trunc(input.limit ?? 50), 1), 200)
     const rows = this.#db
       .prepare(`SELECT * FROM decisions WHERE ${where} ORDER BY updated_at DESC, decision_id LIMIT ?`)
-      .all(...params, limit) as unknown as DecisionRow[]
+      .all(...params, limit) as DecisionRow[]
     const count = this.#db.prepare(`SELECT COUNT(*) AS n FROM decisions WHERE ${where}`).get(...params) as { n: number }
     return { decisions: rows.map(toDecision), total: count.n, searchCoverage: 'partial' }
   }
@@ -2461,17 +2470,17 @@ export class TaskService {
     const decision = this.#loadDecision(decisionId)
     const evidence = this.#db
       .prepare('SELECT * FROM decision_evidence WHERE decision_id = ? ORDER BY created_at, evidence_id')
-      .all(decision.decisionId) as unknown as DecisionEvidenceRow[]
+      .all(decision.decisionId) as DecisionEvidenceRow[]
     const relations = this.#db
       .prepare(
         `SELECT * FROM decision_relations
          WHERE source_decision_id = ? OR target_decision_id = ?
          ORDER BY created_at, relation_id`,
       )
-      .all(decision.decisionId, decision.decisionId) as unknown as DecisionRelationRow[]
+      .all(decision.decisionId, decision.decisionId) as DecisionRelationRow[]
     const audit = this.#db
       .prepare('SELECT * FROM decision_audit WHERE decision_id = ? ORDER BY created_at, audit_id')
-      .all(decision.decisionId) as unknown as DecisionAuditRow[]
+      .all(decision.decisionId) as DecisionAuditRow[]
     return {
       decision,
       evidence: evidence.map(toDecisionEvidence),
@@ -2873,7 +2882,7 @@ export class TaskService {
       }
     }
     const reportId = `rep_${this.#newId()}`
-    let shouldAdvance = false
+    let submittedStatus: string | undefined
     this.#transaction(() => {
       const task = this.#loadTask(input.taskId)
       this.#checkVersion(task, input.ifVersion)
@@ -2903,10 +2912,10 @@ export class TaskService {
       if (activeRun !== undefined) {
         this.#db.prepare("UPDATE task_runs SET status = 'succeeded' WHERE link_id = ?").run(activeRun.link_id)
       }
-      shouldAdvance = task.status === 'in_progress'
+      submittedStatus = task.status
       this.#touch(input.taskId, 'report_submitted', input.actor, { reportId })
     })
-    if (shouldAdvance) {
+    if (submittedStatus === 'in_progress') {
       try {
         this.advance({
           taskId: input.taskId,
@@ -3028,7 +3037,7 @@ export class TaskService {
       if (input.idempotencyKey !== undefined) {
         const existing = this.#db
           .prepare('SELECT * FROM task_runs WHERE task_id = ? AND idempotency_key = ?')
-          .get(input.taskId, input.idempotencyKey) as unknown as RunRow | undefined
+          .get(input.taskId, input.idempotencyKey) as RunRow | undefined
         if (existing !== undefined) {
           const run = toRun(existing)
           const lease = this.#loadLeaseByLink(run.linkId) ?? this.#createLease(run, input.leaseTtlMs)
@@ -3157,9 +3166,13 @@ export class TaskService {
     return lease
   }
 
-  /** List every lease for one task, newest first. */
+  /**
+   * List every lease for one task, newest first.
+   * @param taskId - the task whose leases are listed.
+   * @returns the task's leases, newest acquisition first.
+   */
   listLeases(taskId: string): LeaseRecord[] {
-    return (this.#db.prepare('SELECT * FROM task_leases WHERE task_id = ? ORDER BY acquired_at DESC').all(taskId) as unknown as LeaseRow[])
+    return (this.#db.prepare('SELECT * FROM task_leases WHERE task_id = ? ORDER BY acquired_at DESC').all(taskId) as LeaseRow[])
       .map(toLease)
   }
 
@@ -3192,7 +3205,7 @@ export class TaskService {
    * @returns runs newest first.
    */
   listRuns(taskId: string): RunRecord[] {
-    return (this.#db.prepare('SELECT * FROM task_runs WHERE task_id = ? ORDER BY linked_at DESC').all(taskId) as unknown as RunRow[])
+    return (this.#db.prepare('SELECT * FROM task_runs WHERE task_id = ? ORDER BY linked_at DESC').all(taskId) as RunRow[])
       .map(toRun)
   }
 
@@ -3225,7 +3238,7 @@ export class TaskService {
   }
 
   #loadLease(leaseId: string): LeaseRecord {
-    const row = this.#db.prepare('SELECT * FROM task_leases WHERE lease_id = ?').get(leaseId) as unknown as LeaseRow | undefined
+    const row = this.#db.prepare('SELECT * FROM task_leases WHERE lease_id = ?').get(leaseId) as LeaseRow | undefined
     if (row === undefined) throw new TaskServiceError('lease_not_found', `lease ${leaseId} does not exist`, { leaseId }, 404)
     return toLease(row)
   }
@@ -3233,14 +3246,14 @@ export class TaskService {
   #loadLeaseByTask(taskId: string): LeaseRecord | undefined {
     const row = this.#db
       .prepare("SELECT * FROM task_leases WHERE task_id = ? AND status = 'active' ORDER BY acquired_at DESC LIMIT 1")
-      .get(taskId) as unknown as LeaseRow | undefined
+      .get(taskId) as LeaseRow | undefined
     return row === undefined ? undefined : toLease(row)
   }
 
   #loadLeaseByLink(linkId: string): LeaseRecord | undefined {
     const row = this.#db
       .prepare("SELECT * FROM task_leases WHERE link_id = ? AND status = 'active' ORDER BY acquired_at DESC LIMIT 1")
-      .get(linkId) as unknown as LeaseRow | undefined
+      .get(linkId) as LeaseRow | undefined
     return row === undefined ? undefined : toLease(row)
   }
 
@@ -3253,7 +3266,7 @@ export class TaskService {
     return this.#transaction(() => {
       const proposal = this.#db
         .prepare('SELECT * FROM doc_change_proposals WHERE proposal_id = ?')
-        .get(input.proposalId) as unknown as DesignProposalRow | undefined
+        .get(input.proposalId) as DesignProposalRow | undefined
       if (proposal === undefined) {
         throw new TaskServiceError('invalid_request', `proposal ${input.proposalId} not found`, {}, 404)
       }
@@ -3334,7 +3347,7 @@ export class TaskService {
     const limit = Math.min(Math.max(filter.limit ?? 100, 1), 500)
     return (this.#db
       .prepare(`SELECT * FROM ideas ${where} ORDER BY created_at DESC LIMIT ${limit}`)
-      .all(...params) as unknown as IdeaRow[]).map(row => this.#toIdea(row))
+      .all(...params) as IdeaRow[]).map(row => this.#toIdea(row))
   }
 
   /**
@@ -3381,8 +3394,7 @@ export class TaskService {
             `SELECT * FROM ideas WHERE channel = ? AND source_system IS ? AND source_ref IS ?
              AND content_hash IS ? LIMIT 1`,
           )
-          .get(input.channel, input.sourceSystem ?? null, input.sourceRef ?? null, input.contentHash ?? null) as unknown as
-          | IdeaRow
+          .get(input.channel, input.sourceSystem ?? null, input.sourceRef ?? null, input.contentHash ?? null) as | IdeaRow
           | undefined
         if (existing !== undefined) return this.#toIdea(existing)
       }
@@ -3488,7 +3500,7 @@ export class TaskService {
       const idea = this.#loadIdea(input.ideaId)
       const existing = this.#db
         .prepare('SELECT * FROM task_candidates WHERE source_idea_id = ? ORDER BY created_at, candidate_id LIMIT 1')
-        .get(idea.ideaId) as unknown as CandidateRow | undefined
+        .get(idea.ideaId) as CandidateRow | undefined
       if (existing !== undefined) {
         if (idea.status !== 'converted' || idea.convertedIdeaId !== existing.candidate_id) {
           this.#db
@@ -3536,8 +3548,7 @@ export class TaskService {
   }
 
   #loadProposal(proposalId: string): DesignProposalRecord {
-    const row = this.#db.prepare('SELECT * FROM doc_change_proposals WHERE proposal_id = ?').get(proposalId) as unknown as
-      | DesignProposalRow
+    const row = this.#db.prepare('SELECT * FROM doc_change_proposals WHERE proposal_id = ?').get(proposalId) as | DesignProposalRow
       | undefined
     if (row === undefined) throw new TaskServiceError('invalid_request', 'proposal disappeared', {}, 500)
     return {
@@ -3552,8 +3563,7 @@ export class TaskService {
   }
 
   #loadDesignNote(noteId: string): DesignNoteRecord {
-    const row = this.#db.prepare('SELECT * FROM design_notes WHERE note_id = ?').get(noteId) as unknown as
-      | DesignNoteRow
+    const row = this.#db.prepare('SELECT * FROM design_notes WHERE note_id = ?').get(noteId) as | DesignNoteRow
       | undefined
     if (row === undefined) throw new TaskServiceError('invalid_request', 'design note disappeared', {}, 500)
     return {
@@ -3567,7 +3577,7 @@ export class TaskService {
   }
 
   #loadIdea(ideaId: string): IdeaRecord {
-    const row = this.#db.prepare('SELECT * FROM ideas WHERE idea_id = ?').get(ideaId) as unknown as IdeaRow | undefined
+    const row = this.#db.prepare('SELECT * FROM ideas WHERE idea_id = ?').get(ideaId) as IdeaRow | undefined
     if (row === undefined) throw new TaskServiceError('invalid_request', `idea ${ideaId} not found`, {}, 404)
     return this.#toIdea(row)
   }
@@ -3592,7 +3602,7 @@ export class TaskService {
   }
 
   #listComments(taskId: string): CommentRecord[] {
-    const rows = this.#db.prepare('SELECT * FROM task_comments WHERE task_id = ? ORDER BY created_at').all(taskId) as unknown as CommentRow[]
+    const rows = this.#db.prepare('SELECT * FROM task_comments WHERE task_id = ? ORDER BY created_at').all(taskId) as CommentRow[]
     return rows.map(row => ({
       commentId: row.comment_id,
       taskId: row.task_id,
@@ -3608,7 +3618,7 @@ export class TaskService {
   #listCriteria(taskId: string): CriteriaRecord[] {
     const rows = this.#db
       .prepare('SELECT * FROM acceptance_criteria WHERE task_id = ? ORDER BY criteria_id')
-      .all(taskId) as unknown as CriteriaRow[]
+      .all(taskId) as CriteriaRow[]
     return rows.map(row => ({
       criteriaId: row.criteria_id,
       taskId: row.task_id,
@@ -3622,7 +3632,7 @@ export class TaskService {
   #listReports(taskId: string): ReportRecord[] {
     const rows = this.#db
       .prepare('SELECT * FROM task_reports WHERE task_id = ? ORDER BY submitted_at DESC')
-      .all(taskId) as unknown as ReportRow[]
+      .all(taskId) as ReportRow[]
     return rows.map(row => ({
       reportId: row.report_id,
       taskId: row.task_id,
@@ -3638,8 +3648,7 @@ export class TaskService {
   }
 
   #loadComment(commentId: string): CommentRecord {
-    const row = this.#db.prepare('SELECT * FROM task_comments WHERE comment_id = ?').get(commentId) as unknown as
-      | CommentRow
+    const row = this.#db.prepare('SELECT * FROM task_comments WHERE comment_id = ?').get(commentId) as | CommentRow
       | undefined
     if (row === undefined) throw new TaskServiceError('invalid_request', 'comment disappeared', {}, 500)
     return {
@@ -3655,8 +3664,7 @@ export class TaskService {
   }
 
   #loadCriteria(criteriaId: string): CriteriaRecord {
-    const row = this.#db.prepare('SELECT * FROM acceptance_criteria WHERE criteria_id = ?').get(criteriaId) as unknown as
-      | CriteriaRow
+    const row = this.#db.prepare('SELECT * FROM acceptance_criteria WHERE criteria_id = ?').get(criteriaId) as | CriteriaRow
       | undefined
     if (row === undefined) throw new TaskServiceError('invalid_request', 'criteria disappeared', {}, 500)
     return {
@@ -3670,8 +3678,7 @@ export class TaskService {
   }
 
   #loadReport(reportId: string): ReportRecord {
-    const row = this.#db.prepare('SELECT * FROM task_reports WHERE report_id = ?').get(reportId) as unknown as
-      | ReportRow
+    const row = this.#db.prepare('SELECT * FROM task_reports WHERE report_id = ?').get(reportId) as | ReportRow
       | undefined
     if (row === undefined) throw new TaskServiceError('report_not_found', `report ${reportId} not found`, {}, 404)
     return {
@@ -3689,7 +3696,7 @@ export class TaskService {
   }
 
   #loadRun(linkId: string): RunRecord {
-    const row = this.#db.prepare('SELECT * FROM task_runs WHERE link_id = ?').get(linkId) as unknown as RunRow | undefined
+    const row = this.#db.prepare('SELECT * FROM task_runs WHERE link_id = ?').get(linkId) as RunRow | undefined
     if (row === undefined) throw new TaskServiceError('invalid_request', `run ${linkId} not found`, {}, 404)
     return toRun(row)
   }
@@ -3732,11 +3739,11 @@ export class TaskService {
     const limit = Math.min(Math.max(filter.limit ?? 100, 1), 500)
     return (this.#db
       .prepare(`SELECT * FROM tasks ${where} ORDER BY updated_at DESC LIMIT ${limit}`)
-      .all(...params) as unknown as TaskRow[]).map(row => this.#toRecord(row))
+      .all(...params) as TaskRow[]).map(row => this.#toRecord(row))
   }
 
   #loadTask(taskId: string): TaskRecord {
-    const row = this.#db.prepare('SELECT * FROM tasks WHERE task_id = ?').get(taskId) as unknown as TaskRow | undefined
+    const row = this.#db.prepare('SELECT * FROM tasks WHERE task_id = ?').get(taskId) as TaskRow | undefined
     if (row === undefined) {
       throw new TaskServiceError('task_not_found', `task ${taskId} does not exist`, { taskId }, 404)
     }
@@ -3746,7 +3753,7 @@ export class TaskService {
   #loadCandidate(candidateId: string): CandidateRecord {
     const row = this.#db
       .prepare('SELECT * FROM task_candidates WHERE candidate_id = ?')
-      .get(candidateId) as unknown as CandidateRow | undefined
+      .get(candidateId) as CandidateRow | undefined
     if (row === undefined) {
       throw new TaskServiceError('candidate_not_found', `candidate ${candidateId} does not exist`, { candidateId }, 404)
     }
@@ -3756,7 +3763,7 @@ export class TaskService {
   #loadDecision(decisionId: string): DecisionRecord {
     const row = this.#db
       .prepare('SELECT * FROM decisions WHERE decision_id = ?')
-      .get(decisionId) as unknown as DecisionRow | undefined
+      .get(decisionId) as DecisionRow | undefined
     if (row === undefined) {
       throw new TaskServiceError('decision_not_found', `decision ${decisionId} does not exist`, { decisionId }, 404)
     }
@@ -3945,7 +3952,7 @@ export class TaskService {
   #loadSnapshot(snapshotId: string): AdmissionSnapshotRecord {
     const row = this.#db
       .prepare('SELECT * FROM admission_snapshots WHERE snapshot_id = ?')
-      .get(snapshotId) as unknown as AdmissionSnapshotRow | undefined
+      .get(snapshotId) as AdmissionSnapshotRow | undefined
     if (row === undefined) {
       throw new TaskServiceError('admission_snapshot_invalid', `snapshot ${snapshotId} does not exist`, { snapshotId }, 404)
     }
@@ -3978,7 +3985,7 @@ export class TaskService {
                 authority_level, subject_type, subject_id, problem, proposal, version, updated_at
          FROM decisions WHERE decision_id IN (${placeholders})`,
       )
-      .all(...normalized) as unknown as DecisionRow[]
+      .all(...normalized) as DecisionRow[]
     const byId = new Map(rows.map(row => [row.decision_id, row]))
     const ordered: DecisionRow[] = []
     for (const decisionId of normalized) {
@@ -4091,7 +4098,7 @@ export class TaskService {
   }
 
   #loadProject(projectId: string): ProjectRow {
-    const row = this.#db.prepare('SELECT * FROM projects WHERE project_id = ?').get(projectId) as unknown as ProjectRow | undefined
+    const row = this.#db.prepare('SELECT * FROM projects WHERE project_id = ?').get(projectId) as ProjectRow | undefined
     if (row === undefined) {
       throw new TaskServiceError('project_not_found', `project ${projectId} does not exist`, { projectId }, 404)
     }
@@ -4119,7 +4126,7 @@ export class TaskService {
       FROM tasks t
       JOIN projects p ON p.project_id = t.project_id
       WHERE t.task_id = ?
-    `).get(taskId) as unknown as {
+    `).get(taskId) as {
       task_id: string
       project_id: string
       workspace_override: string | null
@@ -4158,7 +4165,7 @@ export class TaskService {
     }
     const mandate = this.#db
       .prepare("SELECT mandate_id, scope_json FROM task_mandates WHERE task_id = ? AND status = 'active' ORDER BY created_at DESC LIMIT 1")
-      .get(taskId) as unknown as { mandate_id: string; scope_json: string } | undefined
+      .get(taskId) as { mandate_id: string; scope_json: string } | undefined
     if (mandate === undefined) {
       throw new TaskServiceError('execution_scope_missing', `task ${taskId} has no active execution scope`, { taskId }, 400)
     }

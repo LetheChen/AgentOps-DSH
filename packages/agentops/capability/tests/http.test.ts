@@ -22,7 +22,7 @@ void test('catalog and instance reads use stable capability routes', async () =>
     const catalog = await api.handle({ method: 'GET', path: '/api/agentops/capabilities/catalog' })
     assert.equal(catalog.status, 200)
     const catalogBody = catalog.body as { capabilities: unknown[] }
-    assert.equal(catalogBody.capabilities.length, 10)
+    assert.equal(catalogBody.capabilities.length, 11)
 
     const created = await api.handle({
       method: 'POST',
@@ -53,13 +53,29 @@ void test('tool catalogue exposes runtime and interface declarations with capabi
     const all = await api.handle({ method: 'GET', path: '/api/agentops/capabilities/tools' })
     assert.equal(all.status, 200)
     const tools = (all.body as { tools: Array<Record<string, unknown>> }).tools
-    assert.equal(tools.length, 20)
+    assert.equal(tools.length, 25)
     const sql = tools.find(item => item.toolId === 'sql_query')
     assert.equal(sql?.runtimeAvailable, true)
     assert.equal(sql?.declarationKind, 'runtime_tool')
     const oa = tools.find(item => item.toolId === 'oa_rest')
-    assert.equal(oa?.runtimeAvailable, false)
-    assert.equal(oa?.declarationKind, 'interface')
+    assert.equal(oa?.runtimeAvailable, true)
+    assert.equal(oa?.declarationKind, 'runtime_tool')
+    const oaDetail = tools.find(item => item.toolId === 'oa_affair_detail')
+    assert.equal(oaDetail?.declarationKind, 'runtime_tool')
+    assert.equal(oaDetail?.runtimeAvailable, true)
+    const feishuDocs = tools.find(item => item.toolId === 'feishu_docs_rest')
+    assert.equal(feishuDocs?.runtimeAvailable, false)
+    assert.equal(feishuDocs?.declarationKind, 'interface')
+    const browser = tools.find(item => item.toolId === 'browser_use_chrome_devtools_mcp')
+    assert.equal(browser?.runtimeAvailable, true)
+    assert.equal(browser?.declarationKind, 'runtime_tool')
+    assert.equal(browser?.requiresCapabilityInstance, false)
+    const feishuDocsList = tools.find(item => item.toolId === 'feishu_docs_list')
+    assert.equal(feishuDocsList?.runtimeAvailable, true)
+    assert.equal(feishuDocsList?.declarationKind, 'runtime_tool')
+    const feishuDocsRead = tools.find(item => item.toolId === 'feishu_docs_read')
+    assert.equal(feishuDocsRead?.runtimeAvailable, true)
+    assert.equal(feishuDocsRead?.declarationKind, 'runtime_tool')
 
     const filtered = await api.handle({
       method: 'GET', path: '/api/agentops/capabilities/tools', query: { capability_id: 'database' },
@@ -186,6 +202,43 @@ void test('test route probes a saved SQLite instance and records success', async
   } finally {
     store.close()
     rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+
+void test('test route probes Feishu docs through the saved encrypted App Secret', async () => {
+  const { store, api } = fixture()
+  const original = globalThis.fetch
+  globalThis.fetch = async (input: string | URL | Request) => {
+    const url = input instanceof Request ? input.url : String(input)
+    if (url.endsWith('/open-apis/auth/v3/tenant_access_token/internal')) {
+      return Response.json({ code: 0, msg: 'ok', tenant_access_token: 't-test-token' })
+    }
+    if (url.endsWith('/open-apis/drive/v1/files?page_size=1')) {
+      return Response.json({ code: 0, msg: 'ok', data: { files: [] } })
+    }
+    throw new Error(`unexpected URL ${url}`)
+  }
+  try {
+    const created = await api.handle({
+      method: 'POST', path: '/api/agentops/capabilities/integrations',
+      body: {
+        instanceId: 'int_feishu_docs', capabilityId: 'feishu-docs', name: 'Feishu docs',
+        config: { app_id: 'cli_test', base_url: 'https://open.feishu.cn' }, secret: 'app-secret',
+      },
+    })
+    assert.equal(created.status, 201, JSON.stringify(created.body))
+    assert.equal(JSON.stringify(created.body).includes('app-secret'), false)
+    const response = await api.handle({
+      method: 'POST', path: '/api/agentops/capabilities/integrations/int_feishu_docs/test',
+    })
+    assert.equal(response.status, 200, JSON.stringify(response.body))
+    const body = response.body as { ok: boolean; integration: { lastTestStatus: string } }
+    assert.equal(body.ok, true)
+    assert.equal(body.integration.lastTestStatus, 'succeeded')
+  } finally {
+    globalThis.fetch = original
+    store.close()
   }
 })
 

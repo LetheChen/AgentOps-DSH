@@ -17,6 +17,7 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import {
   alphaFor,
   nodeColor,
+  nodeRadius,
   type MemoryGraphEdge,
   type MemoryNebula,
   type NebulaNode,
@@ -39,6 +40,15 @@ const LINK_COLOR: Record<string, number> = {
   blocks: 0xf87171,
   related: 0x475569,
   originated_from: 0x5eead4,
+  contains: 0x24566a,
+  tagged: 0xfbbf24,
+}
+
+function linkOpacity(kind: string): number {
+  if (kind === 'contains') return 0.2
+  if (kind === 'tagged') return 0.12
+  if (kind === 'originated_from') return 0.22
+  return 0.24
 }
 
 interface Props {
@@ -118,11 +128,37 @@ function worldPosition(node: NebulaNode): THREE.Vector3 {
   return new THREE.Vector3(node.x, node.y, node.z)
 }
 
+function makeLabelSprite(node: NebulaNode, color: string): THREE.Sprite {
+  const canvas = document.createElement('canvas')
+  canvas.width = 512
+  canvas.height = 96
+  const context = canvas.getContext('2d')
+  if (context !== null) {
+    context.font = `${node.kind === 'domain' ? 30 : 24}px "Segoe UI", sans-serif`
+    context.textAlign = 'center'
+    context.textBaseline = 'middle'
+    context.shadowColor = 'rgba(2, 6, 23, 0.95)'
+    context.shadowBlur = 8
+    context.fillStyle = color
+    const label = node.title.length > 24 ? `${node.title.slice(0, 23)}…` : node.title
+    context.fillText(label, 256, 48, 480)
+  }
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.colorSpace = THREE.SRGBColorSpace
+  const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false, opacity: node.kind === 'domain' ? 0.95 : 0.72 })
+  const sprite = new THREE.Sprite(material)
+  sprite.userData = { texture }
+  const scale = node.kind === 'domain' ? 148 : node.kind === 'subdomain' ? 106 : 82
+  sprite.scale.set(scale, scale * 0.1875, 1)
+  sprite.position.set(node.x, node.y + nodeRadius(node) + 22, node.z)
+  return sprite
+}
+
 /** Stable fingerprint for scene rebuilds; React object identity is not enough. */
 function graphFingerprint(graph: MemoryNebula): string {
   const nodes = graph.nodes.map(node => [
     node.id, node.x, node.y, node.z, node.status, node.timestamp,
-    node.title, node.summary, node.importance, node.category, node.kind,
+    node.title, node.summary, node.tags.join(','), node.importance, node.category, node.kind, node.domainId ?? '', node.subdomain ?? '',
   ].join('\u001f')).join('\u001e')
   const links = graph.links.map(link => [link.source, link.target, link.kind].join('\u001f')).join('\u001e')
   return `${nodes}\u001d${links}`
@@ -169,7 +205,7 @@ export function MemoryNebulaCanvas({
     const composer = new EffectComposer(renderer)
     composer.setSize(width, height)
     composer.addPass(new RenderPass(scene, camera))
-    const bloom = new UnrealBloomPass(new THREE.Vector2(width, height), 0.85, 0.5, 0.15)
+    const bloom = new UnrealBloomPass(new THREE.Vector2(width, height), 0.76, 0.42, 0.2)
     composer.addPass(bloom)
 
     const group = new THREE.Group()
@@ -177,19 +213,43 @@ export function MemoryNebulaCanvas({
     const glow = makeGlowTexture()
 
     // --- galactic dust ---
-    const dustCount = Math.min(60000, 12000 + graph.nodes.length * 24)
+    const dustGroup = new THREE.Group()
+    group.add(dustGroup)
+    const dustCount = Math.min(52000, 7800 + graph.nodes.length * 24)
     const dust = galaxyDust(dustCount)
     const dustGeometry = new THREE.BufferGeometry()
     dustGeometry.setAttribute('position', new THREE.BufferAttribute(dust.positions, 3))
     dustGeometry.setAttribute('color', new THREE.BufferAttribute(dust.colors, 3))
     const dustPoints = new THREE.Points(dustGeometry, new THREE.PointsMaterial({
-      size: 2.1, map: glow, vertexColors: true, transparent: true, opacity: 0.55,
+      size: 1.9, map: glow, vertexColors: true, transparent: true, opacity: 0.5,
       depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true,
     }))
-    group.add(dustPoints)
+    dustGroup.add(dustPoints)
+
+    const brightDustCount = Math.max(360, Math.round(dustCount * 0.085))
+    const brightDust = galaxyDust(brightDustCount, 10_000)
+    const brightDustGeometry = new THREE.BufferGeometry()
+    brightDustGeometry.setAttribute('position', new THREE.BufferAttribute(brightDust.positions, 3))
+    brightDustGeometry.setAttribute('color', new THREE.BufferAttribute(brightDust.colors, 3))
+    const brightDustPoints = new THREE.Points(brightDustGeometry, new THREE.PointsMaterial({
+      size: 2.8, map: glow, vertexColors: true, transparent: true, opacity: 0.76,
+      depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true,
+    }))
+    dustGroup.add(brightDustPoints)
+
+    const nearDustCount = Math.max(240, Math.round(dustCount * 0.04))
+    const nearDust = galaxyDust(nearDustCount, 20_000)
+    const nearDustGeometry = new THREE.BufferGeometry()
+    nearDustGeometry.setAttribute('position', new THREE.BufferAttribute(nearDust.positions, 3))
+    nearDustGeometry.setAttribute('color', new THREE.BufferAttribute(nearDust.colors, 3))
+    const nearDustPoints = new THREE.Points(nearDustGeometry, new THREE.PointsMaterial({
+      size: 3.8, map: glow, vertexColors: true, transparent: true, opacity: 0.34,
+      depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true,
+    }))
+    dustGroup.add(nearDustPoints)
 
     // --- central core ---
-    const coreCount = 900
+    const coreCount = 360
     const corePositions = new Float32Array(coreCount * 3)
     const coreColors = new Float32Array(coreCount * 3)
     const core = (seed: number): number => {
@@ -198,7 +258,7 @@ export function MemoryNebulaCanvas({
     }
     for (let index = 0; index < coreCount; index++) {
       const angle = core(index + 11) * Math.PI * 2
-      const radius = Math.pow(core(index + 12), 1.8) * 150
+      const radius = Math.pow(core(index + 12), 1.8) * 110
       corePositions[index * 3] = Math.cos(angle) * radius
       corePositions[index * 3 + 1] = (core(index + 13) + core(index + 14) - 1) * 40
       corePositions[index * 3 + 2] = Math.sin(angle) * radius
@@ -210,7 +270,7 @@ export function MemoryNebulaCanvas({
     coreGeometry.setAttribute('position', new THREE.BufferAttribute(corePositions, 3))
     coreGeometry.setAttribute('color', new THREE.BufferAttribute(coreColors, 3))
     group.add(new THREE.Points(coreGeometry, new THREE.PointsMaterial({
-      size: 3.6, map: glow, vertexColors: true, transparent: true, opacity: 0.9,
+      size: 2.2, map: glow, vertexColors: true, transparent: true, opacity: 0.45,
       depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true,
     })))
 
@@ -229,7 +289,6 @@ export function MemoryNebulaCanvas({
     scene.add(stressGroup)
 
     // --- links ---
-    const linkMaterial = new THREE.LineBasicMaterial({ transparent: true, opacity: 0.3 })
     const links = graph.links
     for (const link of links) {
       const source = graph.nodes.find(node => node.id === link.source)
@@ -243,8 +302,22 @@ export function MemoryNebulaCanvas({
         worldPosition(target),
       )
       const geometry = new THREE.BufferGeometry().setFromPoints(curve.getPoints(28))
-      linkMaterial.color.setHex(LINK_COLOR[link.kind] ?? 0x475569)
-      group.add(new THREE.Line(geometry, linkMaterial))
+      const material = link.kind === 'tagged' || link.kind === 'related'
+        ? new THREE.LineDashedMaterial({
+          color: LINK_COLOR[link.kind] ?? 0x475569,
+          transparent: true,
+          opacity: linkOpacity(link.kind),
+          dashSize: 8,
+          gapSize: 6,
+        })
+        : new THREE.LineBasicMaterial({
+          color: LINK_COLOR[link.kind] ?? 0x475569,
+          transparent: true,
+          opacity: linkOpacity(link.kind),
+        })
+      const line = new THREE.Line(geometry, material)
+      if (material instanceof THREE.LineDashedMaterial) line.computeLineDistances()
+      group.add(line)
     }
 
     // --- stars ---
@@ -263,7 +336,7 @@ export function MemoryNebulaCanvas({
       colors[index * 3] = color.r
       colors[index * 3 + 1] = color.g
       colors[index * 3 + 2] = color.b
-      sizes[index] = (node.kind === 'task' ? 14 : 11) + node.importance * 10
+      sizes[index] = nodeRadius(node) * (node.kind === 'domain' ? 1.85 : node.kind === 'subdomain' ? 1.55 : 1.2)
       alphas[index] = alphaFor(node)
       ringColor.setHex(RING_COLOR[node.status] ?? 0x000000)
       rings[index * 3] = ringColor.r
@@ -281,8 +354,12 @@ export function MemoryNebulaCanvas({
     stars.userData = { nodes: visible }
     group.add(stars)
 
+    visible
+      .filter(node => node.kind !== 'task' && node.kind !== 'memory')
+      .forEach((node) => { group.add(makeLabelSprite(node, nodeColor(node))) })
+
     // --- orbit camera ---
-    const orbit = { theta: 0.7, phi: 0.35, dist: Math.max(900, Math.sqrt(Math.max(1, graph.nodes.length)) * 90), auto: true }
+    const orbit = { theta: 0.7, phi: 0.35, dist: Math.max(820, Math.sqrt(Math.max(1, graph.nodes.length)) * 82), auto: true }
     const applyCamera = (): void => {
       camera.position.set(
         orbit.dist * Math.cos(orbit.theta) * Math.cos(orbit.phi),
@@ -384,6 +461,7 @@ export function MemoryNebulaCanvas({
       if (time - last < targetFrameTime) return
       last = time
       if (orbit.auto && !reduced) orbit.theta += 0.0012
+      if (!reduced) dustGroup.rotation.y += 0.00006
       applyCamera()
       const timeUniform = starMaterial.uniforms.uTime
       const alphaUniform = starMaterial.uniforms.uAlphaScale
@@ -423,7 +501,9 @@ export function MemoryNebulaCanvas({
       element.removeEventListener('dblclick', double)
       element.removeEventListener('wheel', wheel)
       scene.traverse((object) => {
-        const mesh = object as unknown as { geometry?: THREE.BufferGeometry; material?: THREE.Material | THREE.Material[] }
+        const mesh = object as { geometry?: THREE.BufferGeometry; material?: THREE.Material | THREE.Material[] }
+        const texture = (object.userData as { texture?: THREE.Texture }).texture
+        texture?.dispose()
         mesh.geometry?.dispose()
         if (Array.isArray(mesh.material)) mesh.material.forEach((material) =>{  material.dispose() })
         else mesh.material?.dispose()

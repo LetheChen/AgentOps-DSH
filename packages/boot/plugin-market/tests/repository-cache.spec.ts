@@ -9,6 +9,34 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { DetailFailure } from '@deepseek-ai/dsh-plugin-detail'
 import { RepositoryCache, type RepositoryCacheOptions } from '../src/repository-cache.ts'
 
+/** Set while a test needs `git --version` to fail with execa's deadline-kill shape. */
+const probeGate = vi.hoisted(() => ({ slowVersionProbe: false }))
+
+vi.mock('execa', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('execa')>()
+  const realExeca = actual.execa
+  // A real 1 ms deadline races Git's process startup and flaked under CI concurrency
+  // (run 45317753974): the probe sometimes answered before the kill fired, so the
+  // deadline failure surfaced as a plain `git init` error instead. The synthetic
+  // deadline failure keeps the probe failure deterministic on every platform.
+  const timeoutFailure = {
+    failed: true,
+    isMaxBuffer: false,
+    stdout: Buffer.alloc(0),
+    stderr: Buffer.alloc(0),
+    shortMessage: 'Command timed out after 1 milliseconds',
+  }
+  return {
+    ...actual,
+    async execa(command: string, args: readonly string[], options?: import('execa').Options) {
+      if (!probeGate.slowVersionProbe || command !== 'git' || args.at(-1) !== '--version') {
+        return realExeca(command, args, options)
+      }
+      return timeoutFailure
+    },
+  }
+})
+
 /** Await a rejection that matches `fields` and whose message contains `message`. */
 async function expectRejection(promise: Promise<unknown>, fields: object, message: string): Promise<void> {
   await expect(promise).rejects.toMatchObject(fields)
@@ -151,7 +179,12 @@ it('reports an unreachable host as a network failure, a failed local command as 
   expect(readdirSync(join(root, 'cache'))).toEqual([])
   // Git that cannot answer `git --version` within the deadline cannot run.
   const other = repository('t2', { 'README.md': 'x' })
-  await expectRejection(cache({ timeoutMs: 1 }).read(other.url, other.commit, 'README.md', 100, signal), { reason: 'git-unavailable' }, 'timed out')
+  probeGate.slowVersionProbe = true
+  try {
+    await expectRejection(cache({ timeoutMs: 1 }).read(other.url, other.commit, 'README.md', 100, signal), { reason: 'git-unavailable' }, 'timed out')
+  } finally {
+    probeGate.slowVersionProbe = false
+  }
   vi.stubEnv('PATH', join(root, 'no-git'))
   const missing = cache().read(other.url, other.commit, 'README.md', 100, signal)
   await expectRejection(missing, { reason: 'git-unavailable' }, 'git --version')

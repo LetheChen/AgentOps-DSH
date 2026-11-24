@@ -10,6 +10,7 @@
 /** Harness identifiers accepted by the Agent definition parser. */
 export type ExecutionBackend = 'dsh_native' | 'codex' | 'claude_code' | 'auto'
 
+/** Harnesses an Agent definition can run on. */
 export type AgentHarness =
   | 'local_llm'
   | 'claude_sdk'

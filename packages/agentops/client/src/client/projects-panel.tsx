@@ -70,7 +70,11 @@ export function ProjectsPanel(): ReactElement {
     setError('')
   }, [])
 
-  useEffect(() => { void load().catch((reason) =>{  setError(reason instanceof Error ? reason.message : String(reason)) }) }, [load])
+  useEffect(() => {
+    void load().catch((reason: unknown) => {
+      setError(reason instanceof Error ? reason.message : String(reason))
+    })
+  }, [load])
 
   const create = useCallback(async () => {
     if (name.trim() === '') return

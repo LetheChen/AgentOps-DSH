@@ -3,6 +3,7 @@
 import process from 'node:process'
 
 import config from './config.json' with { type: 'json' }
+import { projectManagementEnabled } from './rules.mjs'
 
 const API_VERSION = '2026-03-10'
 
@@ -66,12 +67,13 @@ export async function graphql(query, variables) {
  * Read one Issue together with its Project planning values.
  * @param {number} number Same-repository Issue number.
  * @param {string|null|undefined} status Optional known Project status.
+ * @param {object} projectSettings Project identity and field configuration.
  * @returns {Promise<object|null>} Issue snapshot, or null when the number identifies a pull request.
  */
-export async function issueSnapshot(number, status = undefined) {
+export async function issueSnapshot(number, status = undefined, projectSettings = config) {
   const issue = await api(`/repos/${config.organization}/${config.repository}/issues/${number}`)
   if (issue.pull_request) return null
-  const context = await projectContext(number)
+  const context = await projectContext(number, false, false, projectSettings)
   return {
     number,
     nodeId: issue.node_id,
@@ -89,9 +91,13 @@ export async function issueSnapshot(number, status = undefined) {
  * @param {number} number Same-repository Issue number.
  * @param {boolean} includeStatusActor Include the latest matching status-event actor.
  * @param {boolean} includeStartDate Include and validate the Project Start Date field.
+ * @param {object} projectSettings Project identity and field configuration.
  * @returns {Promise<object>} Project, Issue, fields, optional item, and status actor; never writes.
  */
-export async function projectContext(number, includeStatusActor = false, includeStartDate = false) {
+export async function projectContext(number, includeStatusActor = false, includeStartDate = false, projectSettings = config) {
+  if (projectSettings.projectNumber === null || projectSettings.projectTitle === null) {
+    return { project: null, issue: null, statusField: null, priorityField: null, startDateField: null, item: null, statusActor: null }
+  }
   const data = await graphql(
     `query(
       $organization: String!
@@ -162,38 +168,38 @@ export async function projectContext(number, includeStatusActor = false, include
       organization: config.organization,
       repository: config.repository,
       number,
-      project: config.projectNumber,
+      project: projectSettings.projectNumber,
       includeStatusActor,
       includeStartDate,
-      priorityField: config.priorityField,
-      startDateField: config.startDateField,
+      priorityField: projectSettings.priorityField,
+      startDateField: projectSettings.startDateField,
     },
   )
   const project = data.organization?.projectV2
   const issue = data.repository?.issue
-  if (!project || project.title !== config.projectTitle) throw new Error('目标 Project 不存在或标题不匹配')
+  if (!project || project.title !== projectSettings.projectTitle) throw new Error('目标 Project 不存在或标题不匹配')
   if (!issue) throw new Error(`#${number} 不存在`)
   const statusField = project.fields.nodes.find((field) => field?.name === 'Status')
   if (!statusField) throw new Error('Project 缺少 Status 字段')
-  const priorityField = project.fields.nodes.find((field) => field?.name === config.priorityField)
+  const priorityField = project.fields.nodes.find((field) => field?.name === projectSettings.priorityField)
   if (!priorityField) throw new Error(`Project 缺少 ${config.priorityField} 字段`)
   if (priorityField.dataType !== 'SINGLE_SELECT') {
-    throw new Error(`Project ${config.priorityField} 字段必须为 Single Select`)
+    throw new Error(`Project ${projectSettings.priorityField} 字段必须为 Single Select`)
   }
   if (priorityField.isIssueField) {
-    throw new Error(`Project ${config.priorityField} 字段必须为 Project custom field`)
+    throw new Error(`Project ${projectSettings.priorityField} 字段必须为 Project custom field`)
   }
   const startDateField = includeStartDate
-    ? project.fields.nodes.find((field) => field?.name === config.startDateField)
+    ? project.fields.nodes.find((field) => field?.name === projectSettings.startDateField)
     : null
   if (includeStartDate && !startDateField) {
-    throw new Error(`Project 缺少 ${config.startDateField} 字段`)
+    throw new Error(`Project 缺少 ${projectSettings.startDateField} 字段`)
   }
   if (startDateField && startDateField.dataType !== 'DATE') {
-    throw new Error(`Project ${config.startDateField} 字段必须为 Date`)
+    throw new Error(`Project ${projectSettings.startDateField} 字段必须为 Date`)
   }
   if (startDateField?.isIssueField) {
-    throw new Error(`Project ${config.startDateField} 字段必须为 Project Date 字段`)
+    throw new Error(`Project ${projectSettings.startDateField} 字段必须为 Project Date 字段`)
   }
   const item = issue.projectItems.nodes.find((candidate) => candidate.project.id === project.id)
   const latestStatusEvent = issue.timelineItems?.nodes
@@ -210,11 +216,12 @@ export async function projectContext(number, includeStatusActor = false, include
  * Read Project membership and add the Issue when absent.
  * @param {number} number Same-repository Issue number.
  * @param {boolean} includeStartDate Include and validate the Project Start Date field.
+ * @param {object} projectSettings Project identity and field configuration.
  * @returns {Promise<object>} Project context with an existing or newly added item.
  */
-export async function ensureProjectItem(number, includeStartDate = false) {
-  const context = await projectContext(number, false, includeStartDate)
-  if (context.item) return context
+export async function ensureProjectItem(number, includeStartDate = false, projectSettings = config) {
+  const context = await projectContext(number, false, includeStartDate, projectSettings)
+  if (context.project === null || context.item) return context
   const data = await graphql(
     `mutation($projectId: ID!, $contentId: ID!) {
       addProjectV2ItemById(input: {projectId: $projectId, contentId: $contentId}) {
@@ -238,11 +245,12 @@ export async function ensureProjectItem(number, includeStartDate = false) {
  * Initialize one Issue's Project Start Date when it is empty.
  * @param {number} number Same-repository Issue number.
  * @param {string} date Date in YYYY-MM-DD form.
+ * @param {object} projectSettings Project identity and field configuration.
  * @returns {Promise<void>} Resolves after the conditional Project update.
  */
-export async function initializeIssueStartDate(number, date) {
-  const context = await ensureProjectItem(number, true)
-  if (context.item.startDateValue?.date) return
+export async function initializeIssueStartDate(number, date, projectSettings = config) {
+  const context = await ensureProjectItem(number, true, projectSettings)
+  if (context.item === null || context.item.startDateValue?.date) return
   await graphql(
     `mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $date: Date!) {
       updateProjectV2ItemFieldValue(input: {
@@ -268,6 +276,7 @@ export async function initializeIssueStartDate(number, date) {
  * @returns {Promise<void>} Resolves after the optional update; rejects an unknown option.
  */
 export async function updateStatus(context, status) {
+  if (context.project === null || context.item === null) return
   const option = context.statusField.options.find((candidate) => candidate.name === status)
   if (!option) throw new Error(`Status 不存在：${status}`)
   if (context.item.fieldValueByName?.name === status) return

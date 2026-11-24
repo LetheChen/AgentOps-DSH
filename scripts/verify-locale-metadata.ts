@@ -5,6 +5,7 @@ import { detailPath } from '../packages/util/plugin-detail/src/document.ts'
 import { PRODUCT_PACKAGE_POLICY } from './product-package-policy.ts'
 import { SHIPPED_LOCALE_IDS, localeTokens, hasInvisibleLocaleCharacters } from './shipped-locales.ts'
 import { collectConfigCatalog } from './gen-config-catalog.ts'
+import { isForkOwnedPackagePath } from './fork-package-policy.ts'
 
 /** Flatten metadata strings and reject values that cannot be translated. */
 function strings(value: unknown, key = ''): Record<string, string> {
@@ -21,9 +22,10 @@ function strings(value: unknown, key = ''): Record<string, string> {
 export function localeMetadataProblems(root: string): string[] {
   const directories = new Set(globSync('packages/**/locale/**/*.json', {
     cwd: root, exclude: ['packages/**/node_modules/**', 'packages/**/lib/**', 'packages/**/tests/**'],
-  }).map(file => file.replaceAll('\\', '/')).filter(file => SHIPPED_LOCALE_IDS.some(language => basename(file) === `${language}.json`)).map(file => posix.dirname(file)))
+  }).map(file => file.replaceAll('\\', '/')).filter(file => !isForkOwnedPackagePath(file)).filter(file => SHIPPED_LOCALE_IDS.some(language => basename(file) === `${language}.json`)).map(file => posix.dirname(file)))
   for (const entry of collectConfigCatalog(root)) {
     const dir = entry.dir.replaceAll('\\', '/')
+    if (isForkOwnedPackagePath(dir)) continue
     if (PRODUCT_PACKAGE_POLICY[dir]?.category === 'test') continue
     if (entry.kind !== 'config' && entry.kind !== 'no-config') continue
     const directory = `${dir}/locale`

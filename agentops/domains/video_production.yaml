@@ -19,5 +19,5 @@ default_permissions:
     - submit_form
     - approval_flow
 default_knowledge_bases:
-  - video_production
+  - content_creation
 cost_limit_per_run: 5.0

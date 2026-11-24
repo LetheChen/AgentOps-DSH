@@ -31,6 +31,7 @@ async function execute(source: string): Promise<Result> {
   const phase = (title: string) => {
     log.push(`phase:${title}`)
   }
+  // eslint-disable-next-line typescript/no-unsafe-assignment -- vm.runInNewContext is typed any by Node.
   const value = await new Script(source).runInNewContext({ agent, parallel, phase })
   return { value, trace: { log } }
 }

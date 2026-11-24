@@ -1,21 +1,21 @@
 # yaml 里的 KB 键 → 旧域 → DSH space
-# DSH 侧的空间由 packages/agentops/knowledge-base/ 定义并同步（finance / hr / ops / weekly / smart_query）。
+# DSH 侧的空间由 packages/agentops/knowledge-base/ 定义并同步。
 # space: null 表示该键还没有对应空间，生成器不会把它写进 readableSpaces。
-version: 3
-spaces_available: [finance, hr, ops, weekly, smart_query, project_analysis]
+version: 5
+spaces_available: [finance, hr, ops, office_docs, project_analysis, technical_docs, learning, smart_query, content_creation, review]
 keys:
   shared_kb:
     domain: null
-    spaces: [finance, hr, ops, weekly, smart_query, project_analysis]
-    note: "通用知识：让管理与方案类 Agent 同时读取制度、手册、周报和问数口径"
+    spaces: [finance, hr, ops, office_docs, project_analysis, technical_docs, learning, smart_query, content_creation, review]
+    note: "通用知识：覆盖制度、办公档案、项目分析、技术文档、学习资料、业务资产与内容资产"
   smart_analysis_kb:
     domain: smart_analysis
     space: smart_query
-    note: "分析域共享问数口径与指标定义"
+    note: "分析域共享业务资产中的业务口径与数据目录"
   smart_query_kb:
     domain: smart_query
     space: smart_query
-    note: "问数口径：指标定义、时间口径、常见问法与能力边界"
+    note: "业务资产：业务口径、数据目录、查询方法与能力边界"
   smart_approval_kb:
     domain: smart_approval
     spaces: [finance, hr]
@@ -28,7 +28,23 @@ keys:
     domain: smart_ops
     space: ops
     note: "运维手册"
-  video_production:
+  content_creation:
     domain: video_production
-    space: null
-    note: "旧域 video_production；暂无对应空间"
+    space: content_creation
+    note: "视频模板、动效卡片、周报模板与内容规范"
+  office_docs_kb:
+    domain: manager
+    space: office_docs
+    note: "周报、会议记录、系统规划与任务总结"
+  technical_docs_kb:
+    domain: manager
+    space: technical_docs
+    note: "架构、接口、部署、故障排查与工程规范"
+  learning_kb:
+    domain: manager
+    space: learning
+    note: "课程、书籍文章与学习笔记"
+  review_kb:
+    domain: manager
+    space: review
+    note: "无法确定业务归属或分类冲突的待复核材料"

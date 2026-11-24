@@ -16,5 +16,5 @@ default_permissions:
     - approval_flow
 default_knowledge_bases:
   - smart_analysis_kb
-  - smart_query_kb                       # 分析域可读问数域知识库（数据字典）
+  - smart_query_kb                       # 分析域可读业务资产域知识（业务口径与数据目录）
 cost_limit_per_run: 1.0

@@ -6,14 +6,17 @@
   en: a374f70c56b3f221
   zh: a07f7a9ba9af40fc
 /safety/experimental-status:
-  en: 39a995a6c819f73e
-  zh: e577df19392736ac
+  en: dcd00846e5e63a4c
+  zh: 60b3bd31e5e682bc
 /safety/sandbox-limitations:
-  en: a2b6cf1311f3abb6
-  zh: c3694663312f4d6c
+  en: 64e667bfaf48489a
+  zh: d1af63998e367bfb
 /safety/responsible-use:
   en: ca3e9da7c0b360fe
   zh: c0a6891a197d48cd
+/safety/reporting-a-vulnerability:
+  en: 7caa0def4a6384e6
+  zh: 85b8ce508b7ab0b6
 /safety/no-warranty-or-liability:
-  en: 71a2989f530f2018
-  zh: e90e55f11068a91f
+  en: d7a8d06d7c28a0ca
+  zh: fb6781ae3782447c

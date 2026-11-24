@@ -20,6 +20,7 @@ import {
   type WikiPageType,
   type WikiSnapshot,
 } from './knowledge-wiki-api.ts'
+import { KnowledgeMarkdown } from './knowledge-markdown.tsx'
 
 const DRAFT_STATUS: Readonly<Record<WikiDraftStatus, string>> = {
   inbox: '待检查',
@@ -67,6 +68,7 @@ export function WikiWorkbench(): ReactElement {
   const [uploadSpace, setUploadSpace] = useState('')
   const [autoPublish, setAutoPublish] = useState(true)
   const [uploading, setUploading] = useState(false)
+  const [previewExpanded, setPreviewExpanded] = useState(false)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
@@ -78,7 +80,6 @@ export function WikiWorkbench(): ReactElement {
     try {
       const next = await fetchWikiSnapshot()
       setSnapshot(next)
-      setUploadSpace(current => current !== '' ? current : next.spaces[0]?.id ?? '')
       setSelectedId(current => current === '' || !next.drafts.some(draft => draft.id === current)
         ? next.drafts.find(draft => draft.status !== 'archived')?.id ?? ''
         : current)
@@ -91,13 +92,15 @@ export function WikiWorkbench(): ReactElement {
 
   useEffect(() => { void load() }, [load])
 
+  useEffect(() => { setPreviewExpanded(false) }, [selectedId])
+
   const selected = useMemo<WikiDraft | null>(() =>
     snapshot?.drafts.find(draft => draft.id === selectedId) ?? null, [selectedId, snapshot])
 
   useEffect(() => {
-    if (selected === null || snapshot === null) return
-    setTargetSpace(current => current !== '' ? current : selected.targetSpaceId ?? snapshot.spaces[0]?.id ?? '')
-  }, [selected, snapshot])
+    if (selected === null) return
+    setTargetSpace(selected.targetSpaceId ?? '')
+  }, [selected])
 
   const act = async (kind: 'check' | 'publish' | 'archive'): Promise<void> => {
     if (selected === null) return
@@ -156,14 +159,14 @@ export function WikiWorkbench(): ReactElement {
           content: extracted.content,
           sourceKind: 'archive',
           sourceRef: `upload:${file.name}`,
-          targetSpaceId: uploadSpace,
+          ...(uploadSpace === '' ? {} : { targetSpaceId: uploadSpace }),
         })
         imported += 1
         setSelectedId(draft.id)
-        setTargetSpace(uploadSpace)
+        setTargetSpace(draft.targetSpaceId ?? '')
         if (draft.status === 'conflicted') conflicted += 1
-        if (autoPublish && draft.status === 'ready' && uploadSpace !== '') {
-          await publishWikiDraft(draft.id, uploadSpace, draft.categoryPath)
+        if (autoPublish && draft.status === 'ready' && draft.targetSpaceId !== null && draft.targetSpaceId !== 'review') {
+          await publishWikiDraft(draft.id, draft.targetSpaceId, draft.categoryPath)
           published += 1
         }
       } catch (reason) {
@@ -188,23 +191,29 @@ export function WikiWorkbench(): ReactElement {
 
   return (
     <div className="kh-wiki">
-      <div className="kh-wiki-stats">
-        <div><strong>{snapshot.stats.drafts}</strong><span>草稿箱</span></div>
-        <div><strong>{snapshot.stats.ready}</strong><span>可发布</span></div>
-        <div><strong>{snapshot.stats.conflicted}</strong><span>待处理冲突</span></div>
-        <div><strong>{snapshot.stats.published}</strong><span>Wiki 页面</span></div>
-      </div>
-
-      <div className="kh-wiki-flow" aria-label="LLM Wiki 三层架构">
-        <div><b>01 · Schema</b><span>页面类型、晋升规则、交叉引用和操作日志</span></div>
-        <div><b>02 · Raw</b><span>任务报告与原始资料只读入箱，保留来源</span></div>
-        <div><b>03 · Wiki</b><span>检查通过后发布为可检索页面并进入记忆星云</span></div>
-      </div>
+      <section className="kh-wiki-overview">
+        <div className="kh-wiki-stats">
+          <div><strong>{snapshot.stats.drafts}</strong><span>草稿箱</span></div>
+          <div><strong>{snapshot.stats.ready}</strong><span>可发布</span></div>
+          <div><strong>{snapshot.stats.conflicted}</strong><span>待处理冲突</span></div>
+          <div><strong>{snapshot.stats.published}</strong><span>Wiki 页面</span></div>
+        </div>
+        <div className="kh-wiki-rule-strip" aria-label="知识归档判断顺序">
+          <span>归档判断</span>
+          <b>知识归属</b>
+          <i>→</i>
+          <b>长期用途</b>
+          <i>→</i>
+          <b>文档类型</b>
+          <i>→</i>
+          <b>待复核</b>
+        </div>
+      </section>
 
       <section className="kh-wiki-upload-card">
         <div className="kh-wiki-upload-copy">
-          <h3>上传技术文档</h3>
-          <p>支持 Markdown / TXT / JSON / YAML / CSV / HTML。上传后自动分类、检查冲突并进入 Raw 草稿箱。</p>
+          <h3>导入并自动归档</h3>
+          <p>支持 Markdown / TXT / JSON / YAML / CSV / HTML。Agent 先判断知识域，再选择稳定分类并进入审核队列。</p>
         </div>
         <div className="kh-wiki-upload-actions">
           <label className="kh-wiki-file-picker">
@@ -212,6 +221,7 @@ export function WikiWorkbench(): ReactElement {
             <input type="file" multiple accept=".md,.markdown,.txt,.json,.yaml,.yml,.csv,.html,.htm" disabled={uploading} onChange={(event) => { void upload(event.target.files); event.target.value = '' }} />
           </label>
           <select value={uploadSpace} onChange={(event) => { setUploadSpace(event.target.value) }} aria-label="上传目标知识空间">
+            <option value="">自动判断知识域</option>
             {snapshot.spaces.map(space => <option key={space.id} value={space.id}>{space.name}</option>)}
           </select>
           <label className="kh-wiki-auto-publish"><input type="checkbox" checked={autoPublish} onChange={(event) => { setAutoPublish(event.target.checked) }} />检查通过后自动发布</label>
@@ -224,7 +234,7 @@ export function WikiWorkbench(): ReactElement {
       <div className="kh-wiki-grid">
         <section className="kh-wiki-inbox">
           <div className="kh-wiki-section-head">
-            <div><h3>Raw 草稿箱</h3><p>任务报告与技术资料先进入这里</p></div>
+            <div><h3>待审队列</h3><p>Agent 已判断目标域，等待检查或发布</p></div>
             <button type="button" className="btn-secondary btn-sm" onClick={() => { void load() }}>刷新</button>
           </div>
           {visibleDrafts.length === 0 ? <div className="kh-empty">暂无待处理草稿</div> : (
@@ -234,9 +244,14 @@ export function WikiWorkbench(): ReactElement {
                   key={draft.id}
                   type="button"
                   className={`kh-wiki-draft${draft.id === selectedId ? ' is-active' : ''}`}
-                  onClick={() => { setSelectedId(draft.id); setTargetSpace(draft.targetSpaceId ?? snapshot.spaces[0]?.id ?? '') }}
+                  onClick={() => { setSelectedId(draft.id); setTargetSpace(draft.targetSpaceId ?? '') }}
                 >
-                  <span><b>{draft.title}</b><small>{PAGE_TYPE[draft.pageType]} · {draft.categoryPath} · {draft.sourceKind}</small></span>
+                  <span>
+                    <b>{draft.title}</b>
+                    <small>
+                      {snapshot.spaces.find(space => space.id === draft.targetSpaceId)?.name ?? '待判断'} · {draft.categoryPath === '' ? '空间根目录' : draft.categoryPath}
+                    </small>
+                  </span>
                   <em className={`kh-wiki-status is-${draft.status}`}>{DRAFT_STATUS[draft.status]}</em>
                 </button>
               ))}
@@ -253,7 +268,7 @@ export function WikiWorkbench(): ReactElement {
               </div>
               <div className="kh-wiki-detail-meta">
                 <span>类型 <b>{PAGE_TYPE[selected.pageType]}</b></span>
-                <span>分类 <b>{selected.categoryPath}</b></span>
+                <span>分类 <b>{selected.categoryPath === '' ? '空间根目录' : selected.categoryPath}</b></span>
                 <span>版本 <b>v{selected.contentHash.slice(0, 8)}</b></span>
                 <span>发现 <b>{selected.conflicts.length}</b></span>
                 <span>目标 <b>{snapshot.spaces.find(space => space.id === selected.targetSpaceId)?.name ?? '发布时选择'}</b></span>
@@ -266,13 +281,21 @@ export function WikiWorkbench(): ReactElement {
                   </div>
                 ))}
               </div>
-              <pre className="kh-wiki-preview">{selected.content}</pre>
+              <KnowledgeMarkdown className={`kh-wiki-preview${previewExpanded ? ' is-expanded' : ''}`} text={selected.content} />
+              <button
+                type="button"
+                className="btn-secondary btn-sm kh-wiki-preview-toggle"
+                aria-expanded={previewExpanded}
+                onClick={() => { setPreviewExpanded(value => !value) }}
+              >
+                {previewExpanded ? '收起全文' : '查看全文'}
+              </button>
               <div className="kh-wiki-actions">
                 <select value={targetSpace} onChange={(event) => { setTargetSpace(event.target.value) }} aria-label="目标知识空间">
                   {snapshot.spaces.map(space => <option key={space.id} value={space.id}>{space.name}</option>)}
                 </select>
                 <button type="button" className="btn-secondary btn-sm" disabled={busy !== ''} onClick={() => { void act('check') }}>{busy === 'check' ? '检查中…' : '重新检查'}</button>
-                <button type="button" className="btn-primary btn-sm" disabled={busy !== '' || selected.status === 'published' || selected.status === 'archived'} onClick={() => { void act('publish') }}>{busy === 'publish' ? '发布中…' : '创建 Wiki'}</button>
+                <button type="button" className="btn-primary btn-sm" disabled={busy !== '' || selected.status === 'published' || selected.status === 'archived'} onClick={() => { void act('publish') }}>{busy === 'publish' ? '发布中…' : '发布到知识库'}</button>
                 <button type="button" className="btn-secondary btn-sm" disabled={busy !== '' || selected.status === 'published' || selected.status === 'archived'} onClick={() => { void act('archive') }}>归档草稿</button>
               </div>
             </>
@@ -281,7 +304,7 @@ export function WikiWorkbench(): ReactElement {
 
         <aside className="kh-wiki-side">
           <section>
-            <div className="kh-wiki-section-head"><div><h3>分类目录</h3><p>Agent 自动维护 · {snapshot.categories.filter(category => category.reviewStatus === 'auto').length} 个待确认</p></div></div>
+            <div className="kh-wiki-section-head"><div><h3>分类目录</h3><p>自动维护 · {snapshot.categories.filter(category => category.reviewStatus === 'auto').length} 个待确认</p></div></div>
             <div className="kh-wiki-category-list">
               {snapshot.categories.slice(0, 12).map(category => (
                 <div key={`${category.spaceId}-${category.path}`}>

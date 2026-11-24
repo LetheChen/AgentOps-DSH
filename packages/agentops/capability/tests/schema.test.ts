@@ -4,7 +4,7 @@ import test from 'node:test'
 import { CAPABILITY_TABLES, SCHEMA_VERSION, createCapabilitySchema, readSchemaVersion } from '../src/schema.ts'
 import { DatabaseSync } from 'node:sqlite'
 
-test('schema creates the versioned capability tables', () => {
+void test('schema creates the versioned capability tables', () => {
   const db = new DatabaseSync(':memory:')
   try {
     createCapabilitySchema(db)

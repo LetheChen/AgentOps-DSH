@@ -146,7 +146,7 @@ function parseTier(value: unknown, issues: ValidationIssue[], path: string): Tie
   const raw = readString(value)
   const upper = raw?.toUpperCase()
   if (upper !== undefined && (TIERS as readonly string[]).includes(upper)) return upper as Tier
-  issues.push({ path, message: `未知 tier：${String(value)}，按 T2 处理` })
+  issues.push({ path, message: `未知 tier：${typeof value === 'string' ? value : JSON.stringify(value)}，按 T2 处理` })
   return 'T2'
 }
 

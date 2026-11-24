@@ -1,0 +1,43 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/agentops/capability/README.md
+/:
+  en: 239a62fb7ac40329
+  zh: 005b51fe33e4fb7b
+/agentops-dsh-capability:
+  en: b505d1f867c048c7
+  zh: c807d82fd8275a62
+/agentops-dsh-capability/summary:
+  en: 88f51ec47b356871
+  zh: 7974dbe40cf1a076
+/agentops-dsh-capability/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 70cecffc6351dc62
+/agentops-dsh-capability/use-this-package:
+  en: d778d4a9008f66c0
+  zh: ac95ca125d12b86e
+/agentops-dsh-capability/use-this-package/when-to-choose-it:
+  en: 9819fd1a4509345a
+  zh: 2b08b1274aa2bb4b
+/agentops-dsh-capability/use-this-package/minimal-configuration:
+  en: 523ddafa023bd43a
+  zh: 868f5da5c916119c
+/agentops-dsh-capability/understand-the-implementation:
+  en: 007eaed11765eb2f
+  zh: 2e263af70cec5179
+/agentops-dsh-capability/further-exploration:
+  en: 0b15f6539aac792b
+  zh: 1e91300df50e2cfc
+/agentops-dsh-capability/model-experience:
+  en: 9feb8f7f2a38dc91
+  zh: 0e2713f892bb7c77
+/agentops-dsh-capability/model-experience/kv-cache-effect:
+  en: c44b7642bc02948e
+  zh: a8b4e2a7dee488f6
+/agentops-dsh-capability/known-limitations-and-deferred-work:
+  en: 3123a726edd5d5e4
+  zh: 73048d1001f1fc32
+/agentops-dsh-capability/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 8ec3e73528ddb1a6

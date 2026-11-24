@@ -7,6 +7,7 @@ import config from './config.json' with { type: 'json' }
 import { api, projectContext } from './github.mjs'
 import {
   parseReferences,
+  projectManagementEnabled,
   retainIssueReferences,
   requiresPullRequestPolicy,
   validatePullRequest,
@@ -64,7 +65,7 @@ export async function pullRequestSnapshot(number, includeProject = true) {
   snapshot.reviewCount = reviews.length
   if (!requiresPullRequestPolicy(snapshot)) return snapshot
   Object.assign(snapshot, await resolvingReferencesSnapshot(number, pull))
-  if (includeProject) {
+  if (includeProject && projectManagementEnabled()) {
     for (const issueNumber of snapshot.references.resolving) {
       const context = await projectContext(issueNumber)
       snapshot.issues.get(issueNumber).priority = context.item?.priorityValue?.name ?? null
@@ -97,7 +98,7 @@ const EXEMPT_MESSAGE =
 export async function runPullRequestPreflight(event) {
   const pull = await pullRequestSnapshot(event.pull_request.number, false)
   const eligible = requiresPullRequestPolicy(pull)
-  const needsProject = eligible && pull.references.resolving.length > 0
+  const needsProject = eligible && projectManagementEnabled() && pull.references.resolving.length > 0
   if (process.env.GITHUB_OUTPUT) {
     fs.appendFileSync(
       process.env.GITHUB_OUTPUT,

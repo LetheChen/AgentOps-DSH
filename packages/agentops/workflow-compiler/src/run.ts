@@ -57,8 +57,10 @@ export interface RunNodeDeps {
   readonly sleep?: (ms: number, signal: AbortSignal) => Promise<void>
 }
 
-function abortReason(signal: AbortSignal): unknown {
-  return signal.reason === undefined ? new Error('已取消') : signal.reason
+function abortReason(signal: AbortSignal): Error {
+  // AbortSignal.reason is typed any by the platform declaration.
+  const reason = (signal as { readonly reason?: unknown }).reason
+  return reason instanceof Error ? reason : new Error(typeof reason === 'string' ? reason : '已取消')
 }
 
 const defaultSleep = (ms: number, signal: AbortSignal): Promise<void> =>

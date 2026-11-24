@@ -147,12 +147,19 @@ function parseAuditEvent(value: unknown): AuditEvent | undefined {
  * @param detail - audit detail as reported by the vault.
  * @returns the scalar fields joined into one line.
  */
+function primitiveText(value: unknown): string {
+  if (typeof value === 'string') return value
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') return String(value)
+  if (typeof value === 'symbol') return value.toString()
+  return ''
+}
+
 function describeDetail(detail: unknown): string {
   if (!isRecord(detail)) return ''
   const parts: string[] = []
   for (const [key, value] of Object.entries(detail)) {
     if (value === null || value === undefined || typeof value === 'object') continue
-    parts.push(`${key}=${String(value)}`)
+    parts.push(`${key}=${primitiveText(value)}`)
   }
   return parts.join(' ')
 }

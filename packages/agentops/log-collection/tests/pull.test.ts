@@ -35,7 +35,7 @@ const config: SshInstanceConfig = {
   hostKeySha256: 'SHA256:rRUjsuVBpbHwjlYknyX1dwnlpu161cM3GDkmZ1bXxio', instanceRevision: 'credential-1',
 }
 
-test('probes host key before reading credential and writes the file', async () => {
+void test('probes host key before reading credential and writes the file', async () => {
   const { root, db, store } = fixture()
   const events: string[] = []
   const resolver: SshCapabilityResolver = {
@@ -63,7 +63,7 @@ test('probes host key before reading credential and writes the file', async () =
   }
 })
 
-test('rejects missing pinned host key before credential access', async () => {
+void test('rejects missing pinned host key before credential access', async () => {
   const { root, db, store } = fixture()
   let credentialReads = 0
   const resolver: SshCapabilityResolver = {
@@ -87,7 +87,34 @@ test('rejects missing pinned host key before credential access', async () => {
   }
 })
 
-test('rejects a preset without pull ACL', async () => {
+void test('rejects a host-key mismatch before credential access', async () => {
+  const { root, db, store } = fixture()
+  const events: string[] = []
+  const resolver: SshCapabilityResolver = {
+    resolveConfig: () => config,
+    readCredential: async () => { events.push('credential'); return { password: 'secret' } },
+  }
+  const transport: LogSftpTransport = {
+    probeHostKey: async () => {
+      events.push('probe')
+      throw new LogCollectionError('SSH_HOST_KEY_REJECTED', 'host key mismatch')
+    },
+    resolveRemotePaths: async () => [],
+    pullFile: async () => ({ bytes: 0, deltaStart: 0, deltaEnd: 0, skipped: false, mtimeMs: 0 }),
+  }
+  try {
+    await assert.rejects(
+      new PullLogsService(store, resolver, transport).pull({ tenantKey: 'tenant-a', agentPreset: 'log_puller', logTaskId: 'oa_approval' }),
+      (error: unknown) => error instanceof LogCollectionError && error.code === 'SSH_HOST_KEY_REJECTED',
+    )
+    assert.deepEqual(events, ['probe'])
+  } finally {
+    db.close()
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+void test('rejects a preset without pull ACL', async () => {
   const { root, db, store } = fixture()
   try {
     await assert.rejects(
@@ -108,10 +135,10 @@ test('rejects a preset without pull ACL', async () => {
   }
 })
 
-test('formats ssh host key fingerprints without padding', () => {
+void test('formats ssh host key fingerprints without padding', () => {
   assert.match(hostKeyFingerprint(Buffer.from('host-key')), /^SHA256:[A-Za-z0-9+/]+$/)
 })
-test('records per-file delta ranges and skips an unchanged remote file', async () => {
+void test('records per-file delta ranges and skips an unchanged remote file', async () => {
   const { root, db, store } = fixture()
   const resolver: SshCapabilityResolver = {
     resolveConfig: () => config,

@@ -13,13 +13,13 @@ function writeMap(body: string): string {
   return file
 }
 
-test('映射文件缺失时返回 missing 目录而不是抛错', () => {
+void test('映射文件缺失时返回 missing 目录而不是抛错', () => {
   const catalog = readToolCatalog(join(tmpdir(), 'agentops-absent-tool-map.yaml'))
   assert.equal(catalog.missing, true)
   assert.deepEqual(catalog.tools, [])
 })
 
-test('解析工具元数据、迁移目标与说明', () => {
+void test('解析工具元数据、迁移目标与说明', () => {
   const file = writeMap([
     'version: 3',
     'tools:',
@@ -64,14 +64,14 @@ test('解析工具元数据、迁移目标与说明', () => {
   assert.equal(sqlQuery.note, '无（DSH 侧走 sql_query）')
 })
 
-test('YAML 非法时返回空目录而不是抛错', () => {
+void test('YAML 非法时返回空目录而不是抛错', () => {
   const file = writeMap('tools: [oops\n  bad: :\n')
   const catalog = readToolCatalog(file)
   assert.equal(catalog.missing, false)
   assert.deepEqual(catalog.tools, [])
 })
 
-test('tools 不是映射时返回空目录', () => {
+void test('tools 不是映射时返回空目录', () => {
   const file = writeMap('version: 3\ntools:\n  - read_file\n')
   const catalog = readToolCatalog(file)
   assert.equal(catalog.missing, false)

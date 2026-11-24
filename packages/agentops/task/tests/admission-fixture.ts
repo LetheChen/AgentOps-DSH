@@ -47,6 +47,13 @@ export function admitCandidate(service: TaskService, options: AdmitCandidateOpti
     analysisNonGoals: '',
     dependencies: [],
   })
+  service.createAdmissionSnapshot({
+    candidateId: candidate.candidateId,
+    ifVersion: 2,
+    actor,
+    query: {},
+    searchCoverage: 'complete',
+  })
 
   const awaiting = service.getCandidate(candidate.candidateId)
   return service.approveCandidateGate({

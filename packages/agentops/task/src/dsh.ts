@@ -95,8 +95,9 @@ export function apply(ctx: Context, config: TaskPluginConfig = DEFAULT_CONFIG): 
   const api = new TaskHttpApi(service, db, {
     exportRootDir,
     listWorkspaces: () => {
-      const registry = ctx.get('workspaceRegistry' as never) as unknown as { list(): readonly { id: string; title: string; path: string }[] } | undefined
-      return registry?.list().map(workspace => ({ workspace_id: String(workspace.id), title: workspace.title, path: workspace.path })) ?? []
+      // The workspace registry is an optional cross-package service; its typed key is not augmented in this package.
+      const registry = (ctx.get as (name: string) => unknown)('workspaceRegistry') as { list(): readonly { id: string; title: string; path: string }[] } | undefined
+      return registry?.list().map(workspace => ({ workspace_id: workspace.id, title: workspace.title, path: workspace.path })) ?? []
     },
   })
   ctx.inject(['connection'], (connectionCtx) => {
@@ -120,9 +121,9 @@ export function apply(ctx: Context, config: TaskPluginConfig = DEFAULT_CONFIG): 
       requestBody: 'buffered',
       fetch: createTaskExecutionHandler(
         service,
-        (executionCtx as unknown as { sessionController: TaskSessionController | undefined }).sessionController,
-        (executionCtx as unknown as { permissionPresets?: TaskPermissionController }).permissionPresets,
-        (executionCtx as unknown as { agents?: TaskAgentRegistry }).agents,
+        (executionCtx.get as (name: string) => unknown)('sessionController') as TaskSessionController | undefined,
+        (executionCtx.get as (name: string) => unknown)('permissionPresets') as TaskPermissionController | undefined,
+        (executionCtx.get as (name: string) => unknown)('agents') as TaskAgentRegistry | undefined,
         resolveExecutionBackend,
       ),
     }), 'agentops-task: /api/agentops/task-execute')

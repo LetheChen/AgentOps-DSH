@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 
 import { buildAgentModelCatalog, type AgentModelLlm } from '../src/models.ts'
 
-test('buildAgentModelCatalog：返回提供方与模型目录', async () => {
+void test('buildAgentModelCatalog：返回提供方与模型目录', async () => {
   const llm: AgentModelLlm = {
     listProviders: () => [
       { id: 'deepseek', name: 'DeepSeek' },
@@ -33,7 +33,7 @@ test('buildAgentModelCatalog：返回提供方与模型目录', async () => {
   })
 })
 
-test('buildAgentModelCatalog：单个提供方失败不影响其他提供方', async () => {
+void test('buildAgentModelCatalog：单个提供方失败不影响其他提供方', async () => {
   const llm: AgentModelLlm = {
     listProviders: () => [
       { id: 'healthy', name: 'Healthy' },

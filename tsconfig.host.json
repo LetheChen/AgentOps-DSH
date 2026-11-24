@@ -580,6 +580,8 @@
     { "path": "./packages/agentops/security" },
     { "path": "./packages/agentops/db" },
     { "path": "./packages/agentops/vault" },
+    { "path": "./packages/agentops/deployment" },
+    { "path": "./packages/agentops/browser" },
     { "path": "./packages/agentops/bundle" },
     { "path": "./packages/agentops/client/tsconfig.host.json" },
     { "path": "./apps/cli" },

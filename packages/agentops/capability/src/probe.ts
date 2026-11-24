@@ -4,8 +4,9 @@
  * Database instances reuse their decrypted capability credential and run one
  * trivial read. SSH instances authenticate in-process, so a credential never
  * passes through a shell, and the same handshake can verify a pinned host-key
- * fingerprint. Capability kinds without a bridged probe return an explicit
- * unsupported result.
+ * fingerprint. Feishu docs probes mint an app token and read one cloud-drive
+ * page. Capability kinds without a bridged probe return an explicit unsupported
+ * result.
  *
  * @module @agentops/dsh-capability/probe
  */
@@ -16,7 +17,10 @@ import { createConnection } from 'node:net'
 import { readFileSync } from 'node:fs'
 import { Client } from './ssh2.ts'
 
-import { resolveWebhookUrl } from './validation.ts'
+import { authSubject, buildAffairRequest, readAffairRows, resolveOaSubject } from './oa-affairs.ts'
+import { RestTransport } from './rest.ts'
+import { TokenBroker } from './token-broker.ts'
+import { resolveFeishuDocsBaseUrl, resolveWebhookUrl } from './validation.ts'
 import type { CapabilityRuntime } from './types.ts'
 
 /** One capability instance probe result. */
@@ -55,12 +59,134 @@ async function pg(): Promise<typeof import('pg')> {
 /** Load MySQL only when a MySQL capability instance is actually probed. */
 async function mysql(): Promise<{ readonly createConnection: MysqlCreateConnection }> {
   const specifier = 'mysql2/promise'
-  mysqlDriver ??= (await import(specifier)) as unknown as { readonly createConnection: MysqlCreateConnection }
+  mysqlDriver ??= (await import(specifier)) as { readonly createConnection: MysqlCreateConnection }
   return mysqlDriver
 }
 
 function text(value: unknown): string {
   return typeof value === 'string' ? value.trim() : ''
+}
+
+function objectValue(value: unknown): Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {}
+}
+
+interface FeishuApiResponse {
+  readonly status: number
+  readonly ok: boolean
+  readonly body: Readonly<Record<string, unknown>>
+}
+
+async function feishuRequest(url: string, init: RequestInit, timeoutMs: number): Promise<FeishuApiResponse> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => { controller.abort() }, timeoutMs)
+  let response: Response | undefined
+  let body: unknown
+  try {
+    response = await fetch(url, {
+      ...init,
+      redirect: 'error',
+      credentials: 'omit',
+      cache: 'no-store',
+      signal: controller.signal,
+    })
+    body = await response.json()
+  } catch (reason) {
+    if (controller.signal.aborted) throw new Error(`飞书 API 请求超时（${timeoutMs}ms）`)
+    if (response === undefined) {
+      throw new Error(`飞书 API 不可达：${reason instanceof Error ? reason.message : String(reason)}`)
+    }
+    throw new Error(`飞书 API 返回了非 JSON 响应（HTTP ${response.status}）`)
+  } finally {
+    clearTimeout(timer)
+  }
+  return { status: response.status, ok: response.ok, body: objectValue(body) }
+}
+
+function feishuErrorDetail(body: Readonly<Record<string, unknown>>, status: number): string {
+  const code = typeof body.code === 'number' ? body.code : undefined
+  const message = text(body.msg) || text(body.message) || `HTTP ${status}`
+  return code === undefined ? message : `code=${code}: ${message}`
+}
+
+async function probeFeishuDocs(
+  runtime: CapabilityRuntime,
+  timeoutMs: number,
+  started: number,
+): Promise<CapabilityProbeResult> {
+  const appId = text(runtime.config.app_id)
+  if (appId === '') throw new Error('飞书文档实例缺少 App ID')
+  const appSecret = runtime.secret?.trim() ?? ''
+  if (appSecret === '') throw new Error('飞书文档实例缺少加密凭证 App Secret')
+  const baseUrl = resolveFeishuDocsBaseUrl(runtime.config.base_url)
+  const tokenResponse = await feishuRequest(
+    `${baseUrl}/open-apis/auth/v3/tenant_access_token/internal`,
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json; charset=utf-8' },
+      body: JSON.stringify({ app_id: appId, app_secret: appSecret }),
+    },
+    timeoutMs,
+  )
+  if (!tokenResponse.ok || tokenResponse.body.code !== 0) {
+    return {
+      ok: false,
+      detail: `飞书 tenant_access_token 获取失败：${feishuErrorDetail(tokenResponse.body, tokenResponse.status)}`,
+      elapsedMs: Date.now() - started,
+    }
+  }
+  const token = text(tokenResponse.body.tenant_access_token)
+  if (token === '') throw new Error('飞书 token 响应缺少 tenant_access_token')
+
+  const driveResponse = await feishuRequest(
+    `${baseUrl}/open-apis/drive/v1/files?page_size=1`,
+    {
+      method: 'GET',
+      headers: { authorization: `Bearer ${token}` },
+    },
+    timeoutMs,
+  )
+  if (!driveResponse.ok || driveResponse.body.code !== 0) {
+    return {
+      ok: false,
+      detail: `飞书凭证有效，但云空间读取失败：${feishuErrorDetail(driveResponse.body, driveResponse.status)}`,
+      elapsedMs: Date.now() - started,
+    }
+  }
+  const data = objectValue(driveResponse.body.data)
+  if (!Array.isArray(data.files)) throw new Error('飞书云空间响应缺少 files 数组')
+  return {
+    ok: true,
+    detail: `飞书 tenant_access_token 获取成功；云空间可读取（本页 ${data.files.length} 项）`,
+    elapsedMs: Date.now() - started,
+  }
+}
+
+async function probeOa(runtime: CapabilityRuntime, timeoutMs: number, started: number): Promise<CapabilityProbeResult> {
+  const subject = resolveOaSubject(runtime)
+  const target = buildAffairRequest('pending', subject)
+  const transport = new RestTransport(new TokenBroker())
+  const response = await transport.request(runtime, {
+    method: 'GET',
+    path: target.path,
+    query: { ...target.query, pageNo: '1', pageSize: '1' },
+    subject: authSubject(subject),
+    timeoutMs,
+  })
+  if (!response.ok) {
+    return { ok: false, detail: `OA 事项接口返回 ${response.status}`, elapsedMs: Date.now() - started }
+  }
+  if (response.json === undefined || response.json === null) {
+    return { ok: false, detail: 'OA 事项接口返回了非 JSON 响应', elapsedMs: Date.now() - started }
+  }
+  const rows = readAffairRows(response.json)
+  return {
+    ok: true,
+    detail: `OA token 获取成功；待办接口可访问（本页 ${rows.length} 条）`,
+    elapsedMs: Date.now() - started,
+  }
 }
 
 /**
@@ -78,8 +204,14 @@ export async function probeCapabilityInstance(
     if (runtime.capabilityId === 'ssh') {
       return await probeSsh(runtime, timeoutMs, started)
     }
+    if (runtime.capabilityId === 'feishu-docs') {
+      return await probeFeishuDocs(runtime, timeoutMs, started)
+    }
     if (runtime.capabilityId === 'feishu-bot' || runtime.capabilityId === 'wecom') {
       return probeWebhook(runtime)
+    }
+    if (runtime.capabilityId === 'oa') {
+      return await probeOa(runtime, timeoutMs, started)
     }
     if (runtime.capabilityId !== 'database') {
       return {

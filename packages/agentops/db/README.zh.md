@@ -24,7 +24,7 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用此包
 
-需要只读审计查询时使用；写入属于各领域包。
+需要只读审计查询时使用；写入属于各领域包。`sql_query` 与 `describe_database` 工具通过 `agentPresets.composedPreset(agent.ctx)` 解析执行 Agent 的实时组合 preset，因此页面绑定与工具调用用的是同一份事实来源；capability instance 也不会经由旧版 datasource 文件访问。
 
 -----
 
@@ -39,7 +39,7 @@ kind: "package-reference"
 | `src/guard.ts` | 表白名单与 schema 校验 |
 | `src/instances.ts` | 能力中心优先的实例解析与 AgentOps 访问策略归一化 |
 | `src/query.ts` | SQLite / MySQL / PostgreSQL 执行与表结构读取 |
-| `src/tools.ts` | 基于单一已解析实例的 `sql_query` 与 `describe_database` |
+| `src/tools.ts` | 基于单一已解析实例的 `sql_query` 与 `describe_database`，并返回 schema 元数据与展示 SQL |
 | `src/dsh.ts` | 插件入口与路由注册 |
 | `src/datasources.ts` | 旧数据源元信息 |
 
@@ -57,7 +57,7 @@ kind: "package-reference"
 <a id="model-experience"></a>
 ## 模型体验
 
-无。本包为 AgentOps 界面提供路由与存储，不构造模型输入。
+无，本包为 `sql_query` 与 `describe_database` 工具解析数据源连接，不构造模型输入。
 
 #### KV 缓存影响
 
@@ -67,7 +67,7 @@ kind: "package-reference"
 
 <a id="known-limitations-and-deferred-work"></a>
 
-- **白名单只校验带 schema 的引用** — 例如 `SELECT * FROM secrets` 这类裸表名目前会被放行；用 SQLite authorizer 取代字符串匹配仍待实现。
+- **白名单拒绝裸表名** — `FROM`/`JOIN` 目标必须带 schema 限定，除非是本地 CTE 或派生表名；完整的 SQL parser 与 SQLite authorizer 仍待实现。
 - **跨包引用源码** — 存储层直接引用 vault 包源码，而不是声明依赖。
 - **元数据回退会写样例** — 数据源文件不可读时用生成的样例行替代，而不是显式失败。
 

@@ -17,8 +17,6 @@ git fetch upstream            # 首次：git remote add upstream https://github.
 git log --oneline agentops-baseline..upstream/master   # 先看改了什么
 ```
 
-数据面不可用时的绕行（已验证）：在转发服务器上 clone 目标版本 → 只回传 `pack`（`--filter=blob:none`）→ 本地 `git index-pack` 放进 `.git/objects/pack/`。
-
 ## 2. 开分支合并
 
 ```powershell

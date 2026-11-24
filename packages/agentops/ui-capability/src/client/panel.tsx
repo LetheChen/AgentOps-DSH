@@ -244,7 +244,7 @@ export function configFromForm(
 
 function objectOf(input: string): Record<string, unknown> | null {
   try {
-    const parsed = JSON.parse(input) as unknown
+    const parsed: unknown = JSON.parse(input)
     return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) ? parsed as Record<string, unknown> : null
   } catch {
     return null

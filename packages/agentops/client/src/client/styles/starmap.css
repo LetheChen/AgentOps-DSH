@@ -30,7 +30,7 @@
 .sm-error {
   margin: 0;
   padding: 9px 12px;
-  border: 1px solid color-mix(in srgb, var(--state-error) 35%, var(--color-border-subtle));
+  border: 0.5px solid color-mix(in srgb, var(--state-error) 35%, var(--color-border-subtle));
   border-radius: var(--radius-md);
   background: var(--state-error-tint);
   color: var(--state-error);
@@ -43,7 +43,7 @@
   align-items: flex-end;
   gap: 10px;
   padding: 10px 12px;
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-lg);
   background: var(--color-bg-surface);
   box-shadow: 0 1px 0 color-mix(in srgb, var(--color-text-primary) 4%, transparent);
@@ -76,7 +76,7 @@
   gap: 8px;
   height: 34px;
   padding: 0 10px;
-  border: 1px solid var(--color-border-default);
+  border: 0.5px solid var(--color-border-default);
   border-radius: var(--radius-md);
   background: var(--color-bg-base);
   color: var(--color-text-tertiary);
@@ -107,7 +107,7 @@
   height: 34px;
   min-width: 130px;
   padding: 0 28px 0 10px;
-  border: 1px solid var(--color-border-default);
+  border: 0.5px solid var(--color-border-default);
   border-radius: var(--radius-md);
   outline: 0;
   background: var(--color-bg-base);
@@ -129,7 +129,7 @@
   display: inline-flex;
   align-items: center;
   height: 30px;
-  border: 1px solid var(--color-border-default);
+  border: 0.5px solid var(--color-border-default);
   border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--color-bg-base);
@@ -145,9 +145,11 @@
   cursor: pointer;
 }
 
+@media (hover: hover) {
 .sm-toolbar .sm-icon-button:hover {
   background: var(--color-bg-hover);
   color: var(--color-text-primary);
+}
 }
 
 .sm-zoom-value {
@@ -169,7 +171,7 @@
   position: relative;
   min-width: 0;
   overflow: hidden;
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-lg);
   background:
     radial-gradient(80% 65% at 18% 12%, var(--color-primary-tint), transparent 56%),
@@ -384,7 +386,7 @@
   top: 12px;
   left: 12px;
   padding: 5px 9px;
-  border: 1px solid var(--color-border-default);
+  border: 0.5px solid var(--color-border-default);
   border-radius: var(--radius-full);
   background: var(--color-bg-elevated);
   color: var(--color-text-secondary);
@@ -421,7 +423,7 @@
 
 .sm-insight-card {
   padding: 12px;
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-lg);
   background: var(--color-bg-surface);
 }
@@ -499,7 +501,7 @@
   width: 8px;
   height: 8px;
   flex: 0 0 auto;
-  border-radius: 50%;
+  border-radius: 50%; corner-shape: round;
 }
 
 .sm-dot-active { background: var(--color-primary-soft); box-shadow: 0 0 7px var(--color-primary); }
@@ -528,7 +530,7 @@
   gap: 7px 10px;
   margin-top: 12px;
   padding-top: 10px;
-  border-top: 1px solid var(--color-border-subtle);
+  border-top: 0.5px solid var(--color-border-subtle);
   color: var(--color-text-tertiary);
   font-size: 9.5px;
 }
@@ -543,8 +545,8 @@
   display: inline-block;
   width: 8px;
   height: 8px;
-  border: 1px solid var(--color-border-strong);
-  border-radius: 50%;
+  border: 0.5px solid var(--color-border-strong);
+  border-radius: 50%; corner-shape: round;
 }
 
 .sm-risk-ring.sm-risk-high { border-color: var(--state-error); }
@@ -571,8 +573,8 @@
   height: 50px;
   margin-bottom: 4px;
   place-items: center;
-  border: 1px solid var(--color-border-default);
-  border-radius: 50%;
+  border: 0.5px solid var(--color-border-default);
+  border-radius: 50%; corner-shape: round;
   background: var(--color-primary-tint);
   color: var(--color-primary-soft);
 }

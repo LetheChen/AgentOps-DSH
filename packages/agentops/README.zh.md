@@ -33,7 +33,9 @@ AgentOps 的业务能力以普通插件的形式运行在 DSH 内。运行环境
 | [`@agentops/dsh-security`](security/README.zh.md) | 用户、角色、会话、用量与审计流 |
 | [`@agentops/dsh-task`](task/README.zh.md) | 十四态任务生命周期、事件历史与工具 |
 | [`@agentops/dsh-vault`](vault/README.zh.md) | 连接注册表与 AES-256-GCM 封装的密文 |
+| [`@agentops/dsh-deployment`](deployment/README.zh.md) | 本地构建产物与 SSH 生产发布，包含镜像备份、journal、健康检查和回滚 |
 | [`@agentops/dsh-client`](client/README.zh.md) | 上述能力的 Web GUI 面板 |
+| [`@agentops/dsh-browser`](browser/README.zh.md) | 挂载 DSH browser-use 与 Chrome DevTools MCP 的可选 profile bundle |
 | [`@agentops/dsh-bundle`](bundle/README.zh.md) | profile 挂载的补丁集 |
 | [`deploy/`](deploy/README.zh.md) | 容器构建、compose 文件与部署补丁 |
 

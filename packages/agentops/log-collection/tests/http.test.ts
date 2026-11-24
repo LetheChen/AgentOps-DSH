@@ -124,7 +124,7 @@ void test('rejects a task whose SSH instance does not exist or lacks a pin', asy
 void test('rejects a disabled SSH instance and an empty remote path list', async () => {
   const f = fixture()
   try {
-    await f.capabilities.saveInstance({
+    f.capabilities.saveInstance({
       instanceId: 'MaxKB', capabilityId: 'ssh', name: 'MaxKB',
       config: {
         host: '192.0.2.10', port: 2222, username: 'root',

@@ -77,6 +77,7 @@ export class PullLogsService {
     if (config.hostKeySha256.trim() === '') {
       throw new LogCollectionError('SSH_HOST_KEY_REJECTED', `SSH instance ${task.sshInstanceId} has no pinned host key`)
     }
+    await this.#transport.probeHostKey(config)
     const states: {
       remotePath: string
       localName: string

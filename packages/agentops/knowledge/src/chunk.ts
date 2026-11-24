@@ -101,7 +101,7 @@ function findBreak(text: string, start: number, hardEnd: number, minChars: numbe
   const sentence = /[。！？!?；;]\s*|\n\n/g
   let candidate = -1
   for (const match of window.matchAll(sentence)) {
-    const at = (match.index ?? 0) + match[0].length
+    const at = match.index + match[0].length
     if (at >= minEnd) candidate = at
   }
   if (candidate > 0) return start + candidate
@@ -133,7 +133,7 @@ function headingPositions(text: string): Heading[] {
   const headings: Heading[] = []
   const pattern = /^(#{1,6})[ \t]+(.+)$/gm
   for (const match of text.matchAll(pattern)) {
-    headings.push({ offset: match.index ?? 0, title: match[2]?.trim() ?? '' })
+    headings.push({ offset: match.index, title: (match[2] ?? '').trim() })
   }
   return headings
 }

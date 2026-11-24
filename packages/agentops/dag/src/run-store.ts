@@ -127,7 +127,7 @@ export class SqliteRunStore {
   #addColumnIfMissing(table: string, column: string, type: string): void {
     const columns = this.#db.prepare(`PRAGMA table_info(${table})`).all()
     const present = columns.some((entry) => {
-      if (typeof entry !== 'object' || entry === null || !('name' in entry)) return false
+      if (!('name' in entry)) return false
       return entry.name === column
     })
     if (!present) this.#db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`)

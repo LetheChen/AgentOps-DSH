@@ -1,6 +1,6 @@
 /**
  * Schema tests for the v2 task database. They exercise the DB-level checks the
- * service layer will rely on: gate-only Task creation, immutable provenance,
+ * service layer will rely on: gate-only Task creation, immutable source,
  * one-to-one decision links, append-only evidence and parent relation facts.
  */
 

@@ -130,7 +130,7 @@ describe('credential page', () => {
     await screen.findByText(t('vault.notice.saved', { id: 'audit_reader' }))
     const save = calls.find(call => call.url.endsWith('/connections/save'))
     expect(save).toBeDefined()
-    const body = JSON.parse(String(save?.init?.body)) as Record<string, unknown>
+    const body = JSON.parse(save?.init?.body as string) as Record<string, unknown>
     expect(Object.prototype.hasOwnProperty.call(body, 'password')).toBe(false)
   })
 
@@ -153,7 +153,7 @@ describe('credential page', () => {
 
     await screen.findByText(t('vault.notice.created', { id: 'new_conn' }))
     const save = calls.find(call => call.url.endsWith('/connections/save'))
-    const body = JSON.parse(String(save?.init?.body)) as Record<string, unknown>
+    const body = JSON.parse(save?.init?.body as string) as Record<string, unknown>
     expect(body.password).toBe('hunter2')
     expect(screen.queryByDisplayValue('hunter2')).toBeNull()
   })
@@ -191,7 +191,7 @@ describe('credential page', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: t('vault.confirm.action') }))
     await screen.findByText(t('vault.notice.deleted', { id: 'audit_reader' }))
     const remove = calls.find(call => call.url.endsWith('/connections/remove'))
-    expect(JSON.parse(String(remove?.init?.body))).toEqual({ id: 'audit_reader' })
+    expect(JSON.parse(remove?.init?.body as string)).toEqual({ id: 'audit_reader' })
   })
 
   it('keeps the last rows visible when a refresh fails', async () => {

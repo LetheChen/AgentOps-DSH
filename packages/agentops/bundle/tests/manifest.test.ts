@@ -94,14 +94,14 @@ function resolveSpecifier(specifier: string): { dir: string; subpath: string } {
   return { dir: dir ?? join(agentopsDir, '__missing__', packageName), subpath: subpath.length === 0 ? '.' : `./${subpath}` }
 }
 
-test('bundle 清单：patch 层文件都存在且在 files 里', () => {
+void test('bundle 清单：patch 层文件都存在且在 files 里', () => {
   for (const layer of manifest.dsh.bundle.patch) {
     assert.ok(existsSync(join(bundleDir, layer)), `缺少 patch 层：${layer}`)
     assert.ok(manifest.files.includes(layer.replace(/^\.\//, '')), `files 未包含：${layer}`)
   }
 })
 
-test('bundle 清单：每行都能解析到真实包，且入口被子路径导出', () => {
+void test('bundle 清单：每行都能解析到真实包，且入口被子路径导出', () => {
   const rows = allRows()
   assert.ok(rows.length >= 10, `行数过少：${rows.length}`)
 
@@ -119,7 +119,7 @@ test('bundle 清单：每行都能解析到真实包，且入口被子路径导�
   }
 })
 
-test('bundle 清单：root 层不声明 inject tools，工具都在 preset 层', () => {
+void test('bundle 清单：root 层不声明 inject tools，工具都在 preset 层', () => {
   const [rootLayer] = manifest.dsh.bundle.patch
   const rootRows = loadLayer(rootLayer!)
   const presetRows = allRows().filter(row => /\/tools(-v1)?$/.test(row.name))
@@ -128,12 +128,20 @@ test('bundle 清单：root 层不声明 inject tools，工具都在 preset 层',
   assert.ok(presetRows.length >= 5, `preset 层应包含 5 个工具行，实际 ${presetRows.length}`)
 })
 
-test('bundle 清单：解析器对不存在的包会失败（守卫本身有牙）', () => {
+void test('bundle 清单：preset registry 覆盖 web-app 行而不重复插入', () => {
+  const rootRows = loadLayer('./cordis.patch.yml')
+  assert.equal(rootRows.filter(row => row.id === 'agent-preset-registry').length, 0)
+  const raw = load(readFileSync(join(bundleDir, 'cordis.patch.yml'), 'utf8'), { schema: patchSchema }) as Row[]
+  assert.equal(raw.filter(row => row.id === 'agent-preset-registry').length, 1)
+  assert.deepEqual((raw.find(row => row.id === 'agent-preset-registry')?.config as { default?: string }), { default: 'manager' })
+})
+
+void test('bundle 清单：解析器对不存在的包会失败（守卫本身有牙）', () => {
   const { dir } = resolveSpecifier('@agentops/dsh-does-not-exist/tools')
   assert.equal(existsSync(dir), false)
 })
 
-test('bundle 清单：模块 id 唯一', () => {
+void test('bundle 清单：模块 id 唯一', () => {
   const rootIds = manifest.dsh.bundle.patch.flatMap(layer => loadLayer(layer).map(row => row.id))
   assert.equal(new Set(rootIds).size, rootIds.length, `根层存在重复 id：${rootIds.join(', ')}`)
 
@@ -143,7 +151,21 @@ test('bundle 清单：模块 id 唯一', () => {
   }
 })
 
-test('bundle 清单：生成式 Agent preset 覆盖全部迁移 Agent', () => {
+void test('bundle 清单：挂载 tool-skill 的 preset 绑定同一运行时 skill 目录', () => {
+  const presets = loadLayer('./presets/agents.generated.patch.yml')
+  const skillPresets = presets.filter(row =>
+    ((row.config as { plugins?: Row[] } | undefined)?.plugins ?? []).some(plugin => plugin.id === 'tool-skill'))
+  assert.ok(skillPresets.length > 0, '没有 preset 挂载 tool-skill')
+
+  for (const preset of skillPresets) {
+    const plugins = (preset.config as { plugins: Row[] }).plugins
+    const provider = plugins.find(plugin => plugin.id === 'skill-filesystem')
+    const config = provider?.config as { customSkillDirs?: unknown[]; disabledSkillsFile?: unknown } | undefined
+    assert.deepEqual(config?.customSkillDirs, ["dshHomePath('agentops', 'skills')"], `${preset.id} 的 skill 根不一致`)
+    assert.equal(config?.disabledSkillsFile, "dshHomePath('agentops', 'skills-disabled.json')", `${preset.id} 的禁用文件不一致`)
+  }
+})
+void test('bundle 清单：生成式 Agent preset 覆盖全部迁移 Agent', () => {
   const relative = './presets/agents.generated.patch.yml'
   assert.ok(manifest.files.includes(relative.replace(/^\.\//, '')), 'files 未包含生成式 Agent preset')
   assert.ok(manifest.dsh.bundle.patch.includes(relative), 'patch 清单未挂载生成式 Agent preset')
@@ -154,4 +176,24 @@ test('bundle 清单：生成式 Agent preset 覆盖全部迁移 Agent', () => {
     .map(name => name.replace(/\.yaml$/, ''))
     .sort()
   assert.deepEqual(ids.sort(), expected)
+})
+
+void test('bundle 清单：部署与构建 operator 使用最小工具面', () => {
+  const presets = loadLayer('./presets/agents.generated.patch.yml')
+  const pluginsOf = (id: string): Row[] => {
+    const preset = presets.find(row => row.id === `preset-agent-${id}`)
+    const plugins = (preset?.config as { plugins?: Row[] } | undefined)?.plugins
+    assert.ok(Array.isArray(plugins), `${id} 缺少 plugins`)
+    return plugins
+  }
+  const build = pluginsOf('build_operator')
+  assert.deepEqual(build.find(row => row.id === 'deployment-tools')?.config, { agentPreset: 'build_operator', only: ['artifact_build'] })
+  assert.equal(build.some(row => row.name === '@deepseek-ai/dsh-tool-pwsh'), false)
+  const deploy = pluginsOf('deploy_operator')
+  assert.deepEqual(deploy.find(row => row.id === 'deployment-tools')?.config, {
+    agentPreset: 'deploy_operator',
+    only: ['deployment_plan', 'deployment_release', 'deployment_status', 'deployment_rollback'],
+  })
+  assert.equal(deploy.some(row => row.name === '@deepseek-ai/dsh-tool-pwsh'), false)
+  assert.equal(deploy.some(row => row.name === '@deepseek-ai/dsh-tool-fs' && (row.config as { write?: boolean } | undefined)?.write === true), false)
 })

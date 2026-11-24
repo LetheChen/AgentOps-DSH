@@ -58,7 +58,7 @@
 
 .workflow-card {
   background: var(--color-bg-surface);
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
   padding: 20px;
   display: flex;
@@ -140,7 +140,7 @@
   min-width: 0;
   overflow: hidden;
   background: var(--color-bg-base);
-  border: 1px solid var(--color-border-default);
+  border: 0.5px solid var(--color-border-default);
   border-radius: var(--radius-lg);
 }
 
@@ -151,7 +151,7 @@
   gap: 12px;
   flex-wrap: wrap;
   padding: 14px 16px;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 0.5px solid var(--color-border-subtle);
   background: var(--color-bg-surface);
 }
 
@@ -165,7 +165,7 @@
   align-items: center;
   gap: 2px;
   padding: 3px;
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
   background: var(--color-bg-elevated);
 }
@@ -209,7 +209,7 @@
   flex-wrap: wrap;
   min-height: 38px;
   padding: 7px 16px;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 0.5px solid var(--color-border-subtle);
   background: var(--color-bg-surface);
   font-size: 11px;
 }
@@ -240,7 +240,7 @@
   align-items: center;
   min-height: 22px;
   padding: 2px 8px;
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-full);
   background: transparent;
   color: var(--color-primary-soft);
@@ -248,10 +248,12 @@
   cursor: pointer;
 }
 
+@media (hover: hover) {
 .workflow-editor-issue-link:hover {
   border-color: var(--color-primary);
   background: var(--color-primary-tint);
   color: var(--color-primary);
+}
 }
 
 .workflow-editor-issue-link:focus-visible {
@@ -322,7 +324,7 @@
   gap: 12px;
   flex-wrap: wrap;
   padding: 10px 16px;
-  border-top: 1px solid var(--color-border-subtle);
+  border-top: 0.5px solid var(--color-border-subtle);
 }
 
 .workflow-editor-dirty {
@@ -360,7 +362,7 @@
   width: 30px;
   height: 30px;
   padding: 0;
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-sm);
   background: var(--color-bg-elevated);
   color: var(--color-text-secondary);
@@ -448,7 +450,7 @@
   min-width: 0;
   margin: -2px 0 10px;
   padding-bottom: 8px;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 0.5px solid var(--color-border-subtle);
 }
 
 .workflow-canvas-panel-header h3 {
@@ -502,7 +504,7 @@
   min-width: 0;
   height: 32px;
   padding: 0 36px 0 30px;
-  border: 1px solid var(--color-border-default);
+  border: 0.5px solid var(--color-border-default);
   border-radius: var(--radius-sm);
   background: var(--color-bg-elevated);
   color: var(--color-text-primary);
@@ -550,7 +552,7 @@
   min-width: 0;
   margin-bottom: 12px;
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 0.5px solid var(--color-border-subtle);
 }
 
 .workflow-node-template-group {
@@ -585,7 +587,7 @@
   width: 100%;
   min-width: 0;
   padding: 8px 9px;
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-sm);
   background: var(--color-bg-elevated);
   color: var(--color-text-primary);
@@ -621,7 +623,7 @@
 
 .workflow-canvas-error {
   padding: 9px 10px;
-  border: 1px solid color-mix(in srgb, var(--state-error) 38%, var(--color-border-subtle));
+  border: 0.5px solid color-mix(in srgb, var(--state-error) 38%, var(--color-border-subtle));
   border-radius: var(--radius-sm);
   background: var(--state-error-tint);
   color: var(--state-error);
@@ -651,7 +653,7 @@
   width: 100%;
   min-width: 0;
   padding: 8px 9px;
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-sm);
   background: var(--color-bg-elevated);
   color: var(--color-text-primary);
@@ -698,7 +700,7 @@
   min-width: 0;
   margin: 12px 0 0;
   padding-top: 12px;
-  border-top: 1px solid var(--color-border-subtle);
+  border-top: 0.5px solid var(--color-border-subtle);
 }
 
 .workflow-canvas-form > h4,
@@ -726,7 +728,7 @@
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  border: 1px solid var(--color-border-default);
+  border: 0.5px solid var(--color-border-default);
   border-radius: var(--radius-sm);
   background: var(--color-bg-elevated);
   color: var(--color-text-primary);
@@ -767,7 +769,7 @@
   margin: 0;
   padding: 12px 0 0;
   border: 0;
-  border-top: 1px solid var(--color-border-subtle);
+  border-top: 0.5px solid var(--color-border-subtle);
 }
 
 .workflow-canvas-inspector > .workflow-canvas-note + .workflow-inspector-section { margin-top: 10px; }
@@ -888,7 +890,7 @@
   min-width: 30px;
   min-height: 30px;
   padding: 4px 8px;
-  border: 1px solid var(--color-border-default);
+  border: 0.5px solid var(--color-border-default);
   border-radius: var(--radius-sm);
   background: var(--color-bg-elevated);
   color: var(--color-text-secondary);
@@ -901,9 +903,11 @@
   cursor: pointer;
 }
 
+@media (hover: hover) {
 .dag-canvas-toolbar button:hover:not(:disabled) {
   border-color: var(--color-primary);
   color: var(--color-primary);
+}
 }
 
 .dag-canvas-toolbar button:disabled {
@@ -920,7 +924,7 @@
   max-width: 100%;
   max-height: min(64vh, 680px);
   overflow: auto;
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
   background-color: var(--color-bg-base);
   background-image:
@@ -993,7 +997,7 @@
   min-height: 240px;
   min-width: 0;
   overflow: hidden;
-  border: 1px solid var(--color-border-default);
+  border: 0.5px solid var(--color-border-default);
   border-radius: var(--radius-md);
   background: var(--color-bg-base);
 }
@@ -1006,7 +1010,7 @@
 .workflow-yaml-gutter {
   overflow: hidden;
   padding: 12px 10px 12px 12px;
-  border-right: 1px solid var(--color-border-subtle);
+  border-right: 0.5px solid var(--color-border-subtle);
   background: var(--color-bg-elevated);
   color: var(--color-text-tertiary);
   font-family: var(--font-mono);
@@ -1052,14 +1056,14 @@
   min-height: 240px;
   min-width: 0;
   overflow: hidden;
-  border: 1px solid var(--color-border-default);
+  border: 0.5px solid var(--color-border-default);
   border-radius: var(--radius-md);
   background: var(--color-bg-base);
 }
 
 .workflow-yaml-issues {
   min-width: 0;
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
   background: var(--color-bg-surface);
 }
@@ -1067,7 +1071,7 @@
 .workflow-yaml-issues h3 {
   margin: 0;
   padding: 10px 12px;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 0.5px solid var(--color-border-subtle);
   color: var(--color-text-primary);
   font-size: 12px;
   font-weight: 500;
@@ -1188,7 +1192,7 @@
 .workflow-compiled-source,
 .workflow-compiled-limitations {
   padding: 12px;
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
   background: var(--color-bg-elevated);
 }
@@ -1267,7 +1271,7 @@
   margin: 0;
   padding: 12px;
   overflow: auto;
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-sm);
   background: var(--color-bg-base);
   color: var(--color-text-primary);
@@ -1336,7 +1340,7 @@
 
 .workflow-run-error {
   padding: 10px 12px;
-  border: 1px solid var(--state-error);
+  border: 0.5px solid var(--state-error);
   border-radius: var(--radius-md);
   background: var(--color-bg-elevated);
   color: var(--state-error);
@@ -1398,7 +1402,7 @@
   min-width: 0;
   min-height: 36px;
   padding: 0 10px;
-  border: 1px solid var(--color-border-default);
+  border: 0.5px solid var(--color-border-default);
   border-radius: var(--radius-md);
   background: var(--color-bg-elevated);
   color: var(--color-text-primary);
@@ -1407,8 +1411,10 @@
   line-height: 1.5;
 }
 
+@media (hover: hover) {
 .workflow-run-control:hover {
   border-color: var(--color-border-default);
+}
 }
 
 .workflow-run-control:focus-visible {
@@ -1482,7 +1488,7 @@
     gap: 6px;
     min-height: 34px;
     padding: 0 10px;
-    border: 1px solid var(--color-border-subtle);
+    border: 0.5px solid var(--color-border-subtle);
     border-radius: var(--radius-sm);
     background: color-mix(in srgb, var(--color-bg-surface) 92%, transparent);
     color: var(--color-text-secondary);
@@ -1802,7 +1808,7 @@
   width: 5px;
   height: 5px;
   flex: 0 0 5px;
-  border-radius: 50%;
+  border-radius: 50%; corner-shape: round;
   background: currentColor;
   content: '';
 }

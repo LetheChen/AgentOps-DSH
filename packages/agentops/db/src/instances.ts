@@ -60,7 +60,11 @@ const DEFAULT_MAX_ROWS = 5000
 /** Default statement timeout the original AgentOps policy used. */
 const DEFAULT_TIMEOUT_SECONDS = 30
 
-/** Read the executing Agent's live composed preset. */
+/**
+ * Read the executing Agent's live composed preset.
+ * @param exec - the tool execution context, or undefined outside a tool run.
+ * @returns the composed preset name, or undefined when no Agent is running.
+ */
 export function agentPresetOf(exec: ToolRunContext | undefined): string | undefined {
   const agent = exec?.agent
   if (agent === undefined) return undefined
@@ -75,7 +79,11 @@ function numberValue(value: unknown, fallback: number): number {
   return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : fallback
 }
 
-/** Normalize the engine name used by the original AgentOps instances. */
+/**
+ * Normalize the engine name used by the original AgentOps instances.
+ * @param config - instance configuration.
+ * @returns the database engine the instance talks to.
+ */
 export function databaseEngineOf(config: Readonly<Record<string, unknown>>): 'mysql' | 'sqlite' | 'postgres' {
   const engine = stringValue(config.engine).toLowerCase()
   if (engine === 'sqlite') return 'sqlite'
@@ -175,6 +183,7 @@ export function normalizeDatabasePolicy(
     ? policy.operation_limits as Readonly<Record<string, unknown>>
     : {}
   return {
+    driver: databaseEngineOf(config),
     schemas,
     tables: schema === '' ? {} : { [schema]: tables },
     deniedColumns,
@@ -328,7 +337,7 @@ export interface CapabilityStoreProvider {
 
 /**
  * Read the capability store from one tool execution's Agent context.
- * @param exec - the tool execution.
+ * @param ctx - the context holding the mounted capability center.
  * @returns the store, or undefined when the capability center is not mounted.
  */
 export function capabilityStoreOf(ctx: Context): CapabilityStore | undefined {

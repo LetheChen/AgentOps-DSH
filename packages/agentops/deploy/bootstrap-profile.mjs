@@ -6,9 +6,9 @@
  * `$DSH_HOME` (an M1-era smoke profile with three packages and no client), so
  * a fresh checkout had no way to boot AgentOps at all.
  *
- * The profile declares three bundles: the DSH base layer, the Web app layer,
- * and `@agentops/dsh-bundle`. The last one carries the AgentOps rows and the
- * directory configuration, so the profile itself needs no hand-written patch.
+ * The profile declares the DSH base layer, the Web app layer, an optional DSH
+ * native browser bundle, and `@agentops/dsh-bundle`. Keeping the browser layer
+ * separate lets the AgentOps plugins ship without one concrete provider.
  * Package resolution still needs links: bundle rows name `@agentops/dsh-*`,
  * and an unlinked name fails at session creation with `never started`.
  *
@@ -30,13 +30,17 @@ const repoRoot = resolve(packagesRoot, '..', '..')
 /** Every workspace package whose name the bundle patch references, plus its library dependencies. */
 const LINKED = [
   'bundle',
+  'browser',
   'client',
   'contracts',
   'dag',
   'db',
   'host',
   'knowledge',
+  'log-collection',
+  'deployment',
   'security',
+  'ui-capability',
   'task',
   'vault',
   'workflow-catalog',
@@ -72,7 +76,12 @@ const profilePackage = {
   dependencies: {},
   dsh: {
     profile: {
-      bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@agentops/dsh-bundle'],
+      bundles: [
+        '@deepseek-ai/dsh-base',
+        '@deepseek-ai/dsh-web-app',
+        '@agentops/dsh-browser',
+        '@agentops/dsh-bundle',
+      ],
     },
   },
 }

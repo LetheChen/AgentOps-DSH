@@ -14,6 +14,7 @@ import { mkdir, open, rename, rm } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import { pipeline } from 'node:stream/promises'
 
+import { probeSshHostKey } from '@agentops/dsh-capability'
 import { Client } from 'ssh2'
 import type { ConnectConfig, SFTPWrapper, Stats } from 'ssh2'
 
@@ -46,8 +47,10 @@ export interface PullFileResult {
 /** One remote file transfer with strict read-only semantics. */
 export interface LogSftpTransport {
   /**
-   * Read the server host key without authenticating.
+   * Read the server host key without authenticating and verify it against the pin.
    * @param config - resolved SSH configuration.
+   * @throws LogCollectionError with `SSH_HOST_KEY_REJECTED` when the key cannot
+   * be read or does not match `config.hostKeySha256`.
    * @returns the observed OpenSSH fingerprint.
    */
   probeHostKey(config: SshInstanceConfig): Promise<string>
@@ -90,28 +93,16 @@ export interface LogSftpTransport {
 /** ssh2-backed read-only transport. */
 export class Ssh2LogTransport implements LogSftpTransport {
   async probeHostKey(config: SshInstanceConfig): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const client = new Client()
-      let verified: string | undefined
-      let settled = false
-      const finish = (error?: Error): void => {
-        if (settled) return
-        settled = true
-        client.end()
-        if (error !== undefined) reject(error)
-        else if (verified !== undefined) resolve(verified)
-        else reject(new LogCollectionError('SSH_HOST_KEY_REJECTED', 'SSH host key was not observed'))
-      }
-      client.once('error', (error) => {
-        if (verified !== undefined) finish()
-        else finish(new LogCollectionError('SSH_HOST_KEY_REJECTED', error.message))
-      })
-      client.once('ready', () =>{  finish() })
-      client.connect(connectConfig(config, (key) => {
-        verified = hostKeyFingerprint(key)
-        return matchesHostKey(config, key)
-      }))
-    })
+    let observed: string
+    try {
+      observed = (await probeSshHostKey(config.host, config.port)).hostKeySha256
+    } catch (error) {
+      throw new LogCollectionError('SSH_HOST_KEY_REJECTED', error instanceof Error ? error.message : String(error))
+    }
+    if (!matchesFingerprint(config.hostKeySha256, observed)) {
+      throw new LogCollectionError('SSH_HOST_KEY_REJECTED', `SSH host key for ${config.instanceId} does not match the pin`)
+    }
+    return observed
   }
 
   async resolveRemotePaths(
@@ -153,8 +144,8 @@ export class Ssh2LogTransport implements LogSftpTransport {
         if (signal?.aborted === true) throw new LogCollectionError('SFTP_PULL_FAILED', 'pull canceled')
         return attributes
       })
-      const mtimeMs = Math.trunc((stat.mtime ?? 0) * 1000)
-      const size = stat.size ?? 0
+      const mtimeMs = Math.trunc(stat.mtime * 1000)
+      const size = stat.size
       if (previous !== undefined && previous.size === size && previous.mtimeMs === mtimeMs) {
         return { bytes: size, deltaStart: size, deltaEnd: size, skipped: true, mtimeMs }
       }
@@ -301,6 +292,10 @@ function credentialConfig(credential: SshCredential, authType: 'password' | 'key
   return { password: credential.password }
 }
 
+function matchesFingerprint(pinned: string, observed: string): boolean {
+  return normalizeFingerprint(pinned) === normalizeFingerprint(observed)
+}
+
 function normalizeFingerprint(value: string): string {
   return value.replace(/^SHA256:/, '').replace(/=+$/, '')
 }
@@ -317,7 +312,7 @@ function normalizeFingerprint(value: string): string {
  * @returns whether the key is the pinned one.
  */
 export function matchesHostKey(config: SshInstanceConfig, key: Buffer): boolean {
-  return normalizeFingerprint(hostKeyFingerprint(key)) === normalizeFingerprint(config.hostKeySha256)
+  return matchesFingerprint(config.hostKeySha256, hostKeyFingerprint(key))
 }
 
 /**

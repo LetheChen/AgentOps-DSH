@@ -15,6 +15,10 @@ import type {
 export interface AddDocumentInput {
   id: DocumentId
   spaceId: SpaceId
+  /** Optional category path inside the space; an empty value means the root. */
+  categoryPath?: string
+  /** Cross-cutting content tags; structure remains in spaceId and categoryPath. */
+  tags?: readonly string[]
   title: string
   mime: string
   /** Raw extracted text; normalized before chunking. */
@@ -37,6 +41,16 @@ interface StoredDocument {
 }
 
 /**
+ * Normalize operator-provided document tags without changing their display text.
+ * @param tags - tags from corpus front matter or API input.
+ * @returns unique non-empty tags in input order.
+ */
+export function normalizeDocumentTags(tags: readonly string[] | undefined): string[] {
+  if (tags === undefined) return []
+  return [...new Set(tags.map(tag => tag.trim()).filter(tag => tag.length > 0))]
+}
+
+/**
  * In-memory knowledge store.
  *
  * The shape mirrors the persistent model so a SQLite adapter can be dropped in
@@ -55,6 +69,7 @@ export class KnowledgeStore {
     if (this.#spaces.has(space.id)) throw new Error(`space already exists: ${space.id}`)
     this.#spaces.set(space.id, {
       ...space,
+      description: space.description,
       readers: [...space.readers],
     })
   }
@@ -66,6 +81,7 @@ export class KnowledgeStore {
   upsertSpace(space: KnowledgeSpace): void {
     this.#spaces.set(space.id, {
       ...space,
+      description: space.description,
       readers: [...space.readers],
     })
   }
@@ -101,6 +117,8 @@ export class KnowledgeStore {
     const meta: DocumentMeta = {
       id: input.id,
       spaceId: input.spaceId,
+      categoryPath: input.categoryPath ?? '',
+      tags: normalizeDocumentTags(input.tags),
       title: input.title,
       mime: input.mime,
       contentHash: input.contentHash,
@@ -123,6 +141,24 @@ export class KnowledgeStore {
       existing.versions.set(version, { version: record, chunks })
     }
     return { meta, version: record, chunks }
+  }
+
+  /**
+   * Change the category metadata without creating a content version.
+   * @param documentId - document to move.
+   * @param categoryPath - normalized category path; empty means the root.
+   * @param tags - replacement tag list; omitted leaves the stored tags unchanged.
+   * @returns whether the document exists.
+   */
+  updateDocumentMetadata(documentId: DocumentId, categoryPath: string, tags?: readonly string[]): boolean {
+    const stored = this.#documents.get(documentId)
+    if (stored === undefined) return false
+    stored.meta = {
+      ...stored.meta,
+      categoryPath,
+      ...(tags === undefined ? {} : { tags: normalizeDocumentTags(tags) }),
+    }
+    return true
   }
 
   /**

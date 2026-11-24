@@ -6,13 +6,13 @@
  * derived from a version and cascade away with their document.
  */
 
-import { DatabaseSync } from 'node:sqlite'
+import { DatabaseSync, type SQLOutputValue } from 'node:sqlite'
 
 import { KnowledgeStore } from './store.js'
 import type { AddDocumentResult } from './store.js'
 import { searchChunks } from './search.js'
 import type { Chunk, DocumentMeta, DocumentVersion, KnowledgeSpace, SearchHit } from './types.js'
-import { DEFAULT_WIKI_CATEGORY } from './wiki.js'
+import { DEFAULT_WIKI_CATEGORY, FLAT_WIKI_SPACES } from './wiki.js'
 import type { WikiCategory, WikiConflict, WikiDraft, WikiOperation, WikiPage } from './wiki.js'
 
 const SCHEMA = `
@@ -21,6 +21,7 @@ PRAGMA foreign_keys = ON;
 CREATE TABLE IF NOT EXISTS spaces (
   id          TEXT PRIMARY KEY,
   name        TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
   visibility  TEXT NOT NULL CHECK (visibility IN ('shared','restricted')),
   readers     TEXT NOT NULL
 );
@@ -28,6 +29,8 @@ CREATE TABLE IF NOT EXISTS spaces (
 CREATE TABLE IF NOT EXISTS documents (
   id              TEXT PRIMARY KEY,
   space_id        TEXT NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
+  category_path   TEXT NOT NULL DEFAULT '',
+  tags_json       TEXT NOT NULL DEFAULT '[]',
   title           TEXT NOT NULL,
   mime            TEXT NOT NULL,
   content_hash    TEXT NOT NULL,
@@ -160,7 +163,7 @@ export interface IngestionDocumentRecord {
   error?: string
 }
 
-interface JobRow {
+interface JobRow extends Record<string, SQLOutputValue> {
   id: string
   status: string
   created_at: string
@@ -171,12 +174,25 @@ interface JobRow {
   failed: number
 }
 
-interface JobDocRow { document_id: string | null; path: string; action: string; error: string | null }
+interface JobDocRow extends Record<string, SQLOutputValue> {
+  document_id: string | null
+  path: string
+  action: string
+  error: string | null
+}
 
-interface SpaceRow { id: string; name: string; visibility: string; readers: string }
-interface DocumentRow {
+interface SpaceRow extends Record<string, SQLOutputValue> {
+  id: string
+  name: string
+  description: string
+  visibility: string
+  readers: string
+}
+interface DocumentRow extends Record<string, SQLOutputValue> {
   id: string
   space_id: string
+  category_path: string
+  tags_json: string
   title: string
   mime: string
   content_hash: string
@@ -184,7 +200,7 @@ interface DocumentRow {
   status: string
   updated_at: string
 }
-interface ChunkRow {
+interface ChunkRow extends Record<string, SQLOutputValue> {
   id: string
   document_id: string
   version: number
@@ -197,7 +213,7 @@ interface ChunkRow {
   section: string | null
 }
 
-interface WikiDraftRow {
+interface WikiDraftRow extends Record<string, SQLOutputValue> {
   id: string
   title: string
   content: string
@@ -216,7 +232,7 @@ interface WikiDraftRow {
   updated_at: string
 }
 
-interface WikiPageRow {
+interface WikiPageRow extends Record<string, SQLOutputValue> {
   id: string
   draft_id: string
   document_id: string
@@ -232,7 +248,7 @@ interface WikiPageRow {
   updated_at: string
 }
 
-interface WikiCategoryRow {
+interface WikiCategoryRow extends Record<string, SQLOutputValue> {
   space_id: string
   path: string
   review_status: string
@@ -240,7 +256,7 @@ interface WikiCategoryRow {
   updated_at: string
 }
 
-interface WikiOperationRow {
+interface WikiOperationRow extends Record<string, SQLOutputValue> {
   id: number
   action: string
   draft_id: string | null
@@ -262,8 +278,13 @@ export class SqliteKnowledgeRepository {
   constructor(path: string) {
     this.#db = new DatabaseSync(path)
     this.#db.exec(SCHEMA)
+    this.#ensureColumn('spaces', 'description', "TEXT NOT NULL DEFAULT ''")
+    this.#ensureColumn('documents', 'category_path', "TEXT NOT NULL DEFAULT ''")
+    this.#ensureColumn('documents', 'tags_json', "TEXT NOT NULL DEFAULT '[]'")
     this.#ensureColumn('wiki_drafts', 'category_path', `TEXT NOT NULL DEFAULT '${DEFAULT_WIKI_CATEGORY}'`)
     this.#ensureColumn('wiki_pages', 'category_path', `TEXT NOT NULL DEFAULT '${DEFAULT_WIKI_CATEGORY}'`)
+    this.#migrateLegacyWeeklySpace()
+    this.#migrateBusinessAssetCategories()
     this.#db.exec(`
       INSERT OR IGNORE INTO wiki_categories(space_id, path, review_status, created_at, updated_at)
       SELECT space_id, category_path, 'auto', updated_at, updated_at FROM wiki_pages;
@@ -271,12 +292,71 @@ export class SqliteKnowledgeRepository {
       SELECT target_space_id, category_path, 'auto', updated_at, updated_at
       FROM wiki_drafts WHERE target_space_id IS NOT NULL;
     `)
+    this.#flattenFixedSpaces()
+  }
+
+  #flattenFixedSpaces(): void {
+    this.#db.exec('BEGIN')
+    try {
+      for (const spaceId of FLAT_WIKI_SPACES) {
+        this.#db.prepare("UPDATE documents SET category_path = '' WHERE space_id = ?").run(spaceId)
+        this.#db.prepare("UPDATE wiki_pages SET category_path = '' WHERE space_id = ?").run(spaceId)
+        this.#db.prepare("UPDATE wiki_drafts SET category_path = '' WHERE target_space_id = ?").run(spaceId)
+        this.#db.prepare('DELETE FROM wiki_categories WHERE space_id = ?').run(spaceId)
+      }
+      this.#db.exec('COMMIT')
+    } catch (error) {
+      this.#db.exec('ROLLBACK')
+      throw error
+    }
   }
 
   #ensureColumn(table: string, column: string, definition: string): void {
     const columns = this.#db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]
     if (!columns.some(item => item.name === column)) {
       this.#db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`)
+    }
+  }
+
+  #migrateLegacyWeeklySpace(): void {
+    const legacy = this.#db.prepare("SELECT id FROM spaces WHERE id = 'weekly'").get()
+    const replacement = this.#db.prepare("SELECT id FROM spaces WHERE id = 'content_creation'").get()
+    if (legacy === undefined || replacement !== undefined) return
+    this.#db.exec('BEGIN')
+    try {
+      this.#db.prepare(`
+        INSERT INTO spaces(id, name, description, visibility, readers)
+        SELECT 'content_creation', '内容创作',
+          '内置内容工作流的专业知识：视频模板、动效卡片、周报模板与内容规范。',
+          visibility, readers
+        FROM spaces WHERE id = 'weekly'
+      `).run()
+      this.#db.prepare("UPDATE documents SET space_id = 'content_creation' WHERE space_id = 'weekly'").run()
+      this.#db.prepare("UPDATE chunks SET space_id = 'content_creation' WHERE space_id = 'weekly'").run()
+      this.#db.prepare("UPDATE wiki_pages SET space_id = 'content_creation' WHERE space_id = 'weekly'").run()
+      this.#db.prepare("UPDATE wiki_drafts SET target_space_id = 'content_creation' WHERE target_space_id = 'weekly'").run()
+      this.#db.prepare("UPDATE wiki_categories SET space_id = 'content_creation' WHERE space_id = 'weekly'").run()
+      this.#db.prepare("DELETE FROM spaces WHERE id = 'weekly'").run()
+      this.#db.exec('COMMIT')
+    } catch (error) {
+      this.#db.exec('ROLLBACK')
+      throw error
+    }
+  }
+
+  /** Remove stale business-asset categories superseded by the per-business split. */
+  #migrateBusinessAssetCategories(): void {
+    const legacy = ['业务口径', '数据目录', '查询方法', '能力边界']
+    this.#db.exec('BEGIN')
+    try {
+      for (const path of legacy) {
+        this.#db.prepare("DELETE FROM wiki_categories WHERE space_id = 'smart_query' AND path = ?").run(path)
+        this.#db.prepare("DELETE FROM wiki_categories WHERE space_id = 'smart_query' AND path LIKE ?").run(`${path}/%`)
+      }
+      this.#db.exec('COMMIT')
+    } catch (error) {
+      this.#db.exec('ROLLBACK')
+      throw error
     }
   }
 
@@ -291,21 +371,22 @@ export class SqliteKnowledgeRepository {
    */
   load(): KnowledgeStore {
     const store = new KnowledgeStore()
-    for (const row of this.#db.prepare('SELECT * FROM spaces ORDER BY id').all() as unknown as SpaceRow[]) {
+    for (const row of this.#db.prepare('SELECT * FROM spaces ORDER BY id').all() as SpaceRow[]) {
       store.addSpace({
         id: row.id,
         name: row.name,
+        description: row.description,
         visibility: row.visibility === 'restricted' ? 'restricted' : 'shared',
         readers: parseReaders(row.readers),
       })
     }
 
-    const docs = this.#db.prepare('SELECT * FROM documents ORDER BY id').all() as unknown as DocumentRow[]
+    const docs = this.#db.prepare('SELECT * FROM documents ORDER BY id').all() as DocumentRow[]
     const chunkStmt = this.#db.prepare('SELECT * FROM chunks WHERE document_id = ? ORDER BY version, ordinal')
     const versionStmt = this.#db.prepare('SELECT * FROM document_versions WHERE document_id = ? ORDER BY version')
 
     for (const doc of docs) {
-      const rows = chunkStmt.all(doc.id) as unknown as ChunkRow[]
+      const rows = chunkStmt.all(doc.id) as ChunkRow[]
       const byVersion = new Map<number, Chunk[]>()
       for (const row of rows) {
         const list = byVersion.get(row.version) ?? []
@@ -325,7 +406,7 @@ export class SqliteKnowledgeRepository {
         })
         byVersion.set(row.version, list)
       }
-      const versions = (versionStmt.all(doc.id) as unknown as {
+      const versions = (versionStmt.all(doc.id) as {
         document_id: string
         version: number
         checksum: string
@@ -342,6 +423,8 @@ export class SqliteKnowledgeRepository {
         meta: {
           id: doc.id,
           spaceId: doc.space_id,
+          categoryPath: doc.category_path,
+          tags: parseStringArray(doc.tags_json),
           title: doc.title,
           mime: doc.mime,
           contentHash: doc.content_hash,
@@ -362,10 +445,11 @@ export class SqliteKnowledgeRepository {
    */
   saveSpace(space: KnowledgeSpace): void {
     this.#db.prepare(`
-      INSERT INTO spaces(id, name, visibility, readers) VALUES (?, ?, ?, ?)
+      INSERT INTO spaces(id, name, description, visibility, readers) VALUES (?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
-        name = excluded.name, visibility = excluded.visibility, readers = excluded.readers
-    `).run(space.id, space.name, space.visibility, JSON.stringify(space.readers))
+        name = excluded.name, description = excluded.description,
+        visibility = excluded.visibility, readers = excluded.readers
+    `).run(space.id, space.name, space.description, space.visibility, JSON.stringify(space.readers))
   }
 
   /**
@@ -377,13 +461,15 @@ export class SqliteKnowledgeRepository {
     this.#db.exec('BEGIN')
     try {
       this.#db.prepare(`
-        INSERT INTO documents(id, space_id, title, mime, content_hash, current_version, status, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO documents(id, space_id, category_path, tags_json, title, mime, content_hash, current_version, status, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
-          space_id = excluded.space_id, title = excluded.title, mime = excluded.mime,
+          space_id = excluded.space_id, category_path = excluded.category_path,
+          tags_json = excluded.tags_json,
+          title = excluded.title, mime = excluded.mime,
           content_hash = excluded.content_hash, current_version = excluded.current_version,
           status = excluded.status, updated_at = excluded.updated_at
-      `).run(meta.id, meta.spaceId, meta.title, meta.mime, meta.contentHash, meta.currentVersion, meta.status, meta.updatedAt)
+      `).run(meta.id, meta.spaceId, meta.categoryPath, JSON.stringify(meta.tags), meta.title, meta.mime, meta.contentHash, meta.currentVersion, meta.status, meta.updatedAt)
 
       this.#db.prepare(`
         INSERT INTO document_versions(document_id, version, checksum, parser, chunk_count)
@@ -411,6 +497,20 @@ export class SqliteKnowledgeRepository {
   }
 
   /**
+   * Change a document's category without creating a content version.
+   * @param documentId - document to move.
+   * @param categoryPath - category path inside its space; empty means the root.
+   * @param tags - replacement tag list; omitted leaves the stored tags unchanged.
+   * @returns whether a document was updated.
+   */
+  updateDocumentMetadata(documentId: string, categoryPath: string, tags?: readonly string[]): boolean {
+    const result = tags === undefined
+      ? this.#db.prepare('UPDATE documents SET category_path = ? WHERE id = ?').run(categoryPath, documentId)
+      : this.#db.prepare('UPDATE documents SET category_path = ?, tags_json = ? WHERE id = ?').run(categoryPath, JSON.stringify(tags), documentId)
+    return result.changes > 0
+  }
+
+  /**
    * Delete a document; versions and chunks cascade.
    * @param documentId - the document to delete.
    * @returns whether a document was deleted.
@@ -435,7 +535,7 @@ export class SqliteKnowledgeRepository {
       SELECT c.* FROM chunks c
       JOIN documents d ON d.id = c.document_id AND d.current_version = c.version
       WHERE c.space_id IN (${placeholders})
-    `).all(...allowedSpaces) as unknown as ChunkRow[]
+    `).all(...allowedSpaces) as ChunkRow[]
 
     const chunks: Chunk[] = rows.map(row => ({
       id: row.id,
@@ -463,10 +563,12 @@ export class SqliteKnowledgeRepository {
    * @returns the document metadata, newest first.
    */
   listDocuments(): DocumentMeta[] {
-    return (this.#db.prepare('SELECT * FROM documents ORDER BY updated_at DESC').all() as unknown as DocumentRow[])
+    return (this.#db.prepare('SELECT * FROM documents ORDER BY updated_at DESC').all() as DocumentRow[])
       .map(row => ({
         id: row.id,
         spaceId: row.space_id,
+        categoryPath: row.category_path,
+        tags: parseStringArray(row.tags_json),
         title: row.title,
         mime: row.mime,
         contentHash: row.content_hash,
@@ -516,7 +618,7 @@ export class SqliteKnowledgeRepository {
    * @returns the job records, newest first.
    */
   listIngestionJobs(): IngestionJobRecord[] {
-    return (this.#db.prepare('SELECT * FROM ingestion_jobs ORDER BY created_at DESC').all() as unknown as JobRow[])
+    return (this.#db.prepare('SELECT * FROM ingestion_jobs ORDER BY created_at DESC').all() as JobRow[])
       .map(row => ({
         id: row.id,
         status: normalizeJobStatus(row.status),
@@ -532,7 +634,7 @@ export class SqliteKnowledgeRepository {
    * @returns the per-file records of that job.
    */
   listIngestionDocuments(jobId: string): IngestionDocumentRecord[] {
-    return (this.#db.prepare('SELECT * FROM ingestion_documents WHERE job_id = ? ORDER BY path').all(jobId) as unknown as JobDocRow[])
+    return (this.#db.prepare('SELECT * FROM ingestion_documents WHERE job_id = ? ORDER BY path').all(jobId) as JobDocRow[])
       .map(row => ({
         ...(row.document_id === null ? {} : { documentId: row.document_id }),
         path: row.path, action: row.action,
@@ -572,7 +674,7 @@ export class SqliteKnowledgeRepository {
    * @returns the draft, or undefined when it does not exist.
    */
   getWikiDraft(draftId: string): WikiDraft | undefined {
-    const row = this.#db.prepare('SELECT * FROM wiki_drafts WHERE id = ?').get(draftId) as unknown as WikiDraftRow | undefined
+    const row = this.#db.prepare('SELECT * FROM wiki_drafts WHERE id = ?').get(draftId) as WikiDraftRow | undefined
     return row === undefined ? undefined : draftFromRow(row)
   }
 
@@ -581,7 +683,7 @@ export class SqliteKnowledgeRepository {
    * @returns all draft records.
    */
   listWikiDrafts(): WikiDraft[] {
-    return (this.#db.prepare('SELECT * FROM wiki_drafts ORDER BY updated_at DESC').all() as unknown as WikiDraftRow[])
+    return (this.#db.prepare('SELECT * FROM wiki_drafts ORDER BY updated_at DESC').all() as WikiDraftRow[])
       .map(draftFromRow)
   }
 
@@ -613,7 +715,7 @@ export class SqliteKnowledgeRepository {
    * @returns all page records.
    */
   listWikiPages(): WikiPage[] {
-    return (this.#db.prepare('SELECT * FROM wiki_pages ORDER BY updated_at DESC').all() as unknown as WikiPageRow[])
+    return (this.#db.prepare('SELECT * FROM wiki_pages ORDER BY updated_at DESC').all() as WikiPageRow[])
       .map(pageFromRow)
   }
 
@@ -638,7 +740,7 @@ export class SqliteKnowledgeRepository {
    */
   getWikiCategory(spaceId: string, path: string): WikiCategory | undefined {
     const row = this.#db.prepare('SELECT * FROM wiki_categories WHERE space_id = ? AND path = ?')
-      .get(spaceId, path) as unknown as WikiCategoryRow | undefined
+      .get(spaceId, path) as WikiCategoryRow | undefined
     return row === undefined ? undefined : categoryFromRow(row, 0, 0)
   }
 
@@ -647,7 +749,7 @@ export class SqliteKnowledgeRepository {
    * @returns category records ordered by space and path.
    */
   listWikiCategories(): WikiCategory[] {
-    return (this.#db.prepare('SELECT * FROM wiki_categories ORDER BY space_id, path').all() as unknown as WikiCategoryRow[])
+    return (this.#db.prepare('SELECT * FROM wiki_categories ORDER BY space_id, path').all() as WikiCategoryRow[])
       .map(row => categoryFromRow(row, 0, 0))
   }
 
@@ -670,7 +772,7 @@ export class SqliteKnowledgeRepository {
    * @returns the operation timeline.
    */
   listWikiOperations(limit = 50): WikiOperation[] {
-    return (this.#db.prepare('SELECT * FROM wiki_operations ORDER BY created_at DESC, id DESC LIMIT ?').all(limit) as unknown as WikiOperationRow[])
+    return (this.#db.prepare('SELECT * FROM wiki_operations ORDER BY created_at DESC, id DESC LIMIT ?').all(limit) as WikiOperationRow[])
       .map(operationFromRow)
   }
 
@@ -680,7 +782,7 @@ export class SqliteKnowledgeRepository {
    * @returns the version records, oldest first.
    */
   listVersions(documentId: string): DocumentVersion[] {
-    const rows = this.#db.prepare('SELECT * FROM document_versions WHERE document_id = ? ORDER BY version').all(documentId) as unknown as {
+    const rows = this.#db.prepare('SELECT * FROM document_versions WHERE document_id = ? ORDER BY version').all(documentId) as {
       document_id: string
       version: number
       checksum: string
@@ -724,7 +826,7 @@ function draftFromRow(row: WikiDraftRow): WikiDraft {
     pageType: pageType(row.page_type),
     status: draftStatus(row.status),
     targetSpaceId: row.target_space_id,
-    categoryPath: row.category_path || DEFAULT_WIKI_CATEGORY,
+    categoryPath: row.category_path,
     conflicts: parseConflicts(row.conflicts_json),
     contentHash: row.content_hash,
     publishedDocumentId: row.published_document_id,
@@ -739,7 +841,7 @@ function pageFromRow(row: WikiPageRow): WikiPage {
     draftId: row.draft_id,
     documentId: row.document_id,
     spaceId: row.space_id,
-    categoryPath: row.category_path || DEFAULT_WIKI_CATEGORY,
+    categoryPath: row.category_path,
     title: row.title,
     pageType: pageType(row.page_type),
     summary: row.summary,

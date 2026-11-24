@@ -9,7 +9,7 @@
  */
 
 import { randomUUID } from 'node:crypto'
-import { DatabaseSync } from 'node:sqlite'
+import { DatabaseSync, type SQLOutputValue } from 'node:sqlite'
 
 import { BUILTIN_CAPABILITIES, listCapabilityTools } from './catalog.ts'
 import { openCapabilitySecret, sealCapabilitySecret, loadCapabilityMasterKey } from './crypto.ts'
@@ -26,7 +26,7 @@ import type {
   IntegrationInstanceView,
 } from './types.ts'
 
-interface DefinitionRow {
+interface DefinitionRow extends Record<string, SQLOutputValue> {
   capability_id: string
   name: string
   category: string
@@ -42,7 +42,7 @@ interface DefinitionRow {
   updated_at: string
 }
 
-interface InstanceRow {
+interface InstanceRow extends Record<string, SQLOutputValue> {
   instance_id: string
   capability_id: string
   name: string
@@ -60,7 +60,7 @@ interface InstanceRow {
   updated_at: string
 }
 
-interface BindingRow {
+interface BindingRow extends Record<string, SQLOutputValue> {
   agent_preset: string
   capability_id: string
   instance_id: string
@@ -87,7 +87,7 @@ function now(): string {
 
 function parseJsonObject(raw: string): Record<string, unknown> {
   try {
-    const value = JSON.parse(raw) as unknown
+    const value: unknown = JSON.parse(raw)
     return typeof value === 'object' && value !== null && !Array.isArray(value)
       ? value as Record<string, unknown>
       : {}
@@ -114,7 +114,7 @@ function definition(row: DefinitionRow): CapabilityDefinition {
 
 function parseJsonArray(raw: string): unknown[] {
   try {
-    const value = JSON.parse(raw) as unknown
+    const value: unknown = JSON.parse(raw)
     return Array.isArray(value) ? value : []
   } catch {
     return []
@@ -201,7 +201,7 @@ export class CapabilityStore {
   listCapabilities(): CapabilityDefinition[] {
     const rows = this.#db.prepare(
       'SELECT * FROM capability_definitions ORDER BY category, capability_id',
-    ).all() as unknown as DefinitionRow[]
+    ).all() as DefinitionRow[]
     return rows.map(definition)
   }
 
@@ -232,6 +232,7 @@ export class CapabilityStore {
    * Existing capability rows win; missing rows are created with the source id.
    * The caller supplies plaintext passwords only for this in-process import.
    * @param connections - browser-safe connection metadata plus optional plaintext secret.
+   * @param actor - authenticated owner id used in audit.
    * @returns number of newly created instances.
    */
   importLegacyConnections(
@@ -306,7 +307,7 @@ export class CapabilityStore {
       ? this.#db.prepare('SELECT * FROM capability_instances ORDER BY created_at DESC, instance_id').all()
       : this.#db.prepare(
         'SELECT * FROM capability_instances WHERE capability_id = ? ORDER BY created_at DESC, instance_id',
-      ).all(capabilityId)) as unknown as InstanceRow[]
+      ).all(capabilityId)) as InstanceRow[]
     return rows.map(view)
   }
 
@@ -448,6 +449,7 @@ export class CapabilityStore {
       config: parseJsonObject(row.config_json),
       accessPolicy: parseJsonObject(row.access_policy_json),
       secret,
+      credentialGeneration: row.credential_updated_at ?? row.updated_at,
     }
   }
 
@@ -456,6 +458,7 @@ export class CapabilityStore {
    * @param instanceId - probed instance.
    * @param ok - probe outcome.
    * @param error - failure detail, if any.
+   * @param actor - authenticated owner id used in audit.
    * @returns the updated browser-safe instance, or null.
    */
   recordTest(instanceId: string, ok: boolean, error: string | null, actor: string = 'owner'): IntegrationInstanceView | null {
@@ -478,7 +481,7 @@ export class CapabilityStore {
   listBindings(agentPreset: string): CapabilityBinding[] {
     const rows = this.#db.prepare(
       'SELECT * FROM capability_bindings WHERE agent_preset = ? ORDER BY capability_id, instance_id',
-    ).all(agentPreset) as unknown as BindingRow[]
+    ).all(agentPreset) as BindingRow[]
     return rows.map(binding)
   }
 
@@ -529,6 +532,7 @@ export class CapabilityStore {
    * replaceBindings persists an audit row even for an empty set, so this is
    * the explicit fail-closed signal rather than presence of a binding row.
    * @param agentPreset - preset whose configuration state is read.
+   * @returns whether the preset has ever been configured in the capability center.
    */
   hasBindings(agentPreset: string): boolean {
     const row = this.#db.prepare(
@@ -633,6 +637,7 @@ export class CapabilityStore {
       config: parseJsonObject(row.config_json),
       accessPolicy: parseJsonObject(row.access_policy_json),
       secret,
+      credentialGeneration: row.credential_updated_at ?? row.updated_at,
     }
   }
 
@@ -644,7 +649,7 @@ export class CapabilityStore {
   listAudit(limit: number = 50): readonly Record<string, unknown>[] {
     const rows = this.#db.prepare(
       'SELECT seq, actor, action, target, result, detail_json, at FROM capability_audit ORDER BY seq DESC LIMIT ?',
-    ).all(limit) as unknown as Record<string, unknown>[]
+    ).all(limit) as Record<string, unknown>[]
     return rows.map(row => ({
       seq: row.seq,
       actor: row.actor,
@@ -675,6 +680,11 @@ export class CapabilityStore {
       'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     )
     this.#transaction(() => {
+      const builtIn = new Set(BUILTIN_CAPABILITIES.map(item => item.capabilityId))
+      const remove = this.#db.prepare('DELETE FROM capability_definitions WHERE capability_id = ?')
+      for (const capabilityId of existing) {
+        if (!builtIn.has(capabilityId)) remove.run(capabilityId)
+      }
       for (const item of BUILTIN_CAPABILITIES) {
         const transports = JSON.stringify(item.transports)
         const schema = JSON.stringify(item.configSchema)

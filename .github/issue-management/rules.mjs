@@ -50,7 +50,30 @@ if (typeof config.startDateField !== 'string' || !config.startDateField) {
 if (typeof config.projectTimeZone !== 'string' || !config.projectTimeZone) {
   throw new Error('config.projectTimeZone 未设置')
 }
+if (typeof config.organization !== 'string' || !config.organization) {
+  throw new Error('config.organization 未设置')
+}
+if (typeof config.repository !== 'string' || !config.repository) {
+  throw new Error('config.repository 未设置')
+}
+if ((config.projectNumber === null) !== (config.projectTitle === null)) {
+  throw new Error('config.projectNumber 与 projectTitle 必须同时配置或同时留空')
+}
+if (config.projectNumber !== null && (!Number.isInteger(config.projectNumber) || config.projectNumber <= 0)) {
+  throw new Error('config.projectNumber 必须为正整数')
+}
+if (config.projectTitle !== null && (typeof config.projectTitle !== 'string' || !config.projectTitle)) {
+  throw new Error('config.projectTitle 必须为非空字符串')
+}
 Intl.DateTimeFormat('en-US', { timeZone: config.projectTimeZone })
+
+/**
+ * Report whether ProjectV2 reads and writes are configured.
+ * @returns true only when both the Project number and title are configured.
+ */
+export function projectManagementEnabled() {
+  return config.projectNumber !== null && config.projectTitle !== null
+}
 
 /**
  * Decide whether the human-review policy applies to a PR.
@@ -205,9 +228,10 @@ export function retainIssueReferences(references, issues) {
 /**
  * Validate one Issue with its Project status.
  * @param {{labels: string[], type: string|null, priority: string|null, status: string|null, state: string, stateReason: string|null}} issue Issue snapshot.
+ * @param {boolean} projectEnabled Require Project status and terminal-state alignment.
  * @returns {string[]} Validation errors.
  */
-export function validateIssue(issue) {
+export function validateIssue(issue, projectEnabled = projectManagementEnabled()) {
   const errors = []
   const status = issue.status
   const invalidLabels = issue.labels.filter(isInvalidIssueLabel)
@@ -216,21 +240,23 @@ export function validateIssue(issue) {
     errors.push(`Issue 不得使用 PR kind 或旧版标签：${invalidLabels.join(', ')}`)
   }
   if (!TYPES.has(issue.type ?? '')) errors.push('Type 必须是五种原生英文 Type 之一')
-  if (!status || !config.statuses.includes(status)) errors.push('Issue 必须在 Project 中且具有合法 Status')
   if (issue.priority !== null && !PRIORITIES.includes(issue.priority.toLowerCase())) {
     errors.push('Priority 必须为空或为 P0–P3')
   }
-  if (status === 'Done' && (issue.state !== 'closed' || issue.stateReason !== 'completed')) {
-    errors.push('Done 必须对应 Completed 关闭原因')
-  }
-  if (
-    status === 'No action' &&
-    (issue.state !== 'closed' || issue.stateReason !== 'not_planned')
-  ) {
-    errors.push('No action 必须对应 Not planned 关闭原因')
-  }
-  if (!['Done', 'No action'].includes(status ?? '') && issue.state !== 'open') {
-    errors.push(`${status} 必须对应开放 Issue`)
+  if (projectEnabled) {
+    if (!status || !config.statuses.includes(status)) errors.push('Issue 必须在 Project 中且具有合法 Status')
+    if (status === 'Done' && (issue.state !== 'closed' || issue.stateReason !== 'completed')) {
+      errors.push('Done 必须对应 Completed 关闭原因')
+    }
+    if (
+      status === 'No action' &&
+      (issue.state !== 'closed' || issue.stateReason !== 'not_planned')
+    ) {
+      errors.push('No action 必须对应 Not planned 关闭原因')
+    }
+    if (!['Done', 'No action'].includes(status ?? '') && issue.state !== 'open') {
+      errors.push(`${status} 必须对应开放 Issue`)
+    }
   }
   return errors
 }

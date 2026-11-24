@@ -33,7 +33,9 @@ AgentOps business capabilities run inside DSH as ordinary plugins. Runtime, mode
 | [`@agentops/dsh-security`](security/README.md) | Users, roles, sessions, usage, and audit streams |
 | [`@agentops/dsh-task`](task/README.md) | Fourteen-state task lifecycle with event history and tools |
 | [`@agentops/dsh-vault`](vault/README.md) | Connection registry with AES-256-GCM sealed secrets |
+| [`@agentops/dsh-deployment`](deployment/README.md) | Local artifact builds and SSH-backed production releases with image backup, journal, health checks, and rollback |
 | [`@agentops/dsh-client`](client/README.md) | The Web GUI panels for every capability above |
+| [`@agentops/dsh-browser`](browser/README.md) | Optional profile bundle that mounts DSH browser-use with Chrome DevTools MCP |
 | [`@agentops/dsh-bundle`](bundle/README.md) | The patch set a profile mounts |
 | [`deploy/`](deploy/README.md) | Container build, compose file, and the deployment patch |
 

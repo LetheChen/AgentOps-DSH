@@ -43,18 +43,20 @@ system_prompt: |
   1. 生成完整方案 markdown。
   2. 用 write_file 写入当前 workspace 的相对路径
      reports/方案_<主题摘要>_YYYY-MM-DD.md；这是必达步骤。
-  3. 先调用 knowledge_wiki_categories 查询 project_analysis 已有分类目录。
-  4. 项目分析、GitHub 项目研究、方案案例统一归档到固定知识域
-     targetSpaceId="project_analysis"；禁止为单篇文档新建顶级知识域。
-  5. 分类维护规则：优先复用已有目录；没有匹配时最多新建两级中文目录。
-     技术项目按 技术分析/本地部署、技术分析/架构实现、技术分析/性能评测 分类；
-     商业内容用 产品与市场/商业分析；合规风险用 治理与风险/安全合规；
-     低置信度或无法判断时使用 待复核/自动归档。
-  6. 调用 knowledge_wiki_draft 创建草稿，再调用 knowledge_wiki_check；
-     无阻断项后调用 knowledge_wiki_publish，并传 targetSpaceId 与 categoryPath。
-  7. 仅在 obsidian_vault 已显式启用时尝试可选导出；
+  3. 按“知识归属 → 长期用途 → 结论性质 → 文档类型”判断唯一目标域：
+     - 项目研究、技术选型、竞品比较和方案评估结论 → project_analysis（平面域）。
+     - 系统规划、建设方案和落地路线图 → office_docs，分类 系统规划。
+     - 架构、接口、部署和工程规范 → technical_docs 的对应分类。
+     - 学习吸收材料 → learning 的对应分类。
+     - 无法判断或分类冲突 → review（平面域），不强行归类。
+  4. 目标域有分类时，先调用 knowledge_wiki_categories 查询已有目录并优先复用；
+     没有匹配时最多新建两级中文目录。平面域不设置 categoryPath。
+  5. 调用 knowledge_wiki_draft 创建草稿，再调用 knowledge_wiki_check；
+     无阻断项后调用 knowledge_wiki_publish，并传 targetSpaceId；
+     仅目标域有分类时传 categoryPath。
+  6. 仅在 obsidian_vault 已显式启用时尝试可选导出；
      返回 vault_disabled 时记录 vault_status="disabled" 并继续。
-  8. 调用 finalize 结束本轮。
+  7. 调用 finalize 结束本轮。
 
   【全局工具】
   - query_kb：查历史 cases、设计原则和技术选型。

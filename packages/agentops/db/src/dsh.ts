@@ -54,17 +54,17 @@ export function loadDatasources(path: string): DatasourceConfig[] {
   }
 }
 
-const SAMPLE = `# AgentOps 数据源（只读问数）
+const SAMPLE = `# AgentOps 数据源（只读问数，首次运行示例；请替换为真实配置）
 # dsn_env 指向环境变量；不要把真实 DSN 写进本文件。
 datasources:
   - key: audit_reader
-    label: 审计业务库（audit_example）
+    label: 业务数据库（示例）
     driver: sqlite            # mysql 需另装 mysql2；sqlite 内置
     dsn_env: AGENTOPS_DB_AUDIT_DSN
     credential_id: '@agentops/db/audit_reader'
-    schemas: [audit_example]
+    schemas: [business_db]
     tables:
-      audit_example: [audit_records, audit_item_results, audit_step_logs, access_logs, llm_call_logs, llm_model_pricing, users]
+      business_db: [records]
     denied_columns: [password_hash]
     max_rows: 1000
     timeout_seconds: 30
@@ -127,7 +127,7 @@ export function apply(ctx: Context, config: DbPluginConfig = {}): void {
     } catch {
       // Vault unavailable: fall through to the other sources.
     }
-    const credentials = ctx.get('credentials') as unknown as {
+    const credentials = ctx.get('credentials') as {
       describeRecord?: (key: string) => Promise<{ present: boolean }>
     } | undefined
     if (credentials?.describeRecord === undefined || datasource.credentialId === null) return false

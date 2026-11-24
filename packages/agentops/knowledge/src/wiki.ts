@@ -53,6 +53,7 @@ export interface WikiDraft {
   readonly pageType: WikiPageType
   readonly status: WikiDraftStatus
   readonly targetSpaceId: string | null
+  /** Category inside the space; empty means the space root. */
   readonly categoryPath: string
   readonly conflicts: readonly WikiConflict[]
   readonly contentHash: string
@@ -67,6 +68,7 @@ export interface WikiPage {
   readonly draftId: string
   readonly documentId: string
   readonly spaceId: string
+  /** Category inside the space; empty means the space root. */
   readonly categoryPath: string
   readonly title: string
   readonly pageType: WikiPageType
@@ -95,6 +97,7 @@ export interface KnowledgeMemoryNode {
   readonly spaceName: string
   readonly title: string
   readonly summary: string
+  readonly tags: readonly string[]
   readonly updatedAt: string
   readonly version: number
   readonly pageType: WikiPageType | 'document'
@@ -143,17 +146,29 @@ export const WIKI_PAGE_TYPE_LABELS: Readonly<Record<WikiPageType, string>> = {
   overview: '综述',
 }
 
-/** Fallback category for low-confidence or unreviewed material. */
+/** Fallback category for low-confidence or unreviewed material in categorized spaces. */
 export const DEFAULT_WIKI_CATEGORY = '待复核/自动归档'
 
-/** Stable first-level branches inside an agent-maintained knowledge space. */
-export const WIKI_CATEGORY_BRANCHES = [
-  '技术分析',
-  '产品与市场',
-  '治理与风险',
-  '任务归档',
-  '待复核',
-] as const
+/** Built-in domains whose documents live directly at the space root. */
+export const FLAT_WIKI_SPACES = ['finance', 'hr', 'ops', 'project_analysis', 'review'] as const
+
+/**
+ * Whether a built-in space stores documents without second-level categories.
+ * @param spaceId - target knowledge space.
+ * @returns true for a flat built-in space.
+ */
+export function isFlatWikiSpace(spaceId: string | null | undefined): boolean {
+  return spaceId !== null && spaceId !== undefined && FLAT_WIKI_SPACES.includes(spaceId as typeof FLAT_WIKI_SPACES[number])
+}
+
+/** Preferred first-level branches for categorized professional knowledge domains. */
+export const WIKI_CATEGORY_BRANCHES: Readonly<Record<string, readonly string[]>> = {
+  office_docs: ['周报', '会议记录', '系统规划', '任务总结', '待复核'],
+  learning: ['课程', '书籍文章', '学习笔记', '待复核'],
+  technical_docs: ['架构设计', '接口说明', '部署实施', '故障排查', '技术规范', '待复核'],
+  smart_query: ['智能问数', '智能审批'],
+  content_creation: ['视频模板', '动效卡片', '周报模板', '内容规范'],
+}
 
 /** The schema layer consumed by the workbench and model-facing tools. */
 export const WIKI_SCHEMA_MARKDOWN = `# AgentOps LLM Wiki Schema
@@ -172,12 +187,14 @@ export const WIKI_SCHEMA_MARKDOWN = `# AgentOps LLM Wiki Schema
 - comparison: created when sources disagree or a query produces reusable analysis.
 - overview: maintained synthesis across multiple pages.
 
-## Category maintenance
+## Routing and category maintenance
 
 - A top-level knowledge space is deployment-owned; agents must never create one per document.
-- Reuse an existing category before creating another. Category paths have at most two segments.
-- If no existing category matches, create a concise Chinese second-level path under a stable first-level branch.
-- Low-confidence or conflicting classifications go to 待复核/自动归档 instead of blocking ingestion.
+- Route by ownership first, then long-term use, conclusion type, and document type.
+- Finance, HR, operations, project analysis, and review spaces are flat: their documents stay at the space root.
+- Office collaboration, learning, technical documentation, data Q&A, and content creation use stable document-type categories.
+- Categorized spaces reuse an existing category before creating another and keep paths at two segments or fewer.
+- Low-confidence or conflicting classifications go to the 待复核 space; do not force a document into a domain.
 - Category names must not contain dates, version numbers, task ids, personal names, or unreviewed product claims.
 - Automatic category creation is recorded in the operation log and remains pending until a reviewer confirms it.
 
@@ -221,33 +238,82 @@ export function classifyWikiPage(input: Pick<CreateWikiDraftInput, 'title' | 'co
 /**
  * Normalize a category path to at most two safe directory segments.
  * @param value - explicit path supplied by a reviewer or agent.
- * @returns a stable first-level path, or null when the path is invalid.
+ * @returns a safe one- or two-segment path, or an empty string for the space root; null when invalid.
  */
 export function normalizeWikiCategoryPath(value: string | null | undefined): string | null {
   if (value === null || value === undefined) return null
+  if (value.trim() === '') return ''
   const parts = value.replaceAll('\\', '/').split('/')
     .map(part => part.replace(/[\u0000-\u001f<>:"|?*]/g, '').replace(/\s+/g, ' ').trim())
     .filter(part => part !== '' && part !== '.' && part !== '..')
     .slice(0, 2)
-  if (parts.length === 0 || !WIKI_CATEGORY_BRANCHES.includes(parts[0] as typeof WIKI_CATEGORY_BRANCHES[number])) return null
+  if (parts.length === 0) return null
   return parts.map(part => Array.from(part).slice(0, 24).join('')).join('/')
+}
+
+/**
+ * Choose the primary macro knowledge domain when a draft has no explicit target.
+ * @param input - title, content, source kind and source reference.
+ * @returns one built-in knowledge-space id; uncertain material goes to review.
+ */
+export function suggestWikiSpace(input: Pick<CreateWikiDraftInput, 'title' | 'content' | 'sourceKind' | 'sourceRef'>): string {
+  const text = `${input.title}
+${input.sourceRef ?? ''}
+${input.content.slice(0, 2000)}`
+  if (/财务|报销|发票|采购|付款|差旅/i.test(text)) return 'finance'
+  if (/人事|员工|请假|休假|加班|调休|培训政策/i.test(text)) return 'hr'
+  if (/运维|值班|告警|生产发布|备份|恢复|服务器|故障恢复/i.test(text)) return 'ops'
+  if (/指标|口径|数据目录|SQL|describe_database|数据源|查询报错/i.test(text)) return 'smart_query'
+  if (/视频模板|动效卡片|周报模板|内容规范|分镜模板/i.test(text)) return 'content_creation'
+  if (/课程|读书|学习笔记|学习资料|学习材料|论文|书籍|知识卡片/i.test(text)) return 'learning'
+  if (/周报|会议记录|会议纪要|系统规划|路线图|实施计划|建设方案|任务总结|复盘|办公文档/i.test(text)) return 'office_docs'
+  if (/项目研究|技术选型|竞品|方案评估|项目评估|分析报告/i.test(text)) return 'project_analysis'
+  if (/架构设计|接口文档|API|部署|故障排查|技术规范|模块设计|工程约定|技术文档|技术资料/i.test(text)) return 'technical_docs'
+  return 'review'
 }
 
 /**
  * Classify a source into the Agent-maintained category tree.
  * @param input - title, content, source kind, and optional explicit category.
- * @returns a one- or two-segment category path.
+ * @returns a one- or two-segment category path, or an empty string for a flat space.
  */
-export function suggestWikiCategory(input: Pick<CreateWikiDraftInput, 'title' | 'content' | 'sourceKind' | 'categoryPath'>): string {
+export function suggestWikiCategory(input: Pick<CreateWikiDraftInput, 'title' | 'content' | 'sourceKind' | 'categoryPath' | 'targetSpaceId'>): string {
+  if (isFlatWikiSpace(input.targetSpaceId)) return ''
   const explicit = normalizeWikiCategoryPath(input.categoryPath)
-  if (explicit !== null) return explicit
+  const preferred = input.targetSpaceId === null || input.targetSpaceId === undefined
+    ? undefined
+    : WIKI_CATEGORY_BRANCHES[input.targetSpaceId]
+  if (explicit !== null && (preferred === undefined || explicit === '' || preferred.includes(explicit.split('/')[0] ?? ''))) return explicit
   const text = `${input.title}\n${input.content.slice(0, 1200)}`
-  if (/部署|安装|运行|推理|显卡|GPU|量化|MTP|WebUI|本地模型|Qwen/i.test(text)) return '技术分析/本地部署'
-  if (/性能|评测|基准|benchmark|tok\/s|延迟|吞吐/i.test(text)) return '技术分析/性能评测'
-  if (/架构|源码|代码|模块|接口|协议|仓库|实现/i.test(text)) return '技术分析/架构实现'
-  if (/商业|市场|竞品|收入|成本|定价|商业模式/i.test(text)) return '产品与市场/商业分析'
-  if (/安全|合规|隐私|许可证|漏洞|风险/i.test(text)) return '治理与风险/安全合规'
-  if (input.sourceKind === 'task_report') return '任务归档/任务报告'
+  if (input.targetSpaceId === 'office_docs') {
+    if (/周报|weekly/i.test(text)) return '周报/经营周报'
+    if (/会议|纪要|meeting/i.test(text)) return '会议记录/讨论纪要'
+    if (/规划|路线图|roadmap|方案|计划/i.test(text)) return '系统规划/建设方案'
+    if (/任务|交付|复盘|总结/i.test(text)) return '任务总结/交付复盘'
+    return DEFAULT_WIKI_CATEGORY
+  }
+  if (input.targetSpaceId === 'learning') {
+    if (/课程|培训|视频课|教程/i.test(text)) return '课程/学习笔记'
+    if (/书|文章|论文|专栏/i.test(text)) return '书籍文章/摘要'
+    return '学习笔记/知识整理'
+  }
+  if (input.targetSpaceId === 'technical_docs') {
+    if (/架构|模块|设计|adr|决策/i.test(text)) return '架构设计/系统设计'
+    if (/接口|API|协议|schema/i.test(text)) return '接口说明/API 文档'
+    if (/部署|安装|发布|配置|运行/i.test(text)) return '部署实施/运行手册'
+    if (/故障|排查|告警|恢复|问题/i.test(text)) return '故障排查/问题记录'
+    return '技术规范/工程约定'
+  }
+  if (input.targetSpaceId === 'smart_query') {
+    if (/审批|OA|表单|流程|待办|驳回|转人工|审批单|审批状态/i.test(text)) return '智能审批'
+    return '智能问数'
+  }
+  if (input.targetSpaceId === 'content_creation') {
+    if (/视频|分镜|旁白|HyperFrames|MP4/i.test(text)) return '视频模板/视频生产'
+    if (/动效|卡片|A2UI|动画|交互/i.test(text)) return '动效卡片/交互呈现'
+    if (/周报|weekly/i.test(text)) return '周报模板/经营周报'
+    return '内容规范/写作与排版'
+  }
   return DEFAULT_WIKI_CATEGORY
 }
 
@@ -260,6 +326,7 @@ export function createWikiDraftRecord(input: CreateWikiDraftInput): WikiDraft {
   const now = input.now ?? new Date().toISOString()
   const contentHash = wikiContentHash(input.content)
   const sourceRef = input.sourceRef?.trim() || null
+  const targetSpaceId = input.targetSpaceId?.trim() || suggestWikiSpace(input)
   return {
     id: `wd_${createHash('sha256').update(sourceRef ?? contentHash).digest('hex').slice(0, 20)}`,
     title: input.title.trim(),
@@ -270,8 +337,8 @@ export function createWikiDraftRecord(input: CreateWikiDraftInput): WikiDraft {
     sourceReportId: input.sourceReportId?.trim() || null,
     pageType: classifyWikiPage(input),
     status: 'inbox',
-    targetSpaceId: input.targetSpaceId?.trim() || null,
-    categoryPath: suggestWikiCategory(input),
+    targetSpaceId,
+    categoryPath: suggestWikiCategory({ ...input, targetSpaceId }),
     conflicts: [],
     contentHash,
     publishedDocumentId: null,

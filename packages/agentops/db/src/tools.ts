@@ -15,7 +15,7 @@ import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import type { DatabaseResolver } from './instances.ts'
 import { agentPresetOf } from './instances.ts'
 import { describeSchema, runQuery } from './query.ts'
-import { guardSql, referencedTables } from './guard.ts'
+import { guardSql, referencedTables, type DatasourceWhitelist } from './guard.ts'
 
 interface QueryTable {
   readonly columns: readonly string[]
@@ -23,19 +23,71 @@ interface QueryTable {
   readonly rowCount: number
   readonly elapsedMs: number
   readonly executedSql: string
+  /** SQL with the real schema replaced by a display placeholder for final answers. */
+  readonly displaySql: string
 }
 
-interface SchemaPayload {
+interface SchemaColumn {
+  readonly name: string
+  readonly type: string
+  readonly nullable: boolean
+}
+
+/** JSON carried by the tool result before render-time validation. */
+interface RenderableSchemaPayload {
   readonly datasource: string
-  readonly tables: Readonly<Record<string, readonly { name: string; type: string; nullable: boolean }[]>>
+  readonly displayName: string
+  readonly schema: string
+  readonly maxRows: number
+  readonly tables: unknown
+}
+
+interface SchemaPayload extends Omit<RenderableSchemaPayload, 'tables'> {
+  readonly tables: Readonly<Record<string, readonly SchemaColumn[]>>
 }
 
 const MAX_RENDERED_ROWS = 50
 const MAX_CELL_CHARS = 120
 
+/** Placeholder used for real schema names in model-visible and final-answer SQL. */
+const DISPLAY_SCHEMA = '<业务库>'
+
+/** Escape a schema name for use in a regular expression. */
+function escapeRegExp(value: string): string {
+  let result = ''
+  for (const char of value) {
+    if ('\\^$.|?*+()[]{}'.includes(char)) result += '\\'
+    result += char
+  }
+  return result
+}
+
+/**
+ * Replace every whitelisted schema prefix with a display placeholder.
+ * @param sql - SQL that may contain schema-qualified table references.
+ * @param whitelist - the datasource policy used for the query.
+ * @returns SQL safe for model-visible and final-answer output.
+ */
+function toDisplaySql(sql: string, whitelist: DatasourceWhitelist): string {
+  let result = sql
+  for (const schema of whitelist.schemas) {
+    if (schema === '') continue
+    result = result.replace(new RegExp('\\b' + escapeRegExp(schema) + '\\.', 'gi'), DISPLAY_SCHEMA + '.')
+  }
+  return result
+}
+
 function cell(value: unknown): string {
   if (value === null || value === undefined) return 'NULL'
-  const text = typeof value === 'object' ? JSON.stringify(value) : String(value)
+  const text = typeof value === 'string'
+    ? value
+    : typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint'
+      ? String(value)
+      : typeof value === 'symbol'
+        ? value.toString()
+        : typeof value === 'function'
+          ? `[function ${value.name === '' ? 'anonymous' : value.name}]`
+          : JSON.stringify(value)
   return text.length > MAX_CELL_CHARS ? `${text.slice(0, MAX_CELL_CHARS)}…` : text
 }
 
@@ -55,7 +107,7 @@ export function renderRows(table: QueryTable): string {
   const shown = table.rows.slice(0, MAX_RENDERED_ROWS)
   const lines = [
     header,
-    `SQL: ${table.executedSql}`,
+    `SQL: ${table.displaySql}`,
     '',
     `| ${columns.join(' | ')} |`,
     `| ${columns.map(() => '---').join(' | ')} |`,
@@ -67,17 +119,39 @@ export function renderRows(table: QueryTable): string {
   return lines.join('\n')
 }
 
+/** Normalize the JSON table map before rendering. */
+function schemaTables(value: unknown): SchemaPayload['tables'] {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return {}
+  const entries: [string, readonly SchemaColumn[]][] = []
+  for (const [name, columns] of Object.entries(value)) {
+    if (!Array.isArray(columns)) continue
+    const valid = columns.flatMap((column): SchemaColumn[] => {
+      if (typeof column !== 'object' || column === null || Array.isArray(column)) return []
+      const candidate = column as Record<string, unknown>
+      return typeof candidate.name === 'string' && typeof candidate.type === 'string'
+        && typeof candidate.nullable === 'boolean'
+        ? [{ name: candidate.name, type: candidate.type, nullable: candidate.nullable }]
+        : []
+    })
+    entries.push([name, valid])
+  }
+  return Object.fromEntries(entries)
+}
+
 /**
  * Same rule for the schema: list tables and their columns instead of a count.
  * @param payload - the described schema.
  * @returns the schema rendered as text.
  */
-export function renderSchema(payload: SchemaPayload): string {
-  const names = Object.keys(payload.tables)
-  const lines = [`数据源 ${payload.datasource}：${names.length} 张表（字段来自 information_schema）`]
+export function renderSchema(payload: RenderableSchemaPayload): string {
+  const tables = schemaTables(payload.tables)
+  const names = Object.keys(tables)
+  const qualifier = payload.schema === '' ? '' : `${payload.schema}.`
+  const lines = [`数据源 ${payload.displayName}（${payload.datasource}，schema ${payload.schema}）：${names.length} 张表（字段来自 information_schema）`]
+  if (payload.maxRows > 0) lines.push(`LIMIT 上限：${payload.maxRows}`)
   for (const name of names) {
-    const columns = payload.tables[name] ?? []
-    lines.push(`${name}（${columns.length} 列）：${columns.map(column => `${column.name} ${column.type.split(' — ')[0]}`).join(', ')}`)
+    const columns = tables[name] ?? []
+    lines.push(`${qualifier}${name}（${columns.length} 列）：${columns.map(column => `${column.name} ${column.type.split(' — ')[0]}`).join(', ')}`)
   }
   return lines.join('\n')
 }
@@ -111,6 +185,7 @@ export function createDbTools(resolve: DatabaseResolver): readonly [ToolDefiniti
           elapsedMs: { type: 'integer', required: true },
           truncated: { type: 'boolean', required: true },
           executedSql: { type: 'string', required: true },
+          displaySql: { type: 'string', required: true },
           tables: { type: 'array', required: true, items: { type: 'string' } },
           error: { type: 'string' },
         },
@@ -118,8 +193,8 @@ export function createDbTools(resolve: DatabaseResolver): readonly [ToolDefiniti
       render: (_args, value) => [{
         type: 'text',
         text:  value.ok
-          ? renderRows(value as unknown as QueryTable)
-          : `查询失败：${String(value.error ?? '未知原因')}`,
+          ? renderRows(value as QueryTable)
+          : `查询失败：${value.error ?? '未知原因'}`,
       }],
     },
     async execute(args, exec) {
@@ -127,7 +202,7 @@ export function createDbTools(resolve: DatabaseResolver): readonly [ToolDefiniti
       if (!resolution.ok) {
         return {
           ok: false, columns: [], rows: [], rowCount: 0, elapsedMs: 0, truncated: false,
-          executedSql: '', tables: [], error: resolution.reason,
+          executedSql: '', displaySql: '', tables: [], error: resolution.reason,
         }
       }
       const database = resolution.database
@@ -135,12 +210,12 @@ export function createDbTools(resolve: DatabaseResolver): readonly [ToolDefiniti
       if (!guarded.ok) {
         return {
           ok: false, columns: [], rows: [], rowCount: 0, elapsedMs: 0, truncated: false,
-          executedSql: guarded.sql, tables: [], error: guarded.reason ?? 'SQL 未通过校验',
+          executedSql: guarded.sql, displaySql: toDisplaySql(guarded.sql, database.whitelist), tables: [], error: guarded.reason ?? 'SQL 未通过校验',
         }
       }
       try {
         const result = await runQuery(
-          { key: database.instanceId, whitelist: database.whitelist },
+          { key: database.instanceId, displayName: database.label, whitelist: database.whitelist },
           database.target,
           guarded.sql,
         )
@@ -152,12 +227,13 @@ export function createDbTools(resolve: DatabaseResolver): readonly [ToolDefiniti
           elapsedMs: result.elapsedMs,
           truncated: result.truncated,
           executedSql: guarded.sql,
+          displaySql: toDisplaySql(guarded.sql, database.whitelist),
           tables: referencedTables(guarded.sql),
         }
       } catch (reason) {
         return {
           ok: false, columns: [], rows: [], rowCount: 0, elapsedMs: 0, truncated: false,
-          executedSql: guarded.sql, tables: [],
+          executedSql: guarded.sql, displaySql: toDisplaySql(guarded.sql, database.whitelist), tables: [],
           error: reason instanceof Error ? reason.message : String(reason),
         }
       }
@@ -178,6 +254,9 @@ export function createDbTools(resolve: DatabaseResolver): readonly [ToolDefiniti
         additionalProperties: false,
         properties: {
           datasource: { type: 'string', required: true },
+          displayName: { type: 'string', required: true },
+          schema: { type: 'string', required: true },
+          maxRows: { type: 'integer', required: true },
           source: { type: 'string', required: true, enum: ['introspection', 'unavailable'] },
           tables: { type: 'json', required: true },
           note: { type: 'string' },
@@ -186,22 +265,25 @@ export function createDbTools(resolve: DatabaseResolver): readonly [ToolDefiniti
       render: (_args, value) => [{
         type: 'text',
         text: value.source === 'unavailable'
-          ? `无法获取结构：${String(value.note ?? '')}`
-          : renderSchema(value as unknown as SchemaPayload),
+          ? `无法获取结构：${value.note ?? ''}`
+          : renderSchema(value),
       }],
     },
     async execute(args, exec) {
       const resolution = await resolve(args.database, agentPresetOf(exec))
       if (!resolution.ok) {
-        return { datasource: args.database ?? '', source: 'unavailable' as const, tables: {} as never, note: resolution.reason }
+        return { datasource: args.database ?? '', displayName: args.database ?? '', schema: '', maxRows: 0, source: 'unavailable' as const, tables: {} as never, note: resolution.reason }
       }
       const database = resolution.database
       const described = await describeSchema(
-        { key: database.instanceId, whitelist: database.whitelist },
+        { key: database.instanceId, displayName: database.label, whitelist: database.whitelist },
         database.target,
       )
       return {
         datasource: described.datasource,
+        displayName: described.displayName,
+        schema: described.schema,
+        maxRows: described.maxRows,
         source: described.source,
         tables: described.tables as never,
         ...(described.note === undefined ? {} : { note: described.note }),

@@ -29,19 +29,28 @@ const target: Target = {
   database: connection.defaultDatabase,
 }
 
-const schema = await describeSchema(datasource, target)
-const tables = Object.entries(schema.tables).map(([name, columns]) => `${name}(${columns.length})`)
+const policy = {
+  key: datasource.key,
+  displayName: datasource.label,
+  whitelist: datasource.whitelist,
+}
 
-const sql = 'SELECT status, COUNT(*) AS total FROM audit_example.audit_records GROUP BY status ORDER BY total DESC LIMIT 10'
+const schema = await describeSchema(policy, target)
+if (schema.schema === '' || Object.keys(schema.tables).length === 0) {
+  throw new Error(`无法获取 ${datasource.key} 的表结构：${schema.note ?? '未知原因'}`)
+}
+const [firstTable] = Object.keys(schema.tables)
+if (firstTable === undefined) throw new Error('datasources 白名单里没有可校验的表')
+
+const sql = `SELECT COUNT(*) AS total FROM ${schema.schema}.${firstTable}`
 const guarded = guardSql(sql, datasource.whitelist)
 if (!guarded.ok) throw new Error(`guard 拒绝：${guarded.reason}`)
 
-const result = await runQuery(datasource, target, guarded.sql)
+const result = await runQuery(policy, target, guarded.sql)
 console.log(JSON.stringify({
-  tables: schema.tables === undefined ? [] : tables,
+  schema: schema.schema,
+  table: firstTable,
   schemaSource: schema.source,
-  columns: result.columns,
-  rows: result.rows,
   rowCount: result.rowCount,
   elapsedMs: result.elapsedMs,
   executedSql: guarded.sql,

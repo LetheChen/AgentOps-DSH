@@ -117,7 +117,7 @@ function riskLabel(risk: string): string {
 
 
 function truncate(text: string, limit: number): string {
-  const characters = [...text]
+  const characters = Array.from(text)
   return characters.length <= limit ? text : `${characters.slice(0, limit).join('')}…`
 }
 

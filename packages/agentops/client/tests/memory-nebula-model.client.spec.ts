@@ -55,6 +55,7 @@ const knowledge = (id: string, sourceTaskId: string | null = 't1'): KnowledgeMem
   spaceName: '财务制度',
   title: `Knowledge ${id}`,
   summary: 'Searchable knowledge summary',
+  tags: ['知识库'],
   updatedAt: '2026-11-12T00:00:00Z',
   version: 1,
   categoryPath: '技术分析/本地部署',
@@ -69,7 +70,7 @@ describe('memory nebula model', () => {
     const first = buildMemoryNebula([task('t1')], [], [decision('d1')], [knowledge('k1')])
     const second = buildMemoryNebula([task('t1')], [], [decision('d1')], [knowledge('k1')])
     expect(first.nodes).toEqual(second.nodes)
-    expect(first.nodes.map(node => node.kind)).toEqual(['task', 'memory', 'knowledge'])
+    expect(first.nodes.map(node => node.kind)).toEqual(['domain', 'subdomain', 'task', 'memory', 'knowledge'])
   })
 
   it('links memory to its source task', () => {
@@ -89,7 +90,18 @@ describe('memory nebula model', () => {
   it('filters task and memory modes independently', () => {
     const graph = buildMemoryNebula([task('t1')], [], [decision('d1')], [knowledge('k1')])
     expect(graph.nodes.filter(node => modeVisible(node, 'tasks')).map(node => node.kind)).toEqual(['task'])
-    expect(graph.nodes.filter(node => modeVisible(node, 'memories')).map(node => node.kind)).toEqual(['memory', 'knowledge'])
+    expect(graph.nodes.filter(node => modeVisible(node, 'memories')).map(node => node.kind)).toEqual(['domain', 'subdomain', 'memory', 'knowledge'])
+  })
+
+  it('bridges documents from different domains through shared tags', () => {
+    const graph = buildMemoryNebula([], [], [], [
+      knowledge('k1'),
+      { ...knowledge('k2'), spaceId: 'learning', spaceName: '学习资料' },
+    ])
+    const tag = graph.nodes.find(node => node.id === 'tag:知识库')
+    expect(tag?.kind).toBe('tag')
+    expect(tag?.status).toBe('cross_domain')
+    expect(graph.links.filter(link => link.kind === 'tagged')).toHaveLength(2)
   })
 
   it('maps decision authority and note class to memory categories', () => {

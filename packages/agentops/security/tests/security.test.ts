@@ -20,7 +20,7 @@ function withStore(run: (store: SecurityStore) => void): void {
   }
 }
 
-test('用户：创建、查询、邮箱唯一', () => {
+void test('用户：创建、查询、邮箱唯一', () => {
   withStore((store) => {
     const user = store.createUser({ id: 'u1', name: '陈工', email: 'chen@example.com', actor: 'admin', now: NOW })
     assert.equal(user.status, 'active')
@@ -35,7 +35,7 @@ test('用户：创建、查询、邮箱唯一', () => {
   })
 })
 
-test('用户：禁用与恢复都写审计', () => {
+void test('用户：禁用与恢复都写审计', () => {
   withStore((store) => {
     store.createUser({ id: 'u1', name: 'A', actor: 'admin', now: NOW })
     const v1 = store.getUser('u1')!.version
@@ -50,7 +50,7 @@ test('用户：禁用与恢复都写审计', () => {
   })
 })
 
-test('用户：陈旧版本被拒绝，不覆盖并发修改', () => {
+void test('用户：陈旧版本被拒绝，不覆盖并发修改', () => {
   withStore((store) => {
     store.createUser({ id: 'u1', name: 'A', actor: 'admin', now: NOW })
     const version = store.getUser('u1')!.version
@@ -63,7 +63,7 @@ test('用户：陈旧版本被拒绝，不覆盖并发修改', () => {
   })
 })
 
-test('Token：只存哈希，明文不可回读，撤销后校验失败', () => {
+void test('Token：只存哈希，明文不可回读，撤销后校验失败', () => {
   withStore((store) => {
     store.createUser({ id: 'u1', name: 'A', actor: 'admin', now: NOW })
     const secret = 'aops_secret_value'
@@ -80,7 +80,7 @@ test('Token：只存哈希，明文不可回读，撤销后校验失败', () => 
   })
 })
 
-test('角色：授权合并去重，未授权用户为空', () => {
+void test('角色：授权合并去重，未授权用户为空', () => {
   withStore((store) => {
     store.createUser({ id: 'u1', name: 'A', actor: 'admin', now: NOW })
     store.createRole({ id: 'viewer', name: '只读', permissions: ['task.read', 'kb.read'], actor: 'admin', now: NOW })
@@ -97,7 +97,7 @@ test('角色：授权合并去重，未授权用户为空', () => {
   })
 })
 
-test('用量：按模型与用户聚合，总数为各项之和', () => {
+void test('用量：按模型与用户聚合，总数为各项之和', () => {
   withStore((store) => {
     store.recordUsage({ id: 'r1', userId: 'u1', agent: 'a', provider: 'p1', model: 'm1', promptTokens: 10, completionTokens: 5, at: NOW })
     store.recordUsage({ id: 'r2', userId: 'u1', agent: 'a', provider: 'p1', model: 'm1', promptTokens: 20, completionTokens: 10, at: NOW })
@@ -114,7 +114,7 @@ test('用量：按模型与用户聚合，总数为各项之和', () => {
   })
 })
 
-test('用量：旧数据库原位补 provider 列，历史行标记为 unknown', () => {
+void test('用量：旧数据库原位补 provider 列，历史行标记为 unknown', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentops-security-legacy-'))
   const path = join(dir, 'security.db')
   const db = new DatabaseSync(path)
@@ -147,7 +147,7 @@ test('用量：旧数据库原位补 provider 列，历史行标记为 unknown',
   }
 })
 
-test('会话：开始与结束，结束后不可再被当作 active', () => {
+void test('会话：开始与结束，结束后不可再被当作 active', () => {
   withStore((store) => {
     store.createUser({ id: 'u1', name: 'A', actor: 'admin', now: NOW })
     store.startSession({ id: 's1', userId: 'u1', agent: 'manager', now: NOW })
@@ -161,7 +161,7 @@ test('会话：开始与结束，结束后不可再被当作 active', () => {
   })
 })
 
-test('summarizeUsage：空输入不产生假数据', () => {
+void test('summarizeUsage：空输入不产生假数据', () => {
   assert.deepEqual(summarizeUsage([]), {
     totalTokens: 0, promptTokens: 0, completionTokens: 0, calls: 0, byModel: [], byUser: [],
   })

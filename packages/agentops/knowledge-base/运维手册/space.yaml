@@ -1,5 +1,5 @@
 id: ops
 name: 运维手册
-description: 生产发布、告警响应与数据备份的操作规程与回滚口径。
+description: 发布、告警、值班与备份恢复规程，服务运维和日志巡检工作流。该域不设二级目录。
 visibility: shared
 readers: []

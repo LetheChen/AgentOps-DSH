@@ -25,6 +25,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { beforeAll, describe, expect, it } from 'vitest'
+import { isElevatedWindows } from './elevated.ts'
 
 const isWin32 = process.platform === 'win32'
 
@@ -130,7 +131,7 @@ function normalized(path: string, lines: readonly string[]): string[] {
   })
 }
 
-describe.skipIf(!isWin32 || !pwshAvailable())('diagnose-windows-sandbox-acl script', { timeout }, () => {
+describe.skipIf(!isWin32 || !pwshAvailable() || isElevatedWindows())('diagnose-windows-sandbox-acl script', { timeout }, () => {
   let meSid!: string
 
   function newScratch(): string {

@@ -39,6 +39,12 @@ export const KNOWN_COMPONENTS: readonly string[] = [
 ]
 
 
+/** Parse stored JSON without asserting its runtime type. */
+function parseJsonValue(text: string): unknown {
+  const value: unknown = JSON.parse(text)
+  return value
+}
+
 /** Per-component contract: required keys, allowed extras, and the enum values we enforce. */
 const COMPONENT_RULES: Record<string, { required: readonly string[]; optional: readonly string[] }> = {
   AoSection: { required: ['children'], optional: ['title', 'tone'] },
@@ -299,7 +305,7 @@ export class SurfaceStore {
     `)
     // Old databases predate view_id; the board aggregates by it. Migrate before
     // creating the index that depends on the column.
-    const columns = this.#db.prepare('PRAGMA table_info(surfaces)').all() as unknown as { name: string }[]
+    const columns = this.#db.prepare('PRAGMA table_info(surfaces)').all() as { name: string }[]
     if (!columns.some(column => column.name === 'view_id')) {
       this.#db.exec("ALTER TABLE surfaces ADD COLUMN view_id TEXT NOT NULL DEFAULT 'main'")
     }
@@ -413,7 +419,7 @@ export class SurfaceStore {
   list(limit = 20): StoredSurface[] {
     const rows = this.#db.prepare(
       'SELECT id, view_id, session_id, title, surface_json, content_json, created_at FROM surfaces ORDER BY id DESC LIMIT ?',
-    ).all(limit) as unknown as {
+    ).all(limit) as {
       id: number
       view_id: string
       session_id: string | null
@@ -427,8 +433,8 @@ export class SurfaceStore {
       viewId: row.view_id,
       sessionId: row.session_id,
       title: row.title,
-      surface: JSON.parse(row.surface_json) as unknown,
-      content: row.content_json === null ? null : JSON.parse(row.content_json) as unknown,
+      surface: parseJsonValue(row.surface_json),
+      content: row.content_json === null ? null : parseJsonValue(row.content_json),
       createdAt: row.created_at,
     }))
   }
@@ -444,9 +450,9 @@ export function registerSurfaceRoutes(ctx: Context, store: SurfaceStore): void {
     path: '/api/agentops/surfaces',
     methods: ['GET'],
     requestBody: 'buffered',
-    fetch: async (request) => {
+    fetch: (request) => {
       const limit = Math.min(Math.max(Number(new URL(request.url).searchParams.get('limit') ?? '20') || 20, 1), 100)
-      return json({ surfaces: store.list(limit) })
+      return Promise.resolve(json({ surfaces: store.list(limit) }))
     },
   }), 'agentops-system: /api/agentops/surfaces')
 
@@ -477,14 +483,14 @@ export function registerSurfaceRoutes(ctx: Context, store: SurfaceStore): void {
     path: '/api/agentops/surfaces/views',
     methods: ['GET'],
     requestBody: 'buffered',
-    fetch: async () => json({ views: store.views() }),
+    fetch: () => Promise.resolve(json({ views: store.views() })),
   }), 'agentops-system: /api/agentops/surfaces/views')
 
   ctx.effect(() => ctx.connection.fetch.register({
     path: '/api/agentops/surfaces/latest',
     methods: ['GET'],
     requestBody: 'buffered',
-    fetch: async () => json({ surface: store.latest() }),
+    fetch: () => Promise.resolve(json({ surface: store.latest() })),
   }), 'agentops-system: /api/agentops/surfaces/latest')
 }
 
@@ -544,7 +550,7 @@ export function createPresentContentTool(store: SurfaceStore): ToolDefinition {
         type: 'text',
         text:  value.stored
           ? `已发布会话面板 surface（#${String(value.id)}，${String(value.components)} 个组件）`
-          : `surface 未发布：${String(value.reason ?? '校验失败')}`,
+          : `surface 未发布：${value.reason ?? '校验失败'}`,
       }],
     },
     execute(args) {
@@ -615,7 +621,7 @@ export function createBoardCleanupTool(store: SurfaceStore): ToolDefinition {
       },
       render: (_args, value) => [{
         type: 'text',
-        text:  value.ok ? `已删除 ${String(value.removed)} 张卡片` : `未删除：${String(value.reason ?? '未知原因')}`,
+        text:  value.ok ? `已删除 ${String(value.removed)} 张卡片` : `未删除：${value.reason ?? '未知原因'}`,
       }],
     },
     execute(args) {

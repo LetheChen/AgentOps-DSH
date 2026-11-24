@@ -1,0 +1,18 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "lib/types"
+  },
+  "include": ["src"],
+  "references": [
+    { "path": "../../../vendor/cordis" },
+    { "path": "../../core/tools" },
+    { "path": "../../util/home-paths" },
+    { "path": "../../util/values" },
+    { "path": "../../subprocess/subprocess" },
+    { "path": "../../preset/agent-preset-registry" },
+    { "path": "../../interaction/user-approval" },
+    { "path": "../capability" }
+  ]
+}

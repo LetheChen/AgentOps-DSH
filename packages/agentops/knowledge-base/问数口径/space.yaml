@@ -1,5 +1,0 @@
-id: smart_query
-name: 问数口径
-description: 智能问数用的业务口径：指标定义、时间口径、常见问法与能力边界。字段名以 describe_database 为准。
-visibility: shared
-readers: []

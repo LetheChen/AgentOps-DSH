@@ -12,7 +12,7 @@ function service(seed = true): KnowledgeService {
   const repo = new SqliteKnowledgeRepository(':memory:')
   const svc = KnowledgeService.open(repo)
   if (seed) {
-    svc.addSpace({ id: 'finance', name: '财务', visibility: 'shared', readers: [] })
+    svc.addSpace({ id: 'finance', name: '财务', description: '', visibility: 'shared', readers: [] })
     svc.addDocument({
       id: 'doc-travel', spaceId: 'finance', title: '差旅办法', mime: 'text/markdown',
       parser: 'md@1', contentHash: 'h-travel', now: NOW,

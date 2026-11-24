@@ -12,6 +12,7 @@ import { publint, type Message, type PackFile } from 'publint'
 import { formatMessage } from 'publint/utils'
 import ts from 'typescript'
 import { defaultParallelism } from './parallelism.ts'
+import { FORK_OWNED_PACKAGE_ROOT } from './fork-package-policy.ts'
 import { isBrowserBundleFormatFalsePositive } from './publint-browser-format.ts'
 
 const CONCURRENCY_ENV = 'DSH_PUBLINT_CONCURRENCY'
@@ -52,6 +53,9 @@ type PublintResult =
 
 function workspacePackages(): PackageTarget[] {
   return globSync('packages/*/*/package.json', { cwd: packagesRoot })
+    // Fork-owned packages stay private and are outside the upstream release
+    // contract, so npm publication readiness does not apply to them.
+    .filter(manifestPath => !manifestPath.split(sep).join('/').startsWith(`${FORK_OWNED_PACKAGE_ROOT}/`))
     .sort()
     .map((manifestPath) => {
       const absoluteManifestPath = resolve(packagesRoot, manifestPath)

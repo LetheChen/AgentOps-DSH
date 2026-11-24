@@ -606,6 +606,30 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'capabilityRuntime',
+    summary: 'Root-owned runtime repository shared with preset-scoped tools.',
+    description: 'Root-owned runtime repository shared with preset-scoped tools.',
+    methods: [
+      {
+        signature: 'readonly store: CapabilityStore',
+        description: 'The root store shared with control-plane routes.',
+        parameters: [],
+      },
+      {
+        signature: 'resolveSet(agentPreset: string, capabilityId: string): CapabilityToolResolution',
+        description: 'Resolve one preset\'s configured binding state and enabled capability instances.',
+        parameters: [{ name: 'agentPreset', description: 'preset bound to the executing Agent.' }, { name: 'capabilityId', description: 'capability family requested by the tool.' }],
+        returns: 'configured state plus enabled runtime instances.',
+      },
+      {
+        signature: 'resolve(agentPreset: string, capabilityId: string, requestedInstanceId?: string): CapabilityRuntime',
+        description: 'Resolve one authorized runtime instance.',
+        parameters: [{ name: 'agentPreset', description: 'preset bound to the executing Agent.' }, { name: 'capabilityId', description: 'capability family requested by the tool.' }, { name: 'requestedInstanceId', description: 'optional explicit instance id or alias.' }],
+        returns: 'the authorized instance and its opened credential.',
+      },
+    ],
+  },
+  {
     key: 'claudeCodeMods',
     summary: 'The bridge service: loaded mods, their hooks, and the harness listeners that raise their events.',
     description: 'The bridge service: loaded mods, their hooks, and the harness listeners that raise their events. Mods join through ClaudeCodeMods.add, which defineMod calls when a mod plugin mounts. The Remote methods let a Client draw each session\'s band above the prompt and press its buttons.',
@@ -809,7 +833,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
       },
       {
         signature: 'createSharedFetchHandler(channel: \'/api\'): ConnectionFetchHandler',
-        description: 'Compose exact Fetch routes and the shared-channel RPC interceptor.',
+        description: 'Compose exact Fetch routes and the shared-channel RPC interceptors.',
         parameters: [{ name: 'channel', description: 'shared channel mounted by Connection.' }],
         returns: 'Fetch handler for trusted, authenticated requests.',
       },
@@ -1116,6 +1140,28 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Prepare every currently registered field from one immutable base request. A provider whose preparation throws, or whose value cannot be cloned, is omitted from this request; the first such failure per field is logged. Only cancellation rejects. Field values are cloned and frozen; providers retain no mutable alias to the outgoing request.',
         parameters: [{ name: 'request', description: 'exact serialized request facts before extension fields.' }],
         returns: 'detached fields and their idempotent joint acceptance transaction.',
+      },
+    ],
+  },
+  {
+    key: 'deployment',
+    summary: 'Root-owned deployment journal and capability store.',
+    description: 'Root-owned deployment journal and capability store.',
+    methods: [
+      {
+        signature: 'readonly journal: DeploymentStore',
+        description: 'Durable release journal.',
+        parameters: [],
+      },
+      {
+        signature: 'readonly capabilityStore: CapabilityStore',
+        description: 'Capability center store used to resolve deployment and SSH instances.',
+        parameters: [],
+      },
+      {
+        signature: 'readonly transport: DeploymentTransport',
+        description: 'SSH transport used for all remote release operations.',
+        parameters: [],
       },
     ],
   },
@@ -1672,6 +1718,23 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Stream one model call as raw chunks (token-level deltas). Replay state is retained only when the same adapter instance owns its historical provider and the target provider. Final adapter selection remains fixed through asynchronous exact-model resolution and dispatch. Adapter selection, dispatch, and iteration failures become terminal `error` or `aborted` finish chunks; middleware, nested-call, cleanup, and consumer failures remain thrown.',
         parameters: [{ name: 'options', description: 'the full request; `options.provider` selects the adapter.' }],
         returns: 'the chunk stream, possibly wrapped by `llm/stream` listeners.',
+      },
+    ],
+  },
+  {
+    key: 'logCollection',
+    summary: 'Root-owned log collection service consumed by Agent-scoped tools.',
+    description: 'Root-owned log collection service consumed by Agent-scoped tools.',
+    methods: [
+      {
+        signature: 'readonly store: LogCollectionStore',
+        description: 'Registry of the deployment\'s log collection tasks.',
+        parameters: [],
+      },
+      {
+        signature: 'readonly capabilityStore: CapabilityStore',
+        description: 'Capability center repository backing SSH instance bindings.',
+        parameters: [],
       },
     ],
   },
@@ -5114,7 +5177,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'AgentPresetRow',
-    declaration: 'export interface AgentPresetRow {\n    readonly id: string;\n    readonly isDefault: boolean;\n    readonly name?: string;\n    readonly description?: string;\n    readonly broken?: string;\n}',
+    declaration: 'export interface AgentPresetRow {\n    readonly id: string;\n    readonly isDefault: boolean;\n    readonly name?: string;\n    readonly description?: string;\n    readonly hidden?: boolean;\n    readonly broken?: string;\n}',
   },
   {
     name: 'AgentResolver',
@@ -5361,6 +5424,38 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface ButtonProps {\n    readonly label: string;\n    readonly hotkey?: string | undefined;\n    readonly disabled?: boolean | undefined;\n    readonly onPress?: (() => unknown) | undefined;\n}',
   },
   {
+    name: 'CapabilityBinding',
+    declaration: 'export interface CapabilityBinding {\n    readonly agentPreset: string;\n    readonly capabilityId: string;\n    readonly instanceId: string;\n    readonly enabled: boolean;\n    readonly createdAt: string;\n    readonly updatedAt: string;\n}',
+  },
+  {
+    name: 'CapabilityConfigField',
+    declaration: 'export interface CapabilityConfigField {\n    readonly key: string;\n    readonly type: \'string\' | \'number\' | \'boolean\' | \'array\' | \'select\';\n    readonly label: string;\n    readonly required: boolean;\n    readonly placeholder?: string;\n    readonly description?: string;\n    readonly options?: readonly string[];\n    readonly default?: unknown;\n}',
+  },
+  {
+    name: 'CapabilityDefinition',
+    declaration: 'export interface CapabilityDefinition {\n    readonly capabilityId: string;\n    readonly name: string;\n    readonly category: string;\n    readonly provider: string;\n    readonly description: string;\n    readonly transports: readonly CapabilityTransport[];\n    readonly configSchema: readonly CapabilityConfigField[];\n    readonly riskLevel: \'low\' | \'medium\' | \'high\';\n    readonly authorizationCapabilityId: string;\n    readonly supportsInstances: boolean;\n    readonly credentialRequired: boolean;\n}',
+  },
+  {
+    name: 'CapabilityRuntime',
+    declaration: 'export interface CapabilityRuntime {\n    readonly agentPreset: string;\n    readonly capabilityId: string;\n    readonly instanceId: string;\n    readonly name: string;\n    readonly config: Readonly<Record<string, unknown>>;\n    readonly accessPolicy: Readonly<Record<string, unknown>>;\n    readonly secret: string | null;\n    readonly credentialGeneration: string;\n}',
+  },
+  {
+    name: 'CapabilityStore',
+    declaration: 'export class CapabilityStore {\n    constructor(path: string, key: MasterKey = loadCapabilityMasterKey());\n    close(): void;\n    listCapabilities(): CapabilityDefinition[];\n    readMeta(key: string): string | null;\n    writeMeta(key: string, value: string): void;\n    importLegacyConnections(connections: readonly {\n        readonly id: string;\n        readonly kind: \'database\' | \'server\';\n        readonly name: string;\n        readonly driver: string;\n        readonly host: string;\n        readonly port: number | null;\n        readonly username: string;\n        readonly defaultDatabase: string | null;\n        readonly enabled: boolean;\n        readonly secret: string | null;\n    }[], actor: string = \'migration\'): number;\n    listTools(capabilityId?: string): CapabilityToolView[];\n    getCapability(capabilityId: string): CapabilityDefinition | null;\n    listInstances(capabilityId?: string): IntegrationInstanceView[];\n    getInstance(instanceId: string): IntegrationInstanceView | null;\n    saveInstance(input: InstanceInput, actor: string = \'owner\'): IntegrationInstanceView;\n    deleteInstance(instanceId: string, actor: string = \'owner\'): boolean;\n    resolveInstanceRuntime(instanceId: string): CapabilityRuntime | null;\n    recordTest(instanceId: string, ok: boolean, error: string | null, actor: string = \'owner\'): IntegrationInstanceView | null;\n    listBindings(agentPreset: string): CapabilityBinding[];\n    replaceBindings(agentPreset: string, bindings: readonly {\n        capabi /* …truncated — full shape in source */',
+  },
+  {
+    name: 'CapabilityToolResolution',
+    declaration: 'export interface CapabilityToolResolution {\n    readonly configured: boolean;\n    readonly runtimes: CapabilityRuntime[];\n}',
+  },
+  {
+    name: 'CapabilityToolView',
+    declaration: 'export interface CapabilityToolView {\n    readonly toolId: string;\n    readonly displayName: string;\n    readonly description: string;\n    readonly capabilityId: string;\n    readonly capabilityTransport: CapabilityTransport;\n    readonly authorizationCapabilityId: string;\n    readonly requiresCapabilityInstance: boolean;\n    readonly handlerModule: string;\n    readonly handlerFunction: string;\n    readonly allowedDomains: readonly string[];\n    readonly allowedAgents: readonly string[];\n    readonly deniedAgents: readonly string[];\n    readonly runtimeAvailable: boolean;\n    readonly runtimeNote: string;\n    readonly declarationKind: \'runtime_tool\' | \'interface\';\n}',
+  },
+  {
+    name: 'CapabilityTransport',
+    declaration: 'export type CapabilityTransport = \'rest\' | \'mcp\' | \'cli\' | \'webhook\' | \'oauth\' | \'skill\';',
+  },
+  {
     name: 'CatalogEntry',
     declaration: 'export interface CatalogEntry {\n    readonly workflowId: string;\n    readonly version: number;\n    readonly businessId?: string;\n    readonly nodeCount: number;\n    readonly digest: string;\n}',
   },
@@ -5375,6 +5470,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'ChangeResult',
     declaration: 'export interface ChangeResult {\n    changed: boolean;\n    application: \'applied\' | \'restart-required\' | \'overridden\' | \'failed\' | \'cancelled\';\n    restartReason?: RestartReason;\n    stage: \'install\' | \'enable\' | \'remove\';\n    target: string;\n    enabled?: boolean;\n    error?: ManagementError;\n    warnings?: string[];\n    packageResult?: PackageResult;\n    bundle?: string;\n    version?: string;\n    pendingBuilds?: string[];\n    approvedBuilds?: string[];\n    registries?: Registry[];\n    failedAt?: \'registry\' | \'spec-host\';\n}',
+  },
+  {
+    name: 'ClaimedRelease',
+    declaration: 'export interface ClaimedRelease {\n    readonly releaseUid: string;\n    readonly fencingToken: string;\n}',
   },
   {
     name: 'ClientArtifactBaseline',
@@ -5669,6 +5768,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface CreateGoalResult {\n    readonly ref: GoalRef;\n}',
   },
   {
+    name: 'CreateLogCollectionTaskInput',
+    declaration: 'export interface CreateLogCollectionTaskInput {\n    readonly tenantKey: string;\n    readonly taskId?: string;\n    readonly name: string;\n    readonly ownerDomain: string;\n    readonly sshInstanceId: string;\n    readonly remotePaths: readonly string[];\n    readonly localSubdir?: string;\n    readonly localMaxDays: number;\n    readonly enabled?: boolean;\n    readonly actor: string;\n}',
+  },
+  {
     name: 'CreateSessionOptions',
     declaration: 'export interface CreateSessionOptions {\n    readonly seed?: readonly SessionEvent[];\n    readonly inheritedEventCount?: SessionLogOffset;\n    readonly meta?: {\n        readonly cwd?: string;\n        readonly parentSession?: SessionId;\n        readonly createdAt?: number;\n        readonly isSeeded?: boolean;\n        readonly origin?: \'subagent\';\n        readonly delegationDepth?: number;\n        readonly agentPreset?: string;\n    };\n}',
   },
@@ -5763,6 +5866,42 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'DeliveryRetentionBounds',
     declaration: 'export interface DeliveryRetentionBounds {\n    readonly days: number;\n    readonly records: number;\n}',
+  },
+  {
+    name: 'DeploymentLease',
+    declaration: 'export interface DeploymentLease {\n    readonly instanceId: string;\n    readonly releaseUid: string;\n    readonly ownerPreset: string;\n    readonly fencingToken: string;\n    readonly state: \'active\' | \'unknown_hold\';\n    readonly acquiredAt: string;\n    readonly heartbeatAt: string;\n}',
+  },
+  {
+    name: 'DeploymentRelease',
+    declaration: 'export interface DeploymentRelease {\n    readonly releaseUid: string;\n    readonly instanceId: string;\n    readonly tenantKey: string;\n    readonly releaseId: string;\n    readonly state: DeploymentReleaseState;\n    readonly manifest: ReleaseManifest | null;\n    readonly manifestDigest: string | null;\n    readonly backupTag: string | null;\n    readonly backupImageId: string | null;\n    readonly imageId: string | null;\n    readonly lastConfirmedStep: string | null;\n    readonly steps: readonly DeploymentStep[];\n    readonly errorCode: string | null;\n    readonly errorMessage: string | null;\n    readonly startedAt: string;\n    readonly updatedAt: string;\n    readonly finishedAt: string | null;\n}',
+  },
+  {
+    name: 'DeploymentReleaseState',
+    declaration: 'export type DeploymentReleaseState = \'planned\' | \'uploading\' | \'releasing\' | \'health_checking\' | \'healthy\' | \'failed\' | \'unknown_hold\' | \'rolled_back\';',
+  },
+  {
+    name: 'DeploymentSshConfig',
+    declaration: 'export interface DeploymentSshConfig {\n    readonly instanceId: string;\n    readonly host: string;\n    readonly port: number;\n    readonly username: string;\n    readonly authType: \'password\' | \'key\';\n    readonly hostKeySha256: string;\n    readonly instanceRevision: string;\n}',
+  },
+  {
+    name: 'DeploymentSshCredential',
+    declaration: 'export interface DeploymentSshCredential {\n    readonly password?: string;\n    readonly privateKey?: string;\n    readonly passphrase?: string;\n}',
+  },
+  {
+    name: 'DeploymentStatus',
+    declaration: 'export interface DeploymentStatus {\n    readonly current: DeploymentRelease | null;\n    readonly previousHealthy: DeploymentRelease | null;\n    readonly journal: readonly DeploymentRelease[];\n}',
+  },
+  {
+    name: 'DeploymentStep',
+    declaration: 'export interface DeploymentStep {\n    readonly name: string;\n    readonly status: \'passed\' | \'failed\' | \'unknown\';\n    readonly at: string;\n    readonly detail?: string;\n}',
+  },
+  {
+    name: 'DeploymentStore',
+    declaration: 'export class DeploymentStore {\n    constructor(db: DatabaseSync);\n    claim(input: {\n        readonly instanceId: string;\n        readonly tenantKey: string;\n        readonly releaseId: string;\n        readonly ownerPreset: string;\n    }): ClaimedRelease;\n    recordStep(releaseUid: string, step: DeploymentStep, patch: ReleaseUpdate = {}): void;\n    settle(releaseUid: string, state: Exclude<DeploymentReleaseState, \'planned\' | \'uploading\' | \'releasing\' | \'health_checking\' | \'unknown_hold\'>, error?: {\n        code: string;\n        message: string;\n    }): void;\n    holdUnknown(releaseUid: string, step: string, message: string): void;\n    get(releaseUid: string): DeploymentRelease;\n    findByReleaseId(instanceId: string, releaseId: string): DeploymentRelease | null;\n    status(instanceId: string): DeploymentStatus;\n    lease(instanceId: string): DeploymentLease | null;\n    healthPassed(releaseUid: string, name: string): void;\n}',
+  },
+  {
+    name: 'DeploymentTransport',
+    declaration: 'export interface DeploymentTransport {\n    probeHostKey(config: DeploymentSshConfig): Promise<string>;\n    upload(config: DeploymentSshConfig, credential: DeploymentSshCredential, localPath: string, remotePath: string, signal?: AbortSignal): Promise<void>;\n    execute(config: DeploymentSshConfig, credential: DeploymentSshCredential, argv: readonly string[], timeoutMs: number, signal?: AbortSignal): Promise<RemoteCommandResult>;\n}',
   },
   {
     name: 'DeveloperMessage',
@@ -6153,6 +6292,18 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type InstallSpecKind = \'registry\' | \'path\' | \'git\' | \'tarball\';',
   },
   {
+    name: 'InstanceInput',
+    declaration: 'export interface InstanceInput {\n    readonly instanceId?: string;\n    readonly capabilityId: string;\n    readonly name: string;\n    readonly config: Readonly<Record<string, unknown>>;\n    readonly accessPolicy?: Readonly<Record<string, unknown>>;\n    readonly status?: InstanceStatus;\n    readonly secret?: string;\n}',
+  },
+  {
+    name: 'InstanceStatus',
+    declaration: 'export type InstanceStatus = \'enabled\' | \'disabled\' | \'error\';',
+  },
+  {
+    name: 'IntegrationInstanceView',
+    declaration: 'export interface IntegrationInstanceView {\n    readonly instanceId: string;\n    readonly capabilityId: string;\n    readonly name: string;\n    readonly config: Readonly<Record<string, unknown>>;\n    readonly accessPolicy: Readonly<Record<string, unknown>>;\n    readonly credentialConfigured: boolean;\n    readonly credentialGeneration: string;\n    readonly status: InstanceStatus;\n    readonly lastTestStatus: \'succeeded\' | \'failed\' | null;\n    readonly lastTestAt: string | null;\n    readonly lastTestError: string | null;\n    readonly createdAt: string;\n    readonly updatedAt: string;\n}',
+  },
+  {
     name: 'InternalScheduleError',
     declaration: 'export interface InternalScheduleError {\n    readonly code: \'internal_error\';\n    readonly message: string;\n}',
   },
@@ -6445,6 +6596,38 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type LocalizedText = string | {\n    readonly en: string;\n    readonly [locale: string]: string;\n};',
   },
   {
+    name: 'LogCollectionFileState',
+    declaration: 'export interface LogCollectionFileState {\n    readonly remotePath: string;\n    readonly localName: string;\n    readonly lastSize: number;\n    readonly lastMtimeMs: number;\n    readonly analyzedSize: number;\n    readonly lastPulledAt: string;\n}',
+  },
+  {
+    name: 'LogCollectionFileStates',
+    declaration: 'export class LogCollectionFileStates {\n    constructor(db: DatabaseSync);\n    list(tenantKey: string, taskId: string): Map<string, LogCollectionFileState>;\n    replace(tenantKey: string, taskId: string, states: readonly LogCollectionFileState[]): void;\n    advanceAnalyzed(tenantKey: string, taskId: string, remotePath: string, offset: number): void;\n}',
+  },
+  {
+    name: 'LogCollectionRun',
+    declaration: 'export interface LogCollectionRun {\n    readonly runId: string;\n    readonly tenantKey: string;\n    readonly taskId: string;\n    readonly sshInstanceId: string;\n    readonly actor: string;\n    readonly origin: \'manual\' | \'tool\' | \'schedule\';\n    readonly status: \'succeeded\' | \'failed\';\n    readonly startedAt: string;\n    readonly finishedAt: string;\n    readonly elapsedMs: number;\n    readonly fileCount: number;\n    readonly byteCount: number;\n    readonly files: readonly {\n        readonly remotePath: string;\n        readonly localPath: string;\n        readonly bytes: number;\n        readonly deltaStart: number;\n        readonly deltaEnd: number;\n        readonly skipped: boolean;\n    }[];\n    readonly errorCode: string | null;\n    readonly errorMessage: string | null;\n}',
+  },
+  {
+    name: 'LogCollectionRuns',
+    declaration: 'export class LogCollectionRuns {\n    constructor(db: DatabaseSync);\n    record(run: LogCollectionRun): void;\n    list(tenantKey: string, taskId: string | undefined, limit: number = 50): readonly LogCollectionRun[];\n}',
+  },
+  {
+    name: 'LogCollectionStore',
+    declaration: 'export class LogCollectionStore {\n    readonly runs: LogCollectionRuns;\n    readonly fileStates: LogCollectionFileStates;\n    constructor(db: DatabaseSync, options: LogCollectionStoreOptions);\n    create(input: CreateLogCollectionTaskInput): LogCollectionTask;\n    list(tenantKey: string): readonly LogCollectionTask[];\n    get(tenantKey: string, taskId: string): LogCollectionTask;\n    update(input: UpdateLogCollectionTaskInput): LogCollectionTask;\n    delete(tenantKey: string, taskId: string, actor: string): void;\n    grantAccess(tenantKey: string, taskId: string, preset: string, permissions: {\n        readonly canPull: boolean;\n        readonly canQuery: boolean;\n    }, actor: string): void;\n    revokeAccess(tenantKey: string, taskId: string, preset: string, actor: string): void;\n    listAccess(tenantKey: string, taskId: string): readonly LogCollectionTaskAcl[];\n    authorize(tenantKey: string, taskId: string, preset: string, permission: \'pull\' | \'query\'): LogCollectionTask;\n    resolveTaskDirectory(task: Pick<LogCollectionTask, \'storageKey\' | \'localSubdir\'>): string;\n}',
+  },
+  {
+    name: 'LogCollectionStoreOptions',
+    declaration: 'export interface LogCollectionStoreOptions {\n    readonly localRoot: string;\n}',
+  },
+  {
+    name: 'LogCollectionTask',
+    declaration: 'export interface LogCollectionTask {\n    readonly taskUid: string;\n    readonly tenantKey: string;\n    readonly taskId: string;\n    readonly name: string;\n    readonly ownerDomain: string;\n    readonly sshInstanceId: string;\n    readonly remotePaths: readonly string[];\n    readonly storageKey: string;\n    readonly localSubdir: string;\n    readonly localMaxDays: number;\n    readonly enabled: boolean;\n    readonly revision: number;\n    readonly createdAt: string;\n    readonly updatedAt: string;\n}',
+  },
+  {
+    name: 'LogCollectionTaskAcl',
+    declaration: 'export interface LogCollectionTaskAcl {\n    readonly agentPreset: string;\n    readonly canPull: boolean;\n    readonly canQuery: boolean;\n    readonly revoked: boolean;\n}',
+  },
+  {
     name: 'LogExporterOptions',
     declaration: 'export type LogExporterOptions = Omit<OTLPExporterNodeConfigBase, \'selfObsMeterProvider\'> & {\n    url: string;\n};',
   },
@@ -6571,6 +6754,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'MarketVersion',
     declaration: 'export interface MarketVersion {\n    readonly version: string;\n    readonly publishTimestamp: number;\n    readonly source: MarketSource;\n    readonly engines: MarketEngines;\n}',
+  },
+  {
+    name: 'MasterKey',
+    declaration: 'export interface MasterKey {\n    readonly key: Buffer;\n    readonly source: \'env\' | \'file\';\n    readonly path?: string;\n}',
   },
   {
     name: 'MatcherValue',
@@ -6974,7 +7161,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'PresetDefinition',
-    declaration: 'export interface PresetDefinition {\n    readonly id: string;\n    readonly name?: string;\n    readonly description?: string;\n    readonly order?: number;\n    readonly plugins: readonly (Omit<EntryOptions, \'id\' | \'disabled\'> & {\n        id?: string;\n        disabled?: EntryOptions[\'disabled\'] | JsExpr;\n    })[];\n}',
+    declaration: 'export interface PresetDefinition {\n    readonly id: string;\n    readonly name?: string;\n    readonly description?: string;\n    readonly order?: number;\n    readonly hidden?: boolean;\n    readonly plugins: readonly (Omit<EntryOptions, \'id\' | \'disabled\'> & {\n        id?: string;\n        disabled?: EntryOptions[\'disabled\'] | JsExpr;\n    })[];\n}',
   },
   {
     name: 'PresetOption',
@@ -7189,6 +7376,18 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface RegistryAttempt {\n    readonly registry: Registry;\n    readonly problem?: \'not-found\' | \'network\' | \'unknown\';\n    readonly reason?: string;\n}',
   },
   {
+    name: 'ReleaseArtifactFile',
+    declaration: 'export interface ReleaseArtifactFile {\n    readonly path: string;\n    readonly bytes: number;\n    readonly sha256: string;\n}',
+  },
+  {
+    name: 'ReleaseManifest',
+    declaration: 'export interface ReleaseManifest {\n    readonly schemaVersion: 1;\n    readonly releaseId: string;\n    readonly gitSha: string | null;\n    readonly dirty: boolean | null;\n    readonly builtAt: string;\n    readonly builder: string;\n    readonly imageName: string | null;\n    readonly artifactFiles: readonly ReleaseArtifactFile[];\n}',
+  },
+  {
+    name: 'ReleaseUpdate',
+    declaration: 'export interface ReleaseUpdate {\n    readonly state?: DeploymentReleaseState;\n    readonly manifest?: ReleaseManifest | null;\n    readonly manifestDigest?: string | null;\n    readonly backupTag?: string | null;\n    readonly backupImageId?: string | null;\n    readonly imageId?: string | null;\n    readonly lastConfirmedStep?: string | null;\n}',
+  },
+  {
     name: 'Reload',
     declaration: 'export interface Reload {\n    filename: string;\n    modules: ReloadModules;\n    runtime?: Plugin.Runtime | undefined;\n}',
   },
@@ -7247,6 +7446,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'RemoteAccessRole',
     declaration: 'export interface RemoteAccessRole<K extends RemoteAccessResourceKind> {\n    readonly name: string;\n    readonly resource: K;\n    readonly actions: readonly RemoteAccessAction[];\n}',
+  },
+  {
+    name: 'RemoteCommandResult',
+    declaration: 'export interface RemoteCommandResult {\n    readonly exitCode: number | null;\n    readonly signal: string | null;\n    readonly stdout: string;\n    readonly stderr: string;\n    readonly timedOut: boolean;\n}',
   },
   {
     name: 'RemoteError',
@@ -9083,6 +9286,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'UpdateBundleOptions',
     declaration: 'export interface UpdateBundleOptions {\n    readonly registry?: Registry;\n    readonly requestId?: PluginInstallRequestId;\n}',
+  },
+  {
+    name: 'UpdateLogCollectionTaskInput',
+    declaration: 'export interface UpdateLogCollectionTaskInput {\n    readonly tenantKey: string;\n    readonly taskId: string;\n    readonly expectedRevision: number;\n    readonly actor: string;\n    readonly name?: string;\n    readonly sshInstanceId?: string;\n    readonly remotePaths?: readonly string[];\n    readonly localSubdir?: string;\n    readonly localMaxDays?: number;\n    readonly enabled?: boolean;\n}',
   },
   {
     name: 'UpdateTeamTaskRequest',

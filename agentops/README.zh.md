@@ -16,7 +16,6 @@
 | [`DSH-BASELINE.md`](./DSH-BASELINE.md) | 基线坐标、基线怎么来的、历史深度怎么补 |
 | [`DSH-CORE-CHANGES.md`](./DSH-CORE-CHANGES.md) | CORE 核心改动与 INTEGRATION 构建接入台账 |
 | [`UPGRADE.md`](./UPGRADE.md) | DSH 升级 SOP（禁止覆盖式拷贝） |
-| [`PARITY-THREE-PAGES.md`](./PARITY-THREE-PAGES.md) | Agent 管理、工作流管理、协作可视化三页与旧项目的逐端点对照 |
 | [`scripts/check-owned-paths.mjs`](./scripts/check-owned-paths.mjs) | 五类变更检查，UNEXPECTED ≠ 0 时退出码 1 |
 
 ## 迁移资产

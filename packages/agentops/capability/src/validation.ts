@@ -9,6 +9,7 @@
  * @module @agentops/dsh-capability/validation
  */
 
+import { parseAuthSpec } from './auth.ts'
 import type { CapabilityDefinition } from './types.ts'
 
 /** One rejected configuration, shaped like the store's configuration errors. */
@@ -89,6 +90,38 @@ function stringList(value: unknown): string[] {
 /** Engines this build can actually connect to. */
 const DATABASE_ENGINES = new Set(['mysql', 'pg', 'postgres', 'postgresql', 'sqlite'])
 
+const FEISHU_DOCS_DEFAULT_BASE_URL = 'https://open.feishu.cn'
+const FEISHU_DOCS_API_HOSTS = new Set(['open.feishu.cn', 'open.larksuite.com'])
+
+/**
+ * Resolve the official Feishu or Lark API origin for a docs instance.
+ *
+ * The app secret is sent to this origin when minting a tenant token, so a
+ * configured URL may not redirect that credential to an arbitrary host.
+ * @param value - configured API address, or an empty value for Feishu.
+ * @returns the canonical HTTPS origin without a trailing slash.
+ */
+export function resolveFeishuDocsBaseUrl(value: unknown): string {
+  const raw = text(value) || FEISHU_DOCS_DEFAULT_BASE_URL
+  let parsed: URL
+  try {
+    parsed = new URL(raw)
+  } catch {
+    throw new CapabilityConfigValidationError('飞书 API 地址必须是合法 URL')
+  }
+  if (parsed.protocol !== 'https:') {
+    throw new CapabilityConfigValidationError('飞书 API 地址必须使用 https://')
+  }
+  if (!FEISHU_DOCS_API_HOSTS.has(parsed.hostname.toLowerCase())) {
+    throw new CapabilityConfigValidationError('飞书 API 地址仅支持 open.feishu.cn 或 open.larksuite.com')
+  }
+  if (parsed.username !== '' || parsed.password !== '' || parsed.port !== ''
+    || (parsed.pathname !== '' && parsed.pathname !== '/') || parsed.search !== '' || parsed.hash !== '') {
+    throw new CapabilityConfigValidationError('飞书 API 地址只能填写官方 HTTPS 主机，不能包含路径、端口或查询参数')
+  }
+  return parsed.origin
+}
+
 function requiredText(config: Readonly<Record<string, unknown>>, key: string, label: string): string {
   const value = text(config[key])
   if (value === '') throw new CapabilityConfigValidationError(`${label} 必填`)
@@ -136,6 +169,67 @@ export function validateInstanceConfig(
   }
 
 
+  if (capability.capabilityId === 'feishu-docs') {
+    normalized.app_id = requiredText(config, 'app_id', 'App ID')
+    normalized.base_url = resolveFeishuDocsBaseUrl(config.base_url)
+    delete normalized.app_secret
+  }
+
+  if (capability.capabilityId === 'oa') {
+    const baseUrl = requiredText(config, 'base_url', 'OA 地址')
+    let parsed: URL
+    try {
+      parsed = new URL(baseUrl)
+    } catch {
+      throw new CapabilityConfigValidationError('OA 地址必须是合法 URL')
+    }
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      throw new CapabilityConfigValidationError('OA 地址必须使用 http:// 或 https://')
+    }
+    normalized.base_url = baseUrl.replace(/\/+$/, '')
+    normalized.username = requiredText(config, 'username', 'REST 服务账号')
+    normalized.login_name = text(config.login_name)
+    normalized.member_code = text(config.member_code)
+    normalized.member_id = text(config.member_id)
+    if (normalized.member_code === '' && normalized.member_id === '') {
+      throw new CapabilityConfigValidationError('人员编码或成员 ID 至少填写一个；待办/已办查询需要可寻址的人员身份')
+    }
+    if (config.auth === undefined || config.auth === null
+      || (typeof config.auth === 'string' && config.auth.trim() === '')) {
+      throw new CapabilityConfigValidationError('认证配置 JSON 必填：致远 OA 需要声明 token 获取接口')
+    }
+    let auth
+    try {
+      auth = parseAuthSpec(config.auth)
+    } catch (error) {
+      throw new CapabilityConfigValidationError(error instanceof Error ? error.message : String(error))
+    }
+    if (auth.type !== 'token-endpoint') {
+      throw new CapabilityConfigValidationError('致远 OA 认证配置必须使用 token-endpoint')
+    }
+    if (!auth.invalidTokenValues.includes('-1')) {
+      throw new CapabilityConfigValidationError('致远 OA 的 token_invalid_values 必须包含 -1')
+    }
+    for (const [name, param] of Object.entries(auth.tokenParams)) {
+      if (param.source.startsWith('config.')) {
+        const key = param.source.slice('config.'.length)
+        if (text(config[key]) === '') {
+          throw new CapabilityConfigValidationError(`token 参数 ${name} 需要实例配置 ${key}`)
+        }
+      }
+      if (param.source === 'subject.memberCode' && text(config.member_code) === '') {
+        throw new CapabilityConfigValidationError(`token 参数 ${name} 需要人员编码`)
+      }
+      if (param.source === 'subject.memberId' && text(config.member_id) === '') {
+        throw new CapabilityConfigValidationError(`token 参数 ${name} 需要成员 ID`)
+      }
+      if (param.source === 'subject.loginName' && text(config.login_name) === '') {
+        throw new CapabilityConfigValidationError(`token 参数 ${name} 需要绑定登录名`)
+      }
+    }
+    normalized.auth = config.auth
+  }
+
   if (capability.capabilityId === 'database') {
     const engine = text(config.engine).toLowerCase() || 'mysql'
     if (!DATABASE_ENGINES.has(engine)) {
@@ -163,9 +257,13 @@ export function validateInstanceConfig(
   // produced precise messages for the fields they own.
   const capabilityOwned = capability.capabilityId === 'database'
     ? new Set(['host', 'port', 'username', 'database', 'schema', 'auth_type'])
-    : capability.capabilityId === 'feishu-bot' || capability.capabilityId === 'wecom'
-      ? new Set(['webhook_host'])
-      : new Set<string>()
+    : capability.capabilityId === 'oa'
+      ? new Set(['base_url', 'username', 'auth', 'login_name', 'member_code', 'member_id'])
+      : capability.capabilityId === 'feishu-docs'
+        ? new Set(['app_id', 'base_url'])
+        : capability.capabilityId === 'feishu-bot' || capability.capabilityId === 'wecom'
+          ? new Set(['webhook_host'])
+          : new Set<string>()
   for (const field of capability.configSchema) {
     if (field.key === 'secret' || capabilityOwned.has(field.key)) continue
     if (!field.required) continue

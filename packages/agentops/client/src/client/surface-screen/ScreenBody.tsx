@@ -57,18 +57,22 @@ function Card({
     () => buildNode(row.surface as AgentopsA2uiSurfaceV1, row.content, row.title, row.id),
     [row],
   )
-  const placement = useMemo(() => ({
-    id: `board-card-${index}`,
-    slot: 'sidebar',
+  const placement: GenerativeUiCompositionItemV1 = useMemo(() => ({
+    node_id: `board-card-${index}`,
+    node_revision: index,
     surface: 'result',
-    expanded: true,
-  }) as unknown as GenerativeUiCompositionItemV1, [index])
-  const context = useMemo(() => ({
+    variant: 'summary',
+    rank: index + 1,
+    placement: 'primary',
+    pinned: false,
+    visibility: 'visible',
+  }), [index])
+  const context: GenerativeUiSurfaceContextV1 = useMemo(() => ({
     device: 'desktop',
     input: 'mouse',
-    viewport: { width: 640, height: 600 },
-    locale: 'zh-CN',
-  }) as unknown as GenerativeUiSurfaceContextV1, [])
+    viewport: 'regular',
+    attention: 'focused',
+  }), [])
 
   return (
     <section data-agentops-card="" style={{
@@ -266,7 +270,7 @@ export function SurfaceScreen({
           : Array.from({ length: columns }, (_, column) => (
             <div key={column} style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: '1 1 0', minWidth: 0 }}>
               {shownViews
-                .filter((_, index) => index % (columns ?? 1) === column)
+                .filter((_, index) => index % columns === column)
                 .map(row => (
                   <Card
                     key={row.viewId}

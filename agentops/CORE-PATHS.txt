@@ -3,6 +3,9 @@
 packages/client/ui-sidebar/
 packages/client/ui-slots/
 packages/client/ui-layout/
+README.md
+README.zh.md
+README.i18n.yaml
 docs/subsystems/slots.md
 docs/subsystems/slots.zh.md
 docs/subsystems/slots.i18n.yaml

@@ -6,19 +6,19 @@ import { join } from 'node:path'
 
 import { createAgent, deleteAgent, readAgent, scanAgents, updateAgent } from '../src/agents.ts'
 
-test('scanAgents：目录缺失返回空目录', () => {
+void test('scanAgents：目录缺失返回空目录', () => {
   const result = scanAgents(join(tmpdir(), 'agentops-no-agents-xyz'))
   assert.equal(result.missing, true)
   assert.deepEqual(result.entries, [])
 })
 
-test('scanAgents：映射 agent_id / 模型 / 权限 / 运行限制', () => {
+void test('scanAgents：映射 agent_id / 模型 / 权限 / 运行限制', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentops-agents-'))
   try {
     writeFileSync(join(dir, 'manager.yaml'), [
       'agent_id: manager',
       'domain: manager',
-      'display_name: Manager Agent',
+      'display_name: SupAgent',
       'description: 意图识别与编排',
       'harness: local_llm',
       'model:',
@@ -40,7 +40,7 @@ test('scanAgents：映射 agent_id / 模型 / 权限 / 运行限制', () => {
     assert.equal(result.entries.length, 2)
 
     const manager = result.entries.find(entry => entry.id === 'manager')!
-    assert.equal(manager.name, 'Manager Agent')
+    assert.equal(manager.name, 'SupAgent')
     assert.equal(manager.model, 'minimax/MiniMax-M3')
     assert.equal(manager.execution_backend, 'auto')
     assert.equal(manager.execution, 'skill')
@@ -60,7 +60,7 @@ test('scanAgents：映射 agent_id / 模型 / 权限 / 运行限制', () => {
     rmSync(dir, { recursive: true, force: true })
   }
 })
-test('readAgent：按 contracts 解析完整字段，非法值不返回部分定义', () => {
+void test('readAgent：按 contracts 解析完整字段，非法值不返回部分定义', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentops-agents-read-'))
   try {
     writeFileSync(join(dir, 'full.yaml'), [
@@ -101,7 +101,7 @@ test('readAgent：按 contracts 解析完整字段，非法值不返回部分定
   }
 })
 
-test('createAgent：创建前校验、原子写回并拒绝同名覆盖', () => {
+void test('createAgent：创建前校验、原子写回并拒绝同名覆盖', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentops-agents-create-'))
   try {
     const input = {
@@ -141,7 +141,7 @@ test('createAgent：创建前校验、原子写回并拒绝同名覆盖', () => 
   }
 })
 
-test('updateAgent / deleteAgent：未知 Agent 返回 not_found，且不触碰目录外路径', () => {
+void test('updateAgent / deleteAgent：未知 Agent 返回 not_found，且不触碰目录外路径', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentops-agents-update-'))
   try {
     assert.equal(updateAgent(dir, { agent_id: 'missing' }).ok, false)
@@ -157,7 +157,7 @@ test('updateAgent / deleteAgent：未知 Agent 返回 not_found，且不触碰�
   }
 })
 
-test('updateAgent：未声明 execution/workflow 的更新不会把工作流型 Agent 静默降级', () => {
+void test('updateAgent：未声明 execution/workflow 的更新不会把工作流型 Agent 静默降级', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agentops-agents-ownership-'))
   const base = {
     agent_id: 'smart_query',

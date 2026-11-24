@@ -5,7 +5,7 @@
  * throwaway string for the current operation.
  */
 
-import { DatabaseSync } from 'node:sqlite'
+import { DatabaseSync, type SQLOutputValue } from 'node:sqlite'
 
 import { loadMasterKey, openSecret, sealSecret, secretAad, type MasterKey } from './crypto.ts'
 
@@ -48,7 +48,7 @@ export interface ConnectionView {
   readonly updatedAt: string
 }
 
-interface Row {
+interface Row extends Record<string, SQLOutputValue> {
   id: string
   kind: string
   name: string
@@ -132,7 +132,7 @@ export class ConnectionStore {
   list(kind?: ConnectionKind): ConnectionView[] {
     const rows = (kind === undefined
       ? this.#db.prepare('SELECT * FROM connections ORDER BY kind, name').all()
-      : this.#db.prepare('SELECT * FROM connections WHERE kind = ? ORDER BY name').all(kind)) as unknown as Row[]
+      : this.#db.prepare('SELECT * FROM connections WHERE kind = ? ORDER BY name').all(kind)) as Row[]
     return rows.map(toView)
   }
 
@@ -142,7 +142,7 @@ export class ConnectionStore {
    * @returns the connection, or null when it does not exist.
    */
   get(id: string): ConnectionView | null {
-    const row = this.#db.prepare('SELECT * FROM connections WHERE id = ?').get(id) as unknown as Row | undefined
+    const row = this.#db.prepare('SELECT * FROM connections WHERE id = ?').get(id) as Row | undefined
     return row === undefined ? null : toView(row)
   }
 
@@ -179,7 +179,7 @@ export class ConnectionStore {
         .run(sealed, now, input.id)
     }
     const saved = this.get(input.id)
-    if (saved === undefined || saved === null) throw new Error('connection disappeared during upsert')
+    if (saved === null) throw new Error('connection disappeared during upsert')
     return saved
   }
 
@@ -190,7 +190,7 @@ export class ConnectionStore {
    */
   readSecret(id: string): string | null {
     const row = this.#db.prepare('SELECT kind, secret_cipher FROM connections WHERE id = ?')
-      .get(id) as unknown as { kind: string; secret_cipher: string | null } | undefined
+      .get(id) as { kind: string; secret_cipher: string | null } | undefined
     if (row === undefined || row.secret_cipher === null) return null
     return openSecret(this.#key.key, row.secret_cipher, secretAad(row.kind, id))
   }

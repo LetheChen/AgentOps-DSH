@@ -952,6 +952,30 @@ const SERVICE_ROLES: ServiceRole[] = [
     consumers: ['dag'],
     note: 'Owns the workflow definition files: listing, reading, validation, compilation, and compare-and-swap writes.',
   },
+  {
+    key: 'capabilityRuntime',
+    pkg: 'capability',
+    title: 'Capability runtime bindings',
+    mode: 'service',
+    implementations: ['capability'],
+    note: 'Resolves the enabled capability instances bound to a preset and hands preset-scoped tools their runtime.',
+  },
+  {
+    key: 'deployment',
+    pkg: 'deployment',
+    title: 'Deployment service',
+    mode: 'service',
+    implementations: ['deployment'],
+    note: 'Runs the build and deployment workflow against a resolved SSH capability instance and records each release.',
+  },
+  {
+    key: 'logCollection',
+    pkg: 'log-collection',
+    title: 'Log collection service',
+    mode: 'service',
+    implementations: ['log-collection'],
+    note: 'Owns log collection task records, their access-control grants, and the pull runs that fetch remote files.',
+  },
 ]
 
 function generatedHeader(title: string): string[] {

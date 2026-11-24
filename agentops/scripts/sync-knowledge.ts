@@ -115,6 +115,7 @@ function pendingDocuments(corpus: Corpus, existing: readonly DocumentMeta[]): Co
     const meta = current.get(document.id)
     return meta === undefined
       || meta.spaceId !== document.spaceId
+      || meta.categoryPath !== document.categoryPath
       || meta.title !== document.title
       || meta.contentHash !== document.contentHash
   })

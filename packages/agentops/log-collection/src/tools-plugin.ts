@@ -31,8 +31,8 @@ export interface LogCollectionToolsConfig {
  * @param config - authenticated tenant and preset id.
  */
 export function apply(ctx: Context, config: LogCollectionToolsConfig): void {
-  const tenantKey = config.tenantKey?.trim() ?? ''
-  const agentPreset = config.agentPreset?.trim() ?? ''
+  const tenantKey = config.tenantKey.trim()
+  const agentPreset = config.agentPreset.trim()
   if (tenantKey === '' || agentPreset === '') {
     throw new Error('@agentops/dsh-log-collection/tools requires config.tenantKey and config.agentPreset')
   }

@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-This package closes the LLM Wiki chain: task reports enter a durable draft box, deterministic checks surface duplicates, sensitive values and related pages, and released pages become versioned searchable documents. Agents file pages into an automatically maintained one- or two-segment category tree inside a fixed knowledge space and create a directory only when no existing path matches. The same pages feed memory-nebula projections and model retrieval. Visibility remains closed by default: an empty `readableSpaces` returns no search results; when enabled, shared runtime domains join the configured grants.
+This package closes the LLM Wiki chain: task reports enter a durable draft box, deterministic checks surface duplicates, sensitive values and related pages, and released pages become versioned searchable documents. Agents file pages into an automatically maintained one- or two-segment category tree inside a fixed business-domain knowledge space, and create a directory only when no existing path matches. The same pages feed memory-nebula projections and model retrieval. Visibility remains closed by default: an empty `readableSpaces` returns no search results; when enabled, shared runtime domains join the configured grants.
 
 ## Table of Contents
 
@@ -24,7 +24,7 @@ This package closes the LLM Wiki chain: task reports enter a durable draft box, 
 <a id="use-this-package"></a>
 ## Use this package
 
-Use it to serve document retrieval and LLM Wiki maintenance. Curated space content still lives in [`../knowledge-base/`](../knowledge-base/GUIDE.md), while task reports and extracted technical documents enter the SQLite draft box through the browser bridge or model tools. Publishing a draft writes Markdown into the selected space, where `knowledge_search`, smart-query agents, and the memory nebula read the same versioned material.
+Use it to serve document retrieval and LLM Wiki maintenance. Curated space content still lives in [`../knowledge-base/`](../knowledge-base/GUIDE.md), which defines ten macro knowledge domains. Finance, HR, operations, project analysis, and review are flat; the other domains use stable document-type categories. Drafts without an explicit target are routed automatically, while uncertain material goes to review. Publishing a draft writes Markdown into the selected space, where `knowledge_search`, smart-query agents, and the memory nebula read the same versioned material. Agents can search knowledge and, where a preset allows it, list maintained categories, create checked Wiki drafts, re-run checks, and publish a ready draft into an existing space and category; they never create top-level knowledge spaces.
 
 -----
 
@@ -57,7 +57,7 @@ Use it to serve document retrieval and LLM Wiki maintenance. Curated space conte
 <a id="model-experience"></a>
 ## Model Experience
 
-The model can search knowledge and, where a preset allows it, list maintained categories, create checked Wiki drafts, re-run checks and publish a ready draft into an existing space and category. Agents do not create top-level knowledge spaces.
+None, as this package indexes and retrieves documents; the search tool output is a tool result rather than model input construction.
 
 #### KV Cache effect
 

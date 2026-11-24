@@ -24,7 +24,7 @@ This package answers read-only questions against the AgentOps audit database. It
 <a id="use-this-package"></a>
 ## Use this package
 
-Use it for read-only audit queries; writes belong to the owning domain package.
+Use it for read-only audit queries; writes belong to the owning domain package. The `sql_query` and `describe_database` tools resolve the executing Agent's live composed preset through `agentPresets.composedPreset(agent.ctx)`, so the page binding and the tool call use one fact source, and a capability instance is never reachable through the legacy datasource file.
 
 -----
 
@@ -39,7 +39,7 @@ Use it for read-only audit queries; writes belong to the owning domain package.
 | `src/guard.ts` | Table allowlist and schema checks |
 | `src/instances.ts` | Capability-first instance resolution and AgentOps access-policy normalization |
 | `src/query.ts` | SQLite, MySQL and PostgreSQL execution plus schema introspection |
-| `src/tools.ts` | `sql_query` and `describe_database` over one resolved instance |
+| `src/tools.ts` | `sql_query` and `describe_database` over one resolved instance, including schema metadata and display SQL |
 | `src/dsh.ts` | Plugin entry and route registration |
 | `src/datasources.ts` | Legacy datasource metadata |
 
@@ -57,7 +57,7 @@ Use it for read-only audit queries; writes belong to the owning domain package.
 <a id="model-experience"></a>
 ## Model Experience
 
-The preset-scoped tools expose `sql_query` and `describe_database`. Both resolve the executing Agent's live composed preset through `agentPresets.composedPreset(agent.ctx)`, so the page binding and the tool call use one fact source. A capability instance is never reachable through the legacy datasource file.
+None, as this package resolves the datasource connections behind the `sql_query` and `describe_database` tools; it does not construct model input.
 
 #### KV Cache effect
 
@@ -67,7 +67,7 @@ None; this package neither constructs nor sends model requests.
 
 <a id="known-limitations-and-deferred-work"></a>
 
-- **The allowlist checks schema-qualified references only** — a bare table name such as `SELECT * FROM secrets` is currently admitted; replacing the string check with a SQLite authorizer is deferred.
+- **The allowlist rejects bare table names** — every `FROM`/`JOIN` target must be schema-qualified unless it is a local CTE or derived-table name; a full SQL parser and SQLite authorizer remain deferred.
 - **Cross-package source import** — the store reaches into the vault package source instead of a declared dependency.
 - **Metadata fallback writes samples** — an unreadable datasource file is replaced by generated sample rows rather than failing loud.
 

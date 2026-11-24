@@ -18,6 +18,8 @@ import { dshHomePath } from '@deepseek-ai/dsh-home-paths'
 import { CapabilityHttpApi } from './http.ts'
 import { registerCapabilityRpc } from './mount-rpc.ts'
 import { CapabilityRuntimeService } from './runtime.ts'
+import { CapabilityTokenService, TokenBroker } from './token-broker.ts'
+import { CapabilityRestService, RestTransport } from './rest.ts'
 import { CapabilityStore } from './store.ts'
 import { ConnectionStore } from '@agentops/dsh-vault/src/store.ts'
 
@@ -101,6 +103,9 @@ export function apply(ctx: Context, config: CapabilityPluginConfig = {}): void {
   const store = new CapabilityStore(path)
   migrateLegacyVault(store)
   new CapabilityRuntimeService(ctx, store)
+  const tokens = new TokenBroker()
+  new CapabilityTokenService(ctx, tokens)
+  new CapabilityRestService(ctx, new RestTransport(tokens))
   ctx.effect(() => () => { store.close() }, 'agentops-capability: close store')
   const api = new CapabilityHttpApi(store)
   ctx.inject(['connection'], (connectionCtx) => {

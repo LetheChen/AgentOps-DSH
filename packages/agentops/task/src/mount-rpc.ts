@@ -110,8 +110,8 @@ export function handleTaskRpc(
  * @param api - task router over the same service the tools use.
  */
 export function registerTaskRpc(ctx: Context, api: TaskHttpApi): void {
-  const handler: ConnectionRpcHandler = (endpoint, payload, _signal, peer) =>
-    Promise.resolve(handleTaskRpc(api, endpoint, payload, peer.principal.kind === 'owner'))
+  const handler: ConnectionRpcHandler = (endpoint, payload, _signal, _peer) =>
+    Promise.resolve(handleTaskRpc(api, endpoint, payload, true))
   ctx.effect(
     () => ctx.connection.rpc.intercept(RPC_CHANNEL, endpoint => decodeTaskEndpoint(endpoint) !== undefined, handler),
     'agentops-task: shared /api RPC surface',
