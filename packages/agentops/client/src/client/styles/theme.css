@@ -247,7 +247,6 @@
   --dsw-alias-toast-bg: var(--color-bg-elevated);
   --dsw-alias-toast-label: var(--color-text-primary);
   --dsw-alias-menu-group-header-fill: var(--color-bg-elevated);
-  --dsw-menu-surface-fill: var(--color-bg-elevated);
 
   --dsw-radius-xs: var(--radius-sm);
   --dsw-radius-sm: var(--radius-sm);

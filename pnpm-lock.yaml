@@ -1299,7 +1299,7 @@ importers:
         version: link:../../interaction/user-approval
 
   packages/agentops/browser:
-    devDependencies:
+    dependencies:
       '@deepseek-ai/dsh-browser-use':
         specifier: workspace:*
         version: link:../../browser-use/browser-use
@@ -1308,7 +1308,7 @@ importers:
         version: link:../../experimental/browser-use-chrome-devtools-mcp
 
   packages/agentops/bundle:
-    devDependencies:
+    dependencies:
       '@agentops/dsh-capability':
         specifier: workspace:*
         version: link:../capability
@@ -1348,6 +1348,10 @@ importers:
       '@agentops/dsh-workflow-catalog':
         specifier: workspace:*
         version: link:../workflow-catalog
+      '@deepseek-ai/dsh-agent-preset-registry':
+        specifier: workspace:*
+        version: link:../../preset/agent-preset-registry
+    devDependencies:
       '@types/js-yaml':
         specifier: ^4.0.9
         version: 4.0.9

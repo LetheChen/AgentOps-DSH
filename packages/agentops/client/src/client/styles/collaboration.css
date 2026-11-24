@@ -83,7 +83,7 @@
   min-width: 0;
   max-width: 100%;
   padding: 9px 11px;
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-sm);
   background: var(--color-bg-elevated);
   color: var(--color-text-primary);
@@ -215,7 +215,7 @@
   padding: 12px;
   color: var(--state-error);
   background: var(--state-error-tint);
-  border-bottom: 1px solid color-mix(in srgb, var(--state-error) 45%, var(--color-border-subtle));
+  border-bottom: 0.5px solid color-mix(in srgb, var(--state-error) 45%, var(--color-border-subtle));
   font-size: 13px;
   line-height: 1.5;
 }
@@ -304,7 +304,7 @@
   padding: 10px 12px;
   color: var(--state-warning);
   background: var(--state-warning-tint);
-  border: 1px solid color-mix(in srgb, var(--state-warning) 45%, var(--color-border-subtle));
+  border: 0.5px solid color-mix(in srgb, var(--state-warning) 45%, var(--color-border-subtle));
   border-radius: var(--radius-md);
   font-size: 13px;
   line-height: 1.5;
@@ -335,7 +335,7 @@
   justify-content: space-between;
   gap: 10px;
   padding: 10px 12px;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 0.5px solid var(--color-border-subtle);
 }
 
 .collab-lane-header code,
@@ -362,7 +362,7 @@
   gap: 4px 8px;
   min-width: 0;
   padding: 10px 11px;
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
   background: var(--color-bg-elevated);
   color: inherit;
@@ -425,7 +425,7 @@
 .collab-actors-table th,
 .collab-actors-table td {
   padding: 9px 10px;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 0.5px solid var(--color-border-subtle);
   text-align: left;
 }
 
@@ -510,7 +510,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 14px;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 0.5px solid var(--color-border-subtle);
 }
 
 .collab-legend {
@@ -572,7 +572,7 @@
 
 .collab-inspector > h2 {
   padding: 12px 14px;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 0.5px solid var(--color-border-subtle);
 }
 
 .collab-inspector-fields {
@@ -587,7 +587,7 @@
   gap: 10px;
   min-width: 0;
   padding: 9px 12px;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 0.5px solid var(--color-border-subtle);
 }
 
 .collab-inspector-field:last-child {
@@ -618,7 +618,7 @@
   gap: 8px;
   min-width: 0;
   padding: 12px;
-  border-top: 1px solid var(--color-border-subtle);
+  border-top: 0.5px solid var(--color-border-subtle);
 }
 
 .collab-rerun-unavailable {
@@ -637,7 +637,7 @@
   overflow: auto;
   color: var(--color-text-secondary);
   background: var(--color-bg-base);
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
   font-size: 11px;
@@ -789,7 +789,7 @@
   height: 22px;
   overflow: hidden;
   background: var(--color-bg-base);
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-sm);
 }
 
@@ -833,7 +833,7 @@
   gap: 12px;
   min-width: 0;
   padding: 9px 0;
-  border-top: 1px solid var(--color-border-subtle);
+  border-top: 0.5px solid var(--color-border-subtle);
 }
 
 .collab-timeline-item:first-child {
@@ -885,7 +885,7 @@
   min-width: 0;
   padding: 9px 10px;
   background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-sm);
   color: var(--color-text-secondary);
   font-size: 12px;
@@ -921,7 +921,7 @@
   min-width: 0;
   padding: 9px 10px;
   background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-sm);
   color: var(--color-text-primary);
   font-size: 13px;
@@ -956,7 +956,7 @@
   padding: 9px 10px;
   color: var(--state-error);
   background: var(--state-error-tint);
-  border: 1px solid color-mix(in srgb, var(--state-error) 45%, var(--color-border-subtle));
+  border: 0.5px solid color-mix(in srgb, var(--state-error) 45%, var(--color-border-subtle));
   border-radius: var(--radius-sm);
   font-size: 12px;
   line-height: 1.5;
@@ -1170,7 +1170,7 @@
   flex-direction: column;
   gap: 6px;
   padding: 10px;
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
   background: var(--color-bg-elevated);
 }

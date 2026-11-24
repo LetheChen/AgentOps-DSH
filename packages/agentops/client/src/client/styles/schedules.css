@@ -17,7 +17,9 @@
   transition: background-color 0.15s, color 0.15s;
 }
 
+@media (hover: hover) {
 .filter-chip:hover { background: var(--color-bg-hover); color: var(--color-text-primary); }
+}
 
 .filter-chip.active { background: var(--color-primary); color: #fff; }
 

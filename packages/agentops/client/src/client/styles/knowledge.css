@@ -7,7 +7,7 @@
   height: 22px;
   border: 2px solid var(--color-border-default);
   border-top-color: var(--color-primary);
-  border-radius: 50%;
+  border-radius: 50%; corner-shape: round;
   animation: ag-spin 0.7s linear infinite;
 }
 
@@ -49,7 +49,7 @@
   align-items: flex-end;
   gap: 10px;
   padding: 12px;
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-lg);
   background: var(--color-bg-surface);
 }
@@ -59,7 +59,7 @@
 .kh-domain-create input {
   min-height: 32px;
   padding: 0 10px;
-  border: 1px solid var(--color-border-default);
+  border: 0.5px solid var(--color-border-default);
   border-radius: var(--radius-md);
   background: var(--color-bg-base);
   color: var(--color-text-primary);
@@ -91,17 +91,19 @@
   gap: 12px;
   padding: 14px 16px;
   background: var(--color-bg-surface);
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
   outline: none;
 }
 
+@media (hover: hover) {
 .kh-domain-card:hover {
   border-color: var(--color-primary);
   box-shadow: var(--shadow-floating);
   transform: translateY(-1px);
+}
 }
 
 .kh-domain-card:focus-visible {
@@ -158,8 +160,8 @@
   grid-template-columns: 1fr 1fr;
   gap: 12px;
   padding: 10px 0;
-  border-top: 1px solid var(--color-border-subtle);
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-top: 0.5px solid var(--color-border-subtle);
+  border-bottom: 0.5px solid var(--color-border-subtle);
 }
 
 .kh-domain-card-stat {
@@ -192,8 +194,10 @@
   outline: none;
 }
 
+@media (hover: hover) {
 .kh-domain-card-lint:hover {
   background: var(--color-bg-hover);
+}
 }
 
 .kh-domain-card-lint:focus-visible {
@@ -250,7 +254,7 @@
   gap: 10px;
   flex-wrap: wrap;
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 0.5px solid var(--color-border-subtle);
 }
 
 .kh-back-btn {
@@ -259,7 +263,7 @@
   gap: 4px;
   padding: 4px 10px;
   background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border-default);
+  border: 0.5px solid var(--color-border-default);
   border-radius: var(--radius-sm);
   color: var(--color-text-secondary);
   font-size: 12px;
@@ -267,9 +271,11 @@
   transition: background 0.15s ease, color 0.15s ease;
 }
 
+@media (hover: hover) {
 .kh-back-btn:hover {
   background: var(--color-bg-hover);
   color: var(--color-text-primary);
+}
 }
 
 .kh-domain-detail-name {
@@ -324,7 +330,7 @@
   gap: 4px;
   padding: 12px 14px;
   background: var(--color-bg-surface);
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
 }
 
@@ -386,7 +392,7 @@
 .kh-domain-md-preview {
   padding: 12px 14px;
   background: var(--color-bg-base);
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
   font-family: var(--font-mono);
   font-size: 12px;
@@ -411,7 +417,7 @@
   color: var(--color-text-primary);
   padding: 12px 14px;
   background: var(--color-bg-base);
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
   max-height: 320px;
   overflow: auto;
@@ -427,7 +433,7 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  border-left: 1px solid var(--color-border-subtle);
+  border-left: 0.5px solid var(--color-border-subtle);
   margin-left: 4px;
   padding-left: 16px;
 }
@@ -480,7 +486,7 @@
   gap: 6px;
   padding: 6px 10px;
   background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border-default);
+  border: 0.5px solid var(--color-border-default);
   border-radius: var(--radius-sm);
   color: var(--color-text-secondary);
   font-size: 12px;
@@ -490,9 +496,11 @@
   transition: background 0.15s ease, color 0.15s ease;
 }
 
+@media (hover: hover) {
 .kh-domain-collapse-btn:hover {
   background: var(--color-bg-hover);
   color: var(--color-text-primary);
+}
 }
 
 .kh-domain-collapse-arrow {
@@ -556,7 +564,7 @@
   padding: 10px 14px;
   margin: 8px 0;
   background: var(--state-error-tint);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  border: 0.5px solid rgba(239, 68, 68, 0.3);
   border-radius: var(--radius-md);
   color: var(--state-error);
   font-size: 12px;
@@ -572,7 +580,9 @@
   text-decoration: none;
 }
 
+@media (hover: hover) {
 .kh-link:hover { text-decoration: underline; }
+}
 
 /* ── Lint 处置 ── */
 .kh-lint {
@@ -600,7 +610,7 @@
   color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 0.5px solid var(--color-border-subtle);
   position: sticky;
   top: 0;
   background: var(--color-bg-surface);
@@ -609,13 +619,15 @@
 
 .kh-lint-domain-item {
   padding: 12px 14px;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 0.5px solid var(--color-border-subtle);
   cursor: pointer;
   transition: background 0.12s;
   border-left: 3px solid transparent;
 }
 
+@media (hover: hover) {
 .kh-lint-domain-item:hover { background: var(--color-bg-elevated); }
+}
 
 .kh-lint-domain-item.active {
   background: var(--color-primary-tint);
@@ -668,7 +680,7 @@
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 0.5px solid var(--color-border-subtle);
   flex-shrink: 0;
   flex-wrap: wrap;
 }
@@ -693,7 +705,7 @@
 
 .kh-lint-filters select {
   background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border-default);
+  border: 0.5px solid var(--color-border-default);
   color: var(--color-text-primary);
   border-radius: var(--radius-sm);
   padding: 4px 8px;
@@ -723,7 +735,7 @@
 
 .kh-lint-issue-card {
   background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
   padding: 12px 14px;
   display: flex;
@@ -742,7 +754,7 @@
   display: inline-block;
   width: 10px;
   height: 10px;
-  border-radius: 50%;
+  border-radius: 50%; corner-shape: round;
   flex-shrink: 0;
 }
 
@@ -849,7 +861,7 @@
   width: 480px;
   max-width: 100%;
   background: var(--color-bg-surface);
-  border: 1px solid var(--color-border-default);
+  border: 0.5px solid var(--color-border-default);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-floating);
   display: flex;
@@ -858,7 +870,7 @@
 
 .kh-modal-header {
   padding: 16px 20px;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 0.5px solid var(--color-border-subtle);
   font-size: 15px;
   font-weight: 600;
   color: var(--color-text-primary);
@@ -878,7 +890,7 @@
 
 .kh-modal-textarea {
   background: var(--color-bg-base);
-  border: 1px solid var(--color-border-default);
+  border: 0.5px solid var(--color-border-default);
   color: var(--color-text-primary);
   border-radius: var(--radius-md);
   padding: 10px 12px;
@@ -898,7 +910,7 @@
   justify-content: flex-end;
   gap: 8px;
   padding: 12px 20px;
-  border-top: 1px solid var(--color-border-subtle);
+  border-top: 0.5px solid var(--color-border-subtle);
 }
 
 /* ── Toast ── */
@@ -913,7 +925,7 @@
   font-weight: 500;
   background: var(--color-bg-elevated);
   color: var(--color-text-primary);
-  border: 1px solid var(--color-border-default);
+  border: 0.5px solid var(--color-border-default);
   box-shadow: var(--shadow-floating);
   animation: kh-toast-in 0.25s ease;
   max-width: 420px;
@@ -934,7 +946,7 @@
   gap: 10px;
   padding: 12px 16px;
   background: var(--color-bg-surface);
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 0.5px solid var(--color-border-subtle);
   flex-shrink: 0;
 }
 
@@ -942,7 +954,7 @@
   display: inline-flex;
   border-radius: var(--radius-md);
   overflow: hidden;
-  border: 1px solid var(--color-border-default);
+  border: 0.5px solid var(--color-border-default);
   flex-shrink: 0;
 }
 
@@ -957,7 +969,9 @@
   transition: background 0.12s, color 0.12s;
 }
 
+@media (hover: hover) {
 .kh-search-type-toggle button:hover { background: var(--color-bg-hover); color: var(--color-text-secondary); }
+}
 
 .kh-search-type-toggle button.active {
   background: var(--color-primary);
@@ -968,7 +982,7 @@
   flex: 1;
   min-width: 0;
   background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border-default);
+  border: 0.5px solid var(--color-border-default);
   color: var(--color-text-primary);
   border-radius: var(--radius-md);
   padding: 0 14px;
@@ -995,7 +1009,7 @@
 
 .kh-search-result {
   background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
   padding: 10px 14px;
   display: flex;
@@ -1066,7 +1080,7 @@
   justify-content: space-between;
   padding: 12px 16px;
   background: var(--color-bg-surface);
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 0.5px solid var(--color-border-subtle);
   flex-shrink: 0;
   gap: 12px;
 }
@@ -1101,7 +1115,7 @@
   min-width: 220px;
   max-width: 400px;
   background: var(--color-bg-surface);
-  border-right: 1px solid var(--color-border-subtle);
+  border-right: 0.5px solid var(--color-border-subtle);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -1113,7 +1127,7 @@
   font-weight: 600;
   color: var(--color-text-secondary);
   font-family: var(--font-mono);
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 0.5px solid var(--color-border-subtle);
   position: sticky;
   top: 0;
   background: var(--color-bg-surface);
@@ -1138,7 +1152,9 @@
   white-space: nowrap;
 }
 
+@media (hover: hover) {
 .kh-archive-tree-row:hover { background: var(--color-bg-elevated); }
+}
 
 .kh-archive-tree-row.selected {
   background: var(--color-primary-tint);
@@ -1183,7 +1199,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 0.5px solid var(--color-border-subtle);
   background: var(--color-bg-surface);
   font-size: 12px;
   color: var(--color-text-secondary);
@@ -1233,7 +1249,7 @@
   align-items: center;
   gap: 2px;
   overflow-x: auto;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 0.5px solid var(--color-border-subtle);
   flex-shrink: 0;
   scrollbar-width: none;
 }
@@ -1258,9 +1274,11 @@
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
 }
 
+@media (hover: hover) {
 .kh-tab:hover {
   color: var(--color-text-secondary);
   background: var(--color-bg-surface);
+}
 }
 
 .kh-tab.active {
@@ -1294,7 +1312,7 @@
   display: flex;
   flex: 1;
   min-height: 0;
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
   background: var(--color-bg-surface);
   overflow: hidden;
@@ -1306,7 +1324,7 @@
   max-width: 420px;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--color-border-subtle);
+  border-right: 0.5px solid var(--color-border-subtle);
   background: var(--color-bg-base);
   min-height: 0;
 }
@@ -1316,7 +1334,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 8px 12px;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 0.5px solid var(--color-border-subtle);
   background: var(--color-bg-surface);
   flex-shrink: 0;
 }
@@ -1334,7 +1352,7 @@
   gap: 4px;
   padding: 4px 8px;
   background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-sm);
   color: var(--color-text-secondary);
   font-size: 12px;
@@ -1342,9 +1360,11 @@
   transition: color 0.15s, border-color 0.15s;
 }
 
+@media (hover: hover) {
 .kh-vault-refresh:hover:not(:disabled) {
   color: var(--color-primary-soft);
   border-color: var(--color-border-default);
+}
 }
 
 .kh-vault-refresh:disabled {
@@ -1381,7 +1401,7 @@
   gap: 6px;
   padding: 6px 10px;
   background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-sm);
   font-size: 12px;
 }
@@ -1436,9 +1456,11 @@
   margin: 0 4px;
 }
 
+@media (hover: hover) {
 .kh-tree-node-row:hover {
   background: var(--color-bg-hover);
   color: var(--color-text-primary);
+}
 }
 
 .kh-tree-node-selected {
@@ -1446,9 +1468,11 @@
   color: var(--color-primary-soft);
 }
 
+@media (hover: hover) {
 .kh-tree-node-selected:hover {
   background: var(--color-primary-tint);
   color: var(--color-primary-soft);
+}
 }
 
 .kh-tree-chevron {
@@ -1469,7 +1493,7 @@
   height: 12px;
   border: 2px solid var(--color-border-default);
   border-top-color: var(--color-primary-soft);
-  border-radius: 50%;
+  border-radius: 50%; corner-shape: round;
   animation: kh-spin 0.7s linear infinite;
   flex-shrink: 0;
   box-sizing: border-box;
@@ -1519,7 +1543,7 @@
 
 /* ── Frontmatter 元数据区 ── */
 .kh-frontmatter {
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-sm);
   background: var(--color-bg-elevated);
   overflow: hidden;
@@ -1538,14 +1562,16 @@
   cursor: pointer;
 }
 
+@media (hover: hover) {
 .kh-frontmatter-toggle:hover {
   color: var(--color-primary-soft);
+}
 }
 
 .kh-frontmatter-pre {
   padding: 8px 12px;
   margin: 0;
-  border-top: 1px solid var(--color-border-subtle);
+  border-top: 0.5px solid var(--color-border-subtle);
   font-family: var(--font-mono);
   font-size: 12px;
   color: var(--color-text-secondary);
@@ -1561,7 +1587,7 @@
   flex-wrap: wrap;
   padding: 6px 10px;
   background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-sm);
   font-size: 12px;
   color: var(--color-text-tertiary);
@@ -1583,7 +1609,7 @@
   line-height: 1.6;
   color: var(--color-text-primary);
   background: var(--color-bg-base);
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-sm);
   padding: 12px 14px;
   white-space: pre-wrap;
@@ -1599,7 +1625,7 @@
   padding: 2px;
   margin: 0 0 8px;
   background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-sm);
   width: fit-content;
 }
@@ -1617,9 +1643,11 @@
   transition: background 0.15s, color 0.15s;
 }
 
+@media (hover: hover) {
 .kh-preview-tool:hover {
   color: var(--color-text-primary);
   background: var(--color-bg-hover);
+}
 }
 
 .kh-preview-tool.active {
@@ -1634,7 +1662,7 @@
   line-height: 1.65;
   color: var(--color-text-primary);
   background: var(--color-bg-base);
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-sm);
   padding: 12px 14px;
   overflow-x: auto;
@@ -1661,9 +1689,11 @@
   border-radius: 4px;
 }
 
+@media (hover: hover) {
 .kh-vault-tree-body::-webkit-scrollbar-thumb:hover,
 .kh-vault-preview::-webkit-scrollbar-thumb:hover {
   background: var(--color-border-strong);
+}
 }
 
 .kh-vault-tree-body::-webkit-scrollbar-track,
@@ -1685,7 +1715,7 @@
   gap: 10px;
   padding: 12px 16px;
   background: var(--color-bg-surface);
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 0.5px solid var(--color-border-subtle);
   flex-shrink: 0;
 }
 
@@ -1693,7 +1723,7 @@
   flex: 1;
   min-width: 0;
   background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border-default);
+  border: 0.5px solid var(--color-border-default);
   color: var(--color-text-primary);
   border-radius: var(--radius-md);
   padding: 0 14px;
@@ -1708,7 +1738,7 @@
 .kh-ask-domain {
   height: 36px;
   background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border-default);
+  border: 0.5px solid var(--color-border-default);
   color: var(--color-text-primary);
   border-radius: var(--radius-md);
   padding: 0 10px;
@@ -1747,12 +1777,12 @@
   color: var(--color-text-secondary);
   margin-bottom: 10px;
   padding-bottom: 6px;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 0.5px solid var(--color-border-subtle);
 }
 
 .kh-ask-answer-section {
   background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
   padding: 14px 16px;
 }
@@ -1770,7 +1800,7 @@
   align-items: start;
   gap: 6px;
   padding: 10px 0;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 0.5px solid var(--color-border-subtle);
 }
 
 .kh-ask-result:first-child { padding-top: 0; }
@@ -1788,16 +1818,18 @@
   font-weight: 600;
   color: var(--color-primary);
   background: color-mix(in srgb, var(--color-primary) 10%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
-  border-radius: 10px;
+  border: 0.5px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+  border-radius: 10px; corner-shape: round;
   cursor: pointer;
   transition: background 0.12s, border-color 0.12s;
   vertical-align: baseline;
 }
 
+@media (hover: hover) {
 .kh-ask-cite-marker:hover {
   background: color-mix(in srgb, var(--color-primary) 20%, transparent);
   border-color: var(--color-primary);
+}
 }
 
 .kh-ask-no-result {
@@ -1818,7 +1850,7 @@
 
 .kh-ask-citation {
   background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
   padding: 10px 14px;
   transition: border-color 0.3s, box-shadow 0.3s;
@@ -1854,15 +1886,17 @@
   font-weight: 600;
   color: var(--color-primary);
   background: transparent;
-  border: 1px solid var(--color-border-default);
+  border: 0.5px solid var(--color-border-default);
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background 0.12s, border-color 0.12s;
 }
 
+@media (hover: hover) {
 .kh-ask-vault-btn:hover {
   background: var(--color-bg-hover);
   border-color: var(--color-primary);
+}
 }
 
 .kh-ask-citation-snippet {
@@ -1881,34 +1915,34 @@
 .kh-wiki-load-error .kh-error { flex: 1; margin: 0; }
 .kh-wiki-overview { display: grid; gap: 10px; }
 .kh-wiki-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-.kh-wiki-stats > div { display: flex; min-width: 0; align-items: baseline; gap: 8px; padding: 10px 12px; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-md); background: var(--color-bg-surface); }
+.kh-wiki-stats > div { display: flex; min-width: 0; align-items: baseline; gap: 8px; padding: 10px 12px; border: 0.5px solid var(--color-border-subtle); border-radius: var(--radius-md); background: var(--color-bg-surface); }
 .kh-wiki-stats strong { color: var(--color-text-primary); font-size: 20px; font-weight: 500; line-height: 1; }
 .kh-wiki-stats span { color: var(--color-text-tertiary); font-size: 11px; }
-.kh-wiki-rule-strip { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: 6px; padding: 9px 12px; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-md); background: var(--color-bg-base); color: var(--color-text-tertiary); font-size: 11px; }
+.kh-wiki-rule-strip { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: 6px; padding: 9px 12px; border: 0.5px solid var(--color-border-subtle); border-radius: var(--radius-md); background: var(--color-bg-base); color: var(--color-text-tertiary); font-size: 11px; }
 .kh-wiki-rule-strip > span { margin-right: 4px; color: var(--color-text-secondary); }
 .kh-wiki-rule-strip b { color: var(--color-primary-soft); font-weight: 500; }
 .kh-wiki-rule-strip i { color: var(--color-text-tertiary); font-style: normal; }
-.kh-wiki-upload-card { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 16px; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-lg); background: var(--color-bg-surface); }
+.kh-wiki-upload-card { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 16px; border: 0.5px solid var(--color-border-subtle); border-radius: var(--radius-lg); background: var(--color-bg-surface); }
 .kh-wiki-upload-copy { min-width: 0; }
 .kh-wiki-upload-copy h3 { margin: 0; color: var(--color-text-primary); font-size: 14px; font-weight: 500; }
 .kh-wiki-upload-copy p { margin: 4px 0 0; color: var(--color-text-tertiary); font-size: 11px; line-height: 1.5; }
 .kh-wiki-upload-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
-.kh-wiki-upload-actions select { min-height: 32px; padding: 0 10px; border: 1px solid var(--color-border-default); border-radius: var(--radius-md); background: var(--color-bg-base); color: var(--color-text-primary); font: inherit; font-size: 12px; }
+.kh-wiki-upload-actions select { min-height: 32px; padding: 0 10px; border: 0.5px solid var(--color-border-default); border-radius: var(--radius-md); background: var(--color-bg-base); color: var(--color-text-primary); font: inherit; font-size: 12px; }
 .kh-wiki-file-picker { position: relative; overflow: hidden; }
-.kh-wiki-file-picker > span { display: inline-flex; min-height: 32px; align-items: center; padding: 0 12px; border: 1px solid var(--color-border-default); border-radius: var(--radius-md); background: var(--color-bg-base); color: var(--color-text-primary); font-size: 12px; cursor: pointer; }
+.kh-wiki-file-picker > span { display: inline-flex; min-height: 32px; align-items: center; padding: 0 12px; border: 0.5px solid var(--color-border-default); border-radius: var(--radius-md); background: var(--color-bg-base); color: var(--color-text-primary); font-size: 12px; cursor: pointer; }
 .kh-wiki-file-picker input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .kh-wiki-auto-publish { display: inline-flex; align-items: center; gap: 6px; color: var(--color-text-secondary); font-size: 11px; white-space: nowrap; }
 .kh-wiki-auto-publish input { width: 15px; height: 15px; margin: 0; }
-.kh-wiki-notice { padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--state-success) 35%, var(--color-border-subtle)); border-radius: var(--radius-md); background: var(--state-success-tint); color: var(--state-success); }
+.kh-wiki-notice { padding: 10px 12px; border: 0.5px solid color-mix(in srgb, var(--state-success) 35%, var(--color-border-subtle)); border-radius: var(--radius-md); background: var(--state-success-tint); color: var(--state-success); }
 .kh-wiki-grid { display: grid; grid-template-columns: minmax(260px, .7fr) minmax(0, 1.7fr); gap: 12px; align-items: stretch; }
-.kh-wiki-inbox, .kh-wiki-detail, .kh-wiki-side > section { min-width: 0; padding: 16px; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-lg); background: var(--color-bg-surface); box-shadow: 0 1px 2px rgba(0, 0, 0, .08), 0 5px 16px rgba(0, 0, 0, .05); }
+.kh-wiki-inbox, .kh-wiki-detail, .kh-wiki-side > section { min-width: 0; padding: 16px; border: 0.5px solid var(--color-border-subtle); border-radius: var(--radius-lg); background: var(--color-bg-surface); box-shadow: 0 1px 2px rgba(0, 0, 0, .08), 0 5px 16px rgba(0, 0, 0, .05); }
 .kh-wiki-inbox { display: flex; flex-direction: column; }
 .kh-wiki-side { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; min-width: 0; }
 .kh-wiki-section-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
 .kh-wiki-section-head h3 { margin: 0; color: var(--color-text-primary); font-size: 14px; font-weight: 500; }
 .kh-wiki-section-head p { margin: 3px 0 0; color: var(--color-text-tertiary); font-size: 11px; line-height: 1.4; }
 .kh-wiki-draft-list { display: flex; flex: 1; flex-direction: column; align-items: stretch; gap: 6px; }
-.kh-wiki-draft { display: flex; width: 100%; min-height: 58px; flex: none; align-items: center; justify-content: space-between; gap: 8px; padding: 10px; border: 1px solid transparent; border-radius: var(--radius-md); background: var(--color-bg-base); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.kh-wiki-draft { display: flex; width: 100%; min-height: 58px; flex: none; align-items: center; justify-content: space-between; gap: 8px; padding: 10px; border: 0.5px solid transparent; border-radius: var(--radius-md); background: var(--color-bg-base); color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .kh-wiki-draft > span { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
 .kh-wiki-draft b { color: var(--color-text-primary); font-size: 12px; font-weight: 500; overflow-wrap: anywhere; }
 .kh-wiki-draft small { color: var(--color-text-tertiary); font-size: 10px; }
@@ -1920,7 +1954,7 @@
 .kh-wiki-detail-meta { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-bottom: 12px; color: var(--color-text-tertiary); font-size: 10px; }
 .kh-wiki-detail-meta b { color: var(--color-text-secondary); font-weight: 500; }
 .kh-wiki-conflicts { display: grid; gap: 6px; margin-bottom: 12px; }
-.kh-wiki-conflict { display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-md); color: var(--color-text-secondary); font-size: 11px; line-height: 1.45; }
+.kh-wiki-conflict { display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border: 0.5px solid var(--color-border-subtle); border-radius: var(--radius-md); color: var(--color-text-secondary); font-size: 11px; line-height: 1.45; }
 .kh-wiki-conflict b { flex: none; font-size: 10px; }
 .kh-wiki-conflict.is-block { border-color: color-mix(in srgb, var(--state-error) 38%, var(--color-border-subtle)); background: var(--state-error-tint); }
 .kh-wiki-conflict.is-block b { color: var(--state-error); }
@@ -1928,12 +1962,12 @@
 .kh-wiki-conflict.is-warn b { color: var(--state-warning); }
 .kh-wiki-conflict.is-info b, .kh-wiki-conflict.is-ok b { color: var(--color-primary-soft); }
 .kh-wiki-conflict.is-ok { border-color: color-mix(in srgb, var(--state-success) 32%, var(--color-border-subtle)); background: var(--state-success-tint); color: var(--state-success); }
-.kh-wiki-preview { max-height: 300px; margin: 0 0 8px; overflow: hidden; padding: 12px; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-md); background: var(--color-bg-base); color: var(--color-text-primary); }
+.kh-wiki-preview { max-height: 300px; margin: 0 0 8px; overflow: hidden; padding: 12px; border: 0.5px solid var(--color-border-subtle); border-radius: var(--radius-md); background: var(--color-bg-base); color: var(--color-text-primary); }
 .kh-wiki-preview > div[data-markdown-variant='compact'] { color: var(--color-text-primary); }
 .kh-wiki-preview.is-expanded { max-height: none; overflow: visible; }
 .kh-wiki-preview-toggle { margin: 0 0 12px; }
 .kh-wiki-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.kh-wiki-actions select { min-height: 32px; padding: 0 10px; border: 1px solid var(--color-border-default); border-radius: var(--radius-md); background: var(--color-bg-base); color: var(--color-text-primary); font: inherit; font-size: 12px; }
+.kh-wiki-actions select { min-height: 32px; padding: 0 10px; border: 0.5px solid var(--color-border-default); border-radius: var(--radius-md); background: var(--color-bg-base); color: var(--color-text-primary); font: inherit; font-size: 12px; }
 .kh-wiki-category-list { display: grid; gap: 6px; }
 .kh-wiki-category-list > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px 8px; padding: 8px 9px; border-radius: var(--radius-md); background: var(--color-bg-base); }
 .kh-wiki-category-list b { color: var(--color-text-primary); font-size: 11px; font-weight: 500; overflow-wrap: anywhere; }
@@ -1944,7 +1978,7 @@
 .kh-wiki-page-list > div, .kh-wiki-log > div { display: flex; min-width: 0; flex-direction: column; gap: 2px; padding: 8px 9px; border-radius: var(--radius-md); background: var(--color-bg-base); }
 .kh-wiki-page-list b, .kh-wiki-log b { color: var(--color-text-primary); font-size: 11px; font-weight: 500; overflow-wrap: anywhere; }
 .kh-wiki-page-list span, .kh-wiki-log span { color: var(--color-text-tertiary); font-size: 10px; overflow-wrap: anywhere; }
-.kh-wiki-schema { padding: 12px 14px; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-lg); background: var(--color-bg-surface); }
+.kh-wiki-schema { padding: 12px 14px; border: 0.5px solid var(--color-border-subtle); border-radius: var(--radius-lg); background: var(--color-bg-surface); }
 .kh-wiki-schema summary { color: var(--color-text-secondary); font-size: 12px; cursor: pointer; }
 .kh-wiki-schema pre { margin: 12px 0 0; padding: 12px; overflow: auto; border-radius: var(--radius-md); background: var(--color-bg-base); color: var(--color-text-secondary); font: 11px/1.6 var(--font-mono); white-space: pre-wrap; }
 @media (hover: hover) {
@@ -2002,7 +2036,7 @@
   background: var(--color-bg-elevated);
   color: var(--color-text-tertiary);
   border-radius: 3px;
-  border: 1px solid var(--color-border-subtle);
+  border: 0.5px solid var(--color-border-subtle);
 }
 
 .kh-domain-card-agents {

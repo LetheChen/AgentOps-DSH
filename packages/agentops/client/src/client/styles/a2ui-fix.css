@@ -33,14 +33,14 @@
 }
 
 .agentops-a2ui .ao-a2ui__metric {
-  border: 1px solid var(--color-border-default);
+  border: 0.5px solid var(--color-border-default);
   border-left: 3px solid var(--tone);
   background: var(--color-bg-elevated);
 }
 
 .agentops-a2ui .ao-a2ui__status-badge,
 .agentops-a2ui .ao-a2ui__badge {
-  border: 1px solid var(--tone);
+  border: 0.5px solid var(--tone);
   color: var(--tone);
 }
 

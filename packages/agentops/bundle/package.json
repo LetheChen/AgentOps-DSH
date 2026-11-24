@@ -29,38 +29,26 @@
     "test": "node --import tsx --test tests/*.test.ts",
     "backup": "node --import tsx scripts/backup.ts"
   },
-  "peerDependencies": {
-    "@agentops/dsh-host": "workspace:*",
-    "@agentops/dsh-knowledge": "workspace:*",
-    "@agentops/dsh-dag": "workspace:*",
-    "@agentops/dsh-task": "workspace:*",
-    "@agentops/dsh-capability": "workspace:*",
-    "@agentops/dsh-ui-capability": "workspace:*",
-    "@agentops/dsh-client": "workspace:*",
-    "@agentops/dsh-security": "workspace:*",
-    "@agentops/dsh-workflow-catalog": "workspace:*",
-    "@agentops/dsh-db": "workspace:*",
-    "@agentops/dsh-vault": "workspace:*",
-    "@agentops/dsh-log-collection": "workspace:*",
-    "@agentops/dsh-deployment": "workspace:*"
-  },
   "devDependencies": {
-    "@agentops/dsh-host": "workspace:*",
-    "@agentops/dsh-knowledge": "workspace:*",
-    "@agentops/dsh-dag": "workspace:*",
-    "@agentops/dsh-task": "workspace:*",
-    "@agentops/dsh-capability": "workspace:*",
-    "@agentops/dsh-ui-capability": "workspace:*",
-    "@agentops/dsh-client": "workspace:*",
     "js-yaml": "^4.3.2",
     "@types/js-yaml": "^4.0.9",
     "tsx": "^4.20.6",
-    "typescript": "^5.9.2",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@agentops/dsh-host": "workspace:*",
+    "@agentops/dsh-knowledge": "workspace:*",
+    "@agentops/dsh-dag": "workspace:*",
+    "@agentops/dsh-task": "workspace:*",
+    "@agentops/dsh-capability": "workspace:*",
+    "@agentops/dsh-ui-capability": "workspace:*",
+    "@agentops/dsh-client": "workspace:*",
     "@agentops/dsh-security": "workspace:*",
     "@agentops/dsh-workflow-catalog": "workspace:*",
     "@agentops/dsh-db": "workspace:*",
     "@agentops/dsh-vault": "workspace:*",
     "@agentops/dsh-log-collection": "workspace:*",
-    "@agentops/dsh-deployment": "workspace:*"
+    "@agentops/dsh-deployment": "workspace:*",
+    "@deepseek-ai/dsh-agent-preset-registry": "workspace:*"
   }
 }
