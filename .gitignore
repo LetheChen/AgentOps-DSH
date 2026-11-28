@@ -79,3 +79,6 @@ reports/
 # Real internal OA approval knowledge: kept out of the repository, synced into the
 # runtime knowledge DB only on machines that explicitly opt in.
 packages/agentops/knowledge-base/业务资产/智能审批/
+
+# Agent review drafts and specs (working material, not shipped)
+/agentops/reviews/
