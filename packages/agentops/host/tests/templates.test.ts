@@ -106,7 +106,7 @@ void test('清理：present_content 模板通道落库，board_cleanup 能删单
   const dir = mkdtempSync(join(tmpdir(), 'agentops-board-'))
   const store = new SurfaceStore(join(dir, 'surfaces.db'))
   try {
-    const present = runnable(createPresentContentTool(store))
+    const present = runnable(createPresentContentTool({ get: () => undefined } as never, store))
     const cleanup = runnable(createBoardCleanupTool(store))
 
     await present.execute({

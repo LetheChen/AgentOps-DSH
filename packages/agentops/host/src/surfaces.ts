@@ -1,17 +1,26 @@
 /**
  * Stored generative-UI surfaces.
  *
- * Agents publish A2UI surfaces through the `present_content` tool; the panel
- * reads the newest one. Validation here is structural only (shape and limits) —
- * the renderer runs the full JSON-schema check and degrades visibly on failure.
+ * Agents publish A2UI surfaces and image cards through the `present_content`
+ * tool; the panel reads the newest board state. Surface validation is
+ * structural only (shape and limits) — the renderer runs the full JSON-schema
+ * check and degrades visibly on failure. Image bytes are content-addressed and
+ * served only after raster-format verification.
  *
  * @module @agentops/dsh-host/surfaces
  */
 
+import { createHash } from 'node:crypto'
 import { DatabaseSync } from 'node:sqlite'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
+import type { ToolDefinition, ToolExecution } from '@deepseek-ai/dsh-tools'
+import type { ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
+import type {} from '@deepseek-ai/dsh-fs'
+import type { SessionEvent } from '@deepseek-ai/dsh-session'
+import type {} from '@deepseek-ai/dsh-session-query'
+import type {} from '@deepseek-ai/dsh-working-directory'
 
+import { isSafeGenerativeUiPreviewUri } from './a2ui-schema/artifact-uri.ts'
 import { validateAgentopsA2uiSurface } from './a2ui-schema/validation.ts'
 import { buildTemplate, CONTENT_TYPES } from './a2ui-templates.ts'
 import type { Context } from '@deepseek-ai/cordis'
@@ -25,6 +34,19 @@ export const A2UI_VERSION = 'v1.0'
 export const MAX_SURFACE_BYTES = 64 * 1024
 /** Largest number of components one surface may carry. */
 export const MAX_COMPONENTS = 128
+/** Largest image the board accepts into its durable asset store. */
+export const MAX_SURFACE_IMAGE_BYTES = 16 * 1024 * 1024
+
+/** Raster formats the board serves with a verified media type. */
+export type SurfaceImageMediaType = 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif'
+
+/** Content-addressed image bytes stored for one published surface. */
+export interface SurfaceImageAsset {
+  readonly digest: string
+  readonly mediaType: SurfaceImageMediaType
+  readonly bytes: number
+  readonly data: Uint8Array
+}
 
 /**
  * Components this catalog renders. Anything else would degrade at render time,
@@ -65,6 +87,7 @@ const COMPONENT_RULES: Record<string, { required: readonly string[]; optional: r
   Column: { required: ['children'], optional: ['gap', 'align', 'tone'] },
   List: { required: ['children'], optional: ['direction', 'gap'] },
   Card: { required: ['children'], optional: ['title', 'tone'] },
+  Image: { required: ['url'], optional: ['description', 'fit', 'variant'] },
   Divider: { required: [], optional: [] },
 }
 
@@ -230,6 +253,8 @@ export interface StoredSurface {
   surface: unknown
   content: unknown
   createdAt: string
+  /** Zero-based board position; lower values render first. */
+  order: number
 }
 
 /**
@@ -286,6 +311,73 @@ export function validateSurfaceEnvelope(input: unknown): { ok: true; surface: Re
   return { ok: true, surface }
 }
 
+/**
+ * Identify the raster format from bytes before the Host serves or stores them.
+ * @param data - encoded image bytes to inspect.
+ * @returns the verified raster media type, or undefined for unsupported content.
+ */
+export function detectSurfaceImageMediaType(data: Uint8Array): SurfaceImageMediaType | undefined {
+  if (data.length >= 8
+    && data[0] === 0x89 && data[1] === 0x50 && data[2] === 0x4e && data[3] === 0x47
+    && data[4] === 0x0d && data[5] === 0x0a && data[6] === 0x1a && data[7] === 0x0a) {
+    return 'image/png'
+  }
+  if (data.length >= 3 && data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff) return 'image/jpeg'
+  if (data.length >= 6) {
+    const signature = String.fromCharCode(...data.subarray(0, 6))
+    if (signature === 'GIF87a' || signature === 'GIF89a') return 'image/gif'
+  }
+  if (data.length >= 12) {
+    const riff = String.fromCharCode(...data.subarray(0, 4))
+    const webp = String.fromCharCode(...data.subarray(8, 12))
+    if (riff === 'RIFF' && webp === 'WEBP') return 'image/webp'
+  }
+  return undefined
+}
+
+/**
+ * Stable browser URL for one content-addressed surface image.
+ * @param digest - lowercase SHA-256 content digest.
+ * @returns the authenticated image route carrying that digest.
+ */
+export function surfaceImageUrl(digest: string): string {
+  return `/api/agentops/surfaces/asset?digest=${digest}`
+}
+
+type ScreenshotSource =
+  | { readonly kind: 'attachment'; readonly attachment: ImageAttachmentRef }
+  | { readonly kind: 'path'; readonly path: string }
+
+function screenshotPathIn(text: string): string | undefined {
+  const match = /^Saved (?:a )?screenshot(?: of [^.\n]+)? to (.+?)\.?$/m.exec(text)
+  let path = match?.[1]?.trim()
+  if (path === undefined || path === '') return undefined
+  if ((path.startsWith('"') && path.endsWith('"')) || (path.startsWith("'") && path.endsWith("'"))) {
+    path = path.slice(1, -1)
+  }
+  return path
+}
+
+function latestScreenshotSource(events: readonly SessionEvent[]): ScreenshotSource | undefined {
+  const callNames = new Map<string, string>()
+  for (const event of events) {
+    if (event.type === 'tool/call') callNames.set(String(event.data.callId), event.data.name)
+  }
+  for (let index = events.length - 1; index >= 0; index -= 1) {
+    const event = events[index]
+    if (event?.type !== 'tool/result') continue
+    const name = callNames.get(String(event.data.message.toolCallId))
+    if (name === undefined || !/screenshot/i.test(name)) continue
+    let path: string | undefined
+    for (const block of event.data.message.content) {
+      if (block.type === 'image') return { kind: 'attachment', attachment: block.attachment }
+      if (block.type === 'text') path ??= screenshotPathIn(block.text)
+    }
+    if (path !== undefined) return { kind: 'path', path }
+  }
+  return undefined
+}
+
 /** SQLite storage for published surfaces, one card per view id. */
 export class SurfaceStore {
   readonly #db: DatabaseSync
@@ -300,6 +392,14 @@ export class SurfaceStore {
         title TEXT NOT NULL,
         surface_json TEXT NOT NULL,
         content_json TEXT,
+        created_at TEXT NOT NULL,
+        sort_order INTEGER NOT NULL DEFAULT 0
+      );
+      CREATE TABLE IF NOT EXISTS surface_images (
+        digest TEXT PRIMARY KEY,
+        media_type TEXT NOT NULL,
+        bytes INTEGER NOT NULL,
+        data BLOB NOT NULL,
         created_at TEXT NOT NULL
       );
     `)
@@ -308,6 +408,12 @@ export class SurfaceStore {
     const columns = this.#db.prepare('PRAGMA table_info(surfaces)').all() as { name: string }[]
     if (!columns.some(column => column.name === 'view_id')) {
       this.#db.exec("ALTER TABLE surfaces ADD COLUMN view_id TEXT NOT NULL DEFAULT 'main'")
+    }
+    // Old databases predate sort_order. Seed it from id, which is the order the
+    // board used before this column existed.
+    if (!columns.some(column => column.name === 'sort_order')) {
+      this.#db.exec('ALTER TABLE surfaces ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0')
+      this.#db.exec('UPDATE surfaces SET sort_order = id')
     }
     this.#db.exec(`
       CREATE INDEX IF NOT EXISTS surfaces_created ON surfaces(created_at DESC);
@@ -324,6 +430,60 @@ export class SurfaceStore {
   }
 
   /**
+   * Store one verified raster image under its SHA-256 digest.
+   * @param data - encoded PNG, JPEG, WebP, or GIF bytes.
+   * @param mediaType - media type detected from those exact bytes.
+   * @param now - deterministic timestamp for tests.
+   * @returns the content-addressed image identity.
+   */
+  putImage(data: Uint8Array, mediaType: SurfaceImageMediaType, now = new Date().toISOString()): SurfaceImageAsset {
+    if (data.byteLength === 0) throw new Error('surface image is empty')
+    if (data.byteLength > MAX_SURFACE_IMAGE_BYTES) {
+      throw new Error(`surface image exceeds ${MAX_SURFACE_IMAGE_BYTES} bytes`)
+    }
+    const detected = detectSurfaceImageMediaType(data)
+    if (detected !== mediaType) throw new Error('surface image media type does not match its bytes')
+    const digest = createHash('sha256').update(data).digest('hex')
+    this.#db.prepare(
+      'INSERT OR IGNORE INTO surface_images (digest, media_type, bytes, data, created_at) VALUES (?, ?, ?, ?, ?)',
+    ).run(digest, mediaType, data.byteLength, data, now)
+    return { digest, mediaType, bytes: data.byteLength, data }
+  }
+
+  /**
+   * Read one published surface image by digest.
+   * @param digest - lowercase SHA-256 content digest.
+   * @returns the stored image, or null when the digest is malformed or absent.
+   */
+  image(digest: string): SurfaceImageAsset | null {
+    if (!/^[a-f0-9]{64}$/.test(digest)) return null
+    const row = this.#db.prepare(
+      'SELECT digest, media_type, bytes, data FROM surface_images WHERE digest = ?',
+    ).get(digest) as { digest: string; media_type: SurfaceImageMediaType; bytes: number; data: Uint8Array } | undefined
+    if (row === undefined) return null
+    return { digest: row.digest, mediaType: row.media_type, bytes: row.bytes, data: row.data }
+  }
+
+  /** Delete images no remaining card references. */
+  #pruneImages(): void {
+    const rows = this.#db.prepare('SELECT surface_json FROM surfaces').all() as { surface_json: string }[]
+    const referenced = new Set<string>()
+    const pattern = /\/api\/agentops\/surfaces\/asset\?digest=([a-f0-9]{64})/g
+    for (const row of rows) {
+      for (const match of row.surface_json.matchAll(pattern)) {
+        const digest = match[1]
+        if (digest !== undefined) referenced.add(digest)
+      }
+    }
+    const assets = this.#db.prepare('SELECT digest FROM surface_images').all() as { digest: string }[]
+    for (const asset of assets) {
+      if (!referenced.has(asset.digest)) {
+        this.#db.prepare('DELETE FROM surface_images WHERE digest = ?').run(asset.digest)
+      }
+    }
+  }
+
+  /**
    * Publish one surface, replacing the card of the same view id.
    * @param surface - the A2UI surface document.
    * @param options - the card title, view id, content, session id, and timestamp.
@@ -337,9 +497,17 @@ export class SurfaceStore {
     const viewId = options.viewId?.trim() || 'main'
     // One row per view: publishing the same id replaces the card in place,
     // which is how the board keeps a stable set of cards instead of a feed.
+    // A replacement keeps its board position; a new card appends.
+    const existing = this.#db.prepare('SELECT sort_order FROM surfaces WHERE view_id = ?').get(viewId) as
+      | { sort_order: number }
+      | undefined
+    const maxRow = this.#db.prepare('SELECT COALESCE(MAX(sort_order), -1) AS value FROM surfaces').get() as {
+      value: number
+    }
+    const nextOrder = existing?.sort_order ?? maxRow.value + 1
     this.#db.prepare('DELETE FROM surfaces WHERE view_id = ?').run(viewId)
     const result = this.#db.prepare(
-      'INSERT INTO surfaces (view_id, session_id, title, surface_json, content_json, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO surfaces (view_id, session_id, title, surface_json, content_json, created_at, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)',
     ).run(
       viewId,
       options.sessionId ?? null,
@@ -347,16 +515,34 @@ export class SurfaceStore {
       JSON.stringify(surface),
       options.content === undefined ? null : JSON.stringify(options.content),
       now,
+      nextOrder,
     )
+    this.#pruneImages()
     return Number(result.lastInsertRowid)
   }
 
   /**
-   * Current board: one entry per view id, newest publish last.
+   * Current board in its persisted display order, first card first.
    * @returns the current board, one entry per view id.
    */
   views(): StoredSurface[] {
     return this.list(500).reverse()
+  }
+
+  /**
+   * Replace the whole board order with the given first-to-last sequence.
+   * @param viewIds - every card view id in its new position order.
+   * @returns whether the sequence is exactly a permutation of the current board.
+   */
+  reorder(viewIds: readonly string[]): boolean {
+    const current = this.views()
+    if (current.length !== viewIds.length) return false
+    const currentIds = new Set(current.map(row => row.viewId))
+    if (viewIds.some(viewId => !currentIds.has(viewId))) return false
+    if (new Set(viewIds).size !== viewIds.length) return false
+    const update = this.#db.prepare('UPDATE surfaces SET sort_order = ? WHERE view_id = ?')
+    viewIds.forEach((viewId, order) => update.run(order, viewId))
+    return true
   }
 
   /**
@@ -381,6 +567,7 @@ export class SurfaceStore {
    */
   removeView(viewId: string): boolean {
     const result = this.#db.prepare('DELETE FROM surfaces WHERE view_id = ?').run(viewId)
+    this.#pruneImages()
     return Number(result.changes) > 0
   }
 
@@ -390,6 +577,7 @@ export class SurfaceStore {
    */
   clear(): number {
     const result = this.#db.prepare('DELETE FROM surfaces').run()
+    this.#pruneImages()
     return Number(result.changes)
   }
 
@@ -400,6 +588,7 @@ export class SurfaceStore {
    */
   remove(id: number): boolean {
     const result = this.#db.prepare('DELETE FROM surfaces WHERE id = ?').run(id)
+    this.#pruneImages()
     return Number(result.changes) > 0
   }
 
@@ -418,7 +607,7 @@ export class SurfaceStore {
    */
   list(limit = 20): StoredSurface[] {
     const rows = this.#db.prepare(
-      'SELECT id, view_id, session_id, title, surface_json, content_json, created_at FROM surfaces ORDER BY id DESC LIMIT ?',
+      'SELECT id, view_id, session_id, title, surface_json, content_json, created_at, sort_order FROM surfaces ORDER BY sort_order DESC, id DESC LIMIT ?',
     ).all(limit) as {
       id: number
       view_id: string
@@ -427,6 +616,7 @@ export class SurfaceStore {
       surface_json: string
       content_json: string | null
       created_at: string
+      sort_order: number
     }[]
     return rows.map(row => ({
       id: row.id,
@@ -436,6 +626,7 @@ export class SurfaceStore {
       surface: parseJsonValue(row.surface_json),
       content: row.content_json === null ? null : parseJsonValue(row.content_json),
       createdAt: row.created_at,
+      order: row.sort_order,
     }))
   }
 }
@@ -469,6 +660,19 @@ export function registerSurfaceRoutes(ctx: Context, store: SurfaceStore): void {
   }), 'agentops-system: /api/agentops/surfaces/remove')
 
   ctx.effect(() => ctx.connection.fetch.register({
+    path: '/api/agentops/surfaces/reorder',
+    methods: ['POST'],
+    requestBody: 'buffered',
+    fetch: async (request) => {
+      const body = await request.json().catch(() => ({})) as { viewIds?: unknown }
+      if (!Array.isArray(body.viewIds) || body.viewIds.some(item => typeof item !== 'string')) {
+        return json({ ok: false, reason: '需要 viewIds 数组' }, 400)
+      }
+      return json({ ok: store.reorder(body.viewIds as string[]) })
+    },
+  }), 'agentops-system: /api/agentops/surfaces/reorder')
+
+  ctx.effect(() => ctx.connection.fetch.register({
     path: '/api/agentops/surfaces/clear',
     methods: ['POST'],
     requestBody: 'buffered',
@@ -487,6 +691,32 @@ export function registerSurfaceRoutes(ctx: Context, store: SurfaceStore): void {
   }), 'agentops-system: /api/agentops/surfaces/views')
 
   ctx.effect(() => ctx.connection.fetch.register({
+    path: '/api/agentops/surfaces/asset',
+    methods: ['GET'],
+    requestBody: 'buffered',
+    fetch: (request) => {
+      const digest = new URL(request.url).searchParams.get('digest') ?? ''
+      const asset = store.image(digest)
+      if (asset === null) {
+        return Promise.resolve(new Response('Not found', {
+          status: 404,
+          headers: { 'content-type': 'text/plain; charset=utf-8' },
+        }))
+      }
+      return Promise.resolve(new Response(new Blob([new Uint8Array(asset.data)], { type: asset.mediaType }), {
+        headers: {
+          'content-type': asset.mediaType,
+          'content-length': String(asset.bytes),
+          'cache-control': 'private, max-age=31536000, immutable',
+          'content-security-policy': "default-src 'none'; sandbox",
+          'cross-origin-resource-policy': 'same-origin',
+          'x-content-type-options': 'nosniff',
+        },
+      }))
+    },
+  }), 'agentops-system: /api/agentops/surfaces/asset')
+
+  ctx.effect(() => ctx.connection.fetch.register({
     path: '/api/agentops/surfaces/latest',
     methods: ['GET'],
     requestBody: 'buffered',
@@ -502,12 +732,34 @@ function json(body: unknown, status = 200): Response {
 }
 
 
+/** `content_type` value that publishes one image card through `present_content`. */
+const IMAGE_CONTENT_TYPE = 'image'
+
+/**
+ * Decode a nested JSON object emitted as a JSON-encoded string by a model tool call.
+ * Objects and other values pass through unchanged; invalid JSON remains unchanged
+ * so the owning validator reports the original value.
+ * @param value - model-supplied JSON argument.
+ * @returns the decoded value when it is valid JSON text, otherwise the original value.
+ */
+function decodeJsonArgument(value: unknown): unknown {
+  if (typeof value !== 'string') return value
+  const trimmed = value.trim()
+  if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return value
+  try {
+    return JSON.parse(trimmed)
+  } catch {
+    return value
+  }
+}
+
 /**
  * The publishing tool. Agents call it to hand the panel a rendered surface.
+ * @param ctx - Agent-scoped context carrying optional attachment and filesystem services.
  * @param store - surface storage.
  * @returns the `present_content` tool definition.
  */
-export function createPresentContentTool(store: SurfaceStore): ToolDefinition {
+export function createPresentContentTool(ctx: Context, store: SurfaceStore): ToolDefinition {
   return defineTool({
     name: 'present_content',
     description:
@@ -522,17 +774,19 @@ export function createPresentContentTool(store: SurfaceStore): ToolDefinition {
       + 'AoTable{source,columns:[{id,label,path,format?}]}, Text{text}. '
       + 'Properties are FLAT on the component object — never wrap them in "props". '
       + 'Charts read data from `content` via JSON pointers: content:{bar:[{label,value}]} + source:{path:"/bar"} + itemLabelPath:"/label". '
-      + 'tone is one of neutral/info/positive/warning/critical. See the generative-ui skill for examples.',
+      + 'tone is one of neutral/info/positive/warning/critical. See the generative-ui skill for examples. '
+      + 'For screenshots and standalone images, use content_type:"image" with data:{source,caption?}; source defaults to latest-screenshot. '
+      + 'Pass data, surface, and content as objects, not JSON-encoded strings.',
     parameters: {
       title: { type: 'string', required: true, description: 'Short title shown above the surface.' },
       content_type: {
         type: 'string',
-        description: `Template channel (preferred): ${CONTENT_TYPES.join(' / ')}. Supply data in the shape that template expects.`,
+        description: `Template channel (preferred): ${CONTENT_TYPES.join(' / ')} / image. Supply data in the shape that template expects; image data is {source?,caption?}.`,
       },
-      data: { type: 'json', description: 'Template data; used with content_type.' },
+      data: { type: 'json', description: 'Template data object; used with content_type. Pass an object, not a JSON string.' },
       viewId: { type: 'string', description: 'Card id on the board. Publishing the same id replaces that card in place; omit for \'main\'.' },
-      surface: { type: 'json', description: 'A2UI v1 surface (escape hatch). Omit when using content_type.' },
-      content: { type: 'json', description: 'Data model the components bind to via source paths.' },
+      surface: { type: 'json', description: 'A2UI v1 surface object (escape hatch). Pass an object, not a JSON string.' },
+      content: { type: 'json', description: 'Data-model object the components bind to via source paths. Pass an object, not a JSON string.' },
       sessionId: { type: 'string', description: 'Optional owning session id.' },
     },
     output: {
@@ -553,14 +807,60 @@ export function createPresentContentTool(store: SurfaceStore): ToolDefinition {
           : `surface 未发布：${value.reason ?? '校验失败'}`,
       }],
     },
-    execute(args) {
+    async execute(args, exec) {
+      const data = decodeJsonArgument(args.data)
+      const surface = decodeJsonArgument(args.surface)
+      const content = decodeJsonArgument(args.content)
+      if (args.content_type === IMAGE_CONTENT_TYPE) {
+        if (data === null || typeof data !== 'object' || Array.isArray(data)) {
+          return { stored: false, id: 0, components: 0, reason: 'content_type:"image" 需要 data:{source?,caption?}' }
+        }
+        const values = data as Record<string, unknown>
+        const sourceValue = values.source
+        const captionValue = values.caption
+        if (sourceValue !== undefined && typeof sourceValue !== 'string') {
+          return { stored: false, id: 0, components: 0, reason: 'image.source 必须是字符串' }
+        }
+        if (captionValue !== undefined && typeof captionValue !== 'string') {
+          return { stored: false, id: 0, components: 0, reason: 'image.caption 必须是字符串' }
+        }
+        const source = (sourceValue?.trim() || 'latest-screenshot')
+        const resolved = await resolveImageSource(ctx, store, source, exec)
+        if (!resolved.ok) return { stored: false, id: 0, components: 0, reason: resolved.reason }
+        const caption = captionValue?.trim() || ''
+        const components: Record<string, unknown>[] = [
+          {
+            id: 'root',
+            component: 'Column',
+            align: 'stretch',
+            children: caption === '' ? ['image'] : ['image', 'caption'],
+          },
+          {
+            id: 'image',
+            component: 'Image',
+            url: resolved.url,
+            description: caption || args.title,
+            fit: 'contain',
+            variant: 'largeFeature',
+          },
+        ]
+        if (caption !== '') components.push({ id: 'caption', component: 'Text', text: caption, variant: 'caption' })
+        const checked = validateSurfaceEnvelope({ version: A2UI_VERSION, catalogId: A2UI_CATALOG_ID, components })
+        if (!checked.ok) return { stored: false, id: 0, components: 0, reason: checked.reason }
+        const id = store.put(checked.surface, {
+          title: args.title,
+          viewId: args.viewId?.trim() || 'image',
+          ...(args.sessionId === undefined ? {} : { sessionId: args.sessionId }),
+        })
+        return { stored: true, id, components: components.length }
+      }
       // Template channel: the model supplies a content type and its data, and the
       // surface is generated here — it cannot get component shapes wrong.
       if (args.content_type !== undefined) {
-        if (args.data === undefined) {
+        if (data === undefined) {
           return Promise.resolve({ stored: false, id: 0, components: 0, reason: 'content_type 需要同时提供 data' })
         }
-        const built = buildTemplate(args.content_type, args.data)
+        const built = buildTemplate(args.content_type, data)
         if (!built.ok) return Promise.resolve({ stored: false, id: 0, components: 0, reason: built.reason })
         const checked = validateSurfaceEnvelope({ version: A2UI_VERSION, catalogId: A2UI_CATALOG_ID, components: built.components })
         if (!checked.ok) return Promise.resolve({ stored: false, id: 0, components: 0, reason: checked.reason })
@@ -572,23 +872,109 @@ export function createPresentContentTool(store: SurfaceStore): ToolDefinition {
         })
         return Promise.resolve({ stored: true, id, components: built.components.length })
       }
-      if (args.surface === undefined) {
-        return Promise.resolve({ stored: false, id: 0, components: 0, reason: `需要 surface（自由 A2UI）或 content_type + data；可用模板：${CONTENT_TYPES.join(' / ')}` })
+      if (surface === undefined) {
+        return Promise.resolve({ stored: false, id: 0, components: 0, reason: `需要 surface（自由 A2UI）或 content_type + data；可用模板：${CONTENT_TYPES.join(' / ')} / image` })
       }
-      const checked = validateSurfaceEnvelope(args.surface)
+      const checked = validateSurfaceEnvelope(surface)
       if (!checked.ok) {
         return Promise.resolve({ stored: false, id: 0, components: 0, reason: checked.reason })
       }
       const id = store.put(checked.surface, {
         title: args.title,
         ...(args.viewId === undefined ? {} : { viewId: args.viewId }),
-        ...(args.content === undefined ? {} : { content: args.content }),
+        ...(content === undefined ? {} : { content }),
         ...(args.sessionId === undefined ? {} : { sessionId: args.sessionId }),
       })
       const components = Array.isArray(checked.surface.components) ? checked.surface.components.length : 0
       return Promise.resolve({ stored: true, id, components })
     },
   })
+}
+
+type ImageSourceResolution =
+  | { readonly ok: true; readonly url: string; readonly mediaType: string; readonly bytes: number }
+  | { readonly ok: false; readonly reason: string }
+
+async function readStoredImagePath(
+  ctx: Context,
+  store: SurfaceStore,
+  source: string,
+  exec: ToolExecution,
+): Promise<ImageSourceResolution> {
+  const fs = ctx.get('fs')
+  if (fs === undefined) return { ok: false, reason: '当前部署没有文件系统服务，无法读取图片路径' }
+  const agent = exec.agent
+  const workingDirectory = ctx.get('workingDirectory')
+  const cwd = agent === undefined
+    ? undefined
+    : workingDirectory?.get(agent.session) ?? agent.session.header.cwd
+  try {
+    const target = await fs.resolve(source, {
+      ...(cwd === undefined ? {} : { cwd }),
+      signal: exec.signal,
+    })
+    const info = await fs.stat(target, exec.signal)
+    if (info?.type !== 'file') return { ok: false, reason: `图片文件不存在：${source}` }
+    const data = await fs.readBytes(target, exec.signal, MAX_SURFACE_IMAGE_BYTES)
+    return storeImageBytes(store, data)
+  } catch (error: unknown) {
+    return { ok: false, reason: error instanceof Error ? error.message : `读取图片失败：${source}` }
+  }
+}
+
+function storeImageBytes(store: SurfaceStore, data: Uint8Array): ImageSourceResolution {
+  const mediaType = detectSurfaceImageMediaType(data)
+  if (mediaType === undefined) {
+    return { ok: false, reason: '图片必须是 PNG、JPEG、WebP 或 GIF；不接受 SVG、数据 URL 或其他格式' }
+  }
+  try {
+    const asset = store.putImage(data, mediaType)
+    return { ok: true, url: surfaceImageUrl(asset.digest), mediaType: asset.mediaType, bytes: asset.bytes }
+  } catch (error: unknown) {
+    return { ok: false, reason: error instanceof Error ? error.message : '图片存储失败' }
+  }
+}
+
+async function resolveImageSource(
+  ctx: Context,
+  store: SurfaceStore,
+  source: string,
+  exec: ToolExecution,
+): Promise<ImageSourceResolution> {
+  if (source === 'latest-screenshot') {
+    if (exec.agent === undefined) return { ok: false, reason: 'latest-screenshot 只能在 Agent 会话内使用' }
+    const query = ctx.get('sessionQuery')
+    if (query === undefined) return { ok: false, reason: '当前部署没有会话查询服务，无法定位截图' }
+    let screenshot: ScreenshotSource | undefined
+    try {
+      using observation = await query.observeSession(exec.agent.session.id, {
+        projectionMode: 'none',
+        signal: exec.signal,
+      })
+      screenshot = latestScreenshotSource(observation.events)
+    } catch (error: unknown) {
+      return { ok: false, reason: error instanceof Error ? error.message : '读取会话截图记录失败' }
+    }
+    if (screenshot === undefined) return { ok: false, reason: '当前会话还没有浏览器或桌面截图结果' }
+    if (screenshot.kind === 'path') return readStoredImagePath(ctx, store, screenshot.path, exec)
+    const attachments = ctx.get('attachments')
+    if (attachments === undefined) return { ok: false, reason: '当前部署没有附件存储，无法读取截图' }
+    try {
+      const stored = await attachments.readImage(screenshot.attachment, exec.signal)
+      return storeImageBytes(store, stored.data)
+    } catch (error: unknown) {
+      return { ok: false, reason: error instanceof Error ? error.message : '读取截图附件失败' }
+    }
+  }
+
+  if (isSafeGenerativeUiPreviewUri(source)) {
+    return { ok: true, url: source, mediaType: 'external', bytes: 0 }
+  }
+  if (/^(?:https?|data|blob|file|artifact):/i.test(source)) {
+    return { ok: false, reason: '图片来源必须是无凭据的 HTTP(S) URL、面板图片 URL，或当前工作区中的图片路径' }
+  }
+
+  return readStoredImagePath(ctx, store, source, exec)
 }
 
 /**

@@ -1,271 +1,602 @@
+legacy: "Superseded by video-full-production after staged approvals; kept as a reference for one-shot runs."
 workflow_id: video-pipeline
 name: AI 视频生产管线
-version: 1.2
+version: 2.0
 description: |
-  6 步视频生产。搜索→分镜→语音+图像（并行）→校验→合成+渲染→质检。
+  产物驱动的 AI 视频生产 DAG。覆盖选题/素材、脚本与配音输入分离、TTS、时间线、
+  画面素材、HyperFrames 合成、版式检查、草稿渲染、最终渲染、响度精修与验收。
+  脚本、合成前和合成检查三处 Gate 失败时进入终止分支，不伪造成功。
 
-workspace:
-  root: "workspace/video-pipeline/{{run_id}}/"
-  structure:
-    data: data/
-    script: script/
-    media_audio: media/audio/
-    media_images: media/images/
-    media_prompts: media/prompts/
-    code: code/
-layout:
-  nodes:
-    search:
-      x: 80
-      y: 60
-    storyboard:
-      x: 360
-      y: 60
-    tts:
-      x: 640
-      y: 58.7602681721948
-    image_gen:
-      x: 640
-      y: 180
-    validate:
-      x: 920
-      y: 60
-    compose:
-      x: 1200
-      y: 60
-    video_validate:
-      x: 1480
-      y: 60
 inputs:
   - name: topic
     type: string
     required: true
+    description: 视频主题、目标或选题方向
   - name: target_duration
     type: integer
-    required: true
-    default: "60"
+    required: false
+    default: 60
+    description: 目标时长，单位秒
+  - name: output_dir
+    type: string
+    required: false
+    default: video-production
+    description: 当前 workspace 内的相对输出目录
+  - name: materials_path
+    type: string
+    required: false
+    default: ""
+    description: 可选；用户提供的图片、文档、截图或素材目录
+  - name: reference_video_path
+    type: string
+    required: false
+    default: ""
+    description: 可选；参考视频路径，只用于节奏和视觉分析
+  - name: visual_mode
+    type: string
+    required: false
+    default: auto
+    description: auto | supplied | generated | hybrid
+  - name: aspect_ratio
+    type: string
+    required: false
+    default: "16:9"
+    description: 画面比例
+  - name: audience
+    type: string
+    required: false
+    default: 通用观众
+    description: 目标受众
+  - name: style_brief
+    type: string
+    required: false
+    default: ""
+    description: 品牌、字体、配色、动效和禁用项
+  - name: voice_id
+    type: string
+    required: false
+    default: "Chinese (Mandarin)_Male_Announcer"
+    description: MMX TTS voice id
+  - name: voice_speed
+    type: number
+    required: false
+    default: 1.0
+    description: TTS 语速倍率
+  - name: caption_mode
+    type: string
+    required: false
+    default: none
+    description: none | sidecar | burned
+  - name: bgm
+    type: boolean
+    required: false
+    default: false
+    description: 是否使用背景音乐
+  - name: bgm_path
+    type: string
+    required: false
+    default: ""
+    description: BGM 文件路径；bgm=true 时必填
+  - name: render_quality
+    type: string
+    required: false
+    default: high
+    description: draft | standard | high
+
+layout:
+  nodes:
+    intake: {x: 40, y: 280}
+    research: {x: 250, y: 280}
+    script: {x: 460, y: 280}
+    script_review: {x: 670, y: 280}
+    script_rejected: {x: 670, y: 500}
+    tts: {x: 890, y: 150}
+    timeline: {x: 1100, y: 150}
+    image_gen: {x: 890, y: 420}
+    precompose_gate: {x: 1320, y: 280}
+    precompose_rejected: {x: 1320, y: 510}
+    compose: {x: 1540, y: 280}
+    composition_review: {x: 1750, y: 280}
+    composition_rejected: {x: 1750, y: 510}
+    render_draft: {x: 1970, y: 280}
+    final_render: {x: 2180, y: 280}
+    audio_finish: {x: 2390, y: 280}
+    acceptance: {x: 2600, y: 280}
+
 nodes:
-  search:
-    name: Step 1 · 搜索素材
+  intake:
+    name: 01 · 制片 Brief
     type: agent
     agent: video_creator
-    business_role: 素材调研员
-    role_prompt: |
-      你是素材调研员，负责从互联网搜索与主题相关的素材，
-      整理成结构化的搜索结果文档。
-
-    harness: local_llm
-    model: minimax/MiniMax-M3
+    business_role: 制片统筹
     after: []
-    inputs:
-      - topic
+    timeout_seconds: 300
     outputs:
-      search_results:
-        to: "storyboard.in:search_results"
-    command_config: null
-    await_command_config: null
-    while_config: null
-  storyboard:
-    name: Step 2 · 分镜+旁白
+      project_manifest:
+        to: "research.in:project_manifest"
+    role_prompt: |
+      你是视频制片统筹，负责把本次请求固定成可追踪的制作包。
+
+      输入：topic={{topic}}、target_duration={{target_duration}}、output_dir={{output_dir}}、
+      materials_path={{materials_path}}、reference_video_path={{reference_video_path}}、
+      visual_mode={{visual_mode}}、aspect_ratio={{aspect_ratio}}、audience={{audience}}、
+      style_brief={{style_brief}}、voice_id={{voice_id}}、voice_speed={{voice_speed}}、
+      caption_mode={{caption_mode}}、bgm={{bgm}}、bgm_path={{bgm_path}}、
+      render_quality={{render_quality}}。
+
+      执行：
+      1. 校验 visual_mode 属于 auto/supplied/generated/hybrid；caption_mode 属于 none/sidecar/burned；
+         render_quality 属于 draft/standard/high。非法值直接输出 failed。
+      2. 用 bash 创建 {{output_dir}}/ 下的 research、script、media/audio、media/images、
+         composition、renders、captions、deliverables 目录；caption_mode=none 时可创建空 captions 目录。
+      3. 用 write_file 写 {{output_dir}}/brief.md 和 {{output_dir}}/project.json。
+         project.json 必须记录全部顶层输入、版本、状态和产物相对路径。
+      4. bgm=true 且 bgm_path 为空时，status=failed，不得继续假装可用。
+
+      最终回复必须是单个 JSON 对象，键只能是 project_manifest：
+      {"project_manifest":{"status":"ok|failed","output_dir":"{{output_dir}}","brief_md":"{{output_dir}}/brief.md","project_json":"{{output_dir}}/project.json","caption_mode":"{{caption_mode}}","errors":[]}}
+      不得有 Markdown 代码块、解释文字或额外键。
+
+  research:
+    name: 02 · 研究与素材盘點
     type: agent
     agent: video_creator
-    business_role: 分镜编剧
-    role_prompt: |
-      你是分镜编剧，负责根据搜索结果创作分镜脚本和旁白文案，
-      控制时长匹配目标。
-
-    harness: local_llm
-    model: minimax/MiniMax-M3
-    after: [search]
-    inputs:
-      - search_results
-      - target_duration
+    business_role: 研究与素材调研员
+    after: [intake]
+    timeout_seconds: 900
     outputs:
-      storyboard:
+      research_manifest:
+        to: "script.in:research_manifest"
+    role_prompt: |
+      你是研究与素材调研员。读取上游 project_manifest，按 visual_mode 和 materials_path 处理。
+
+      执行：
+      1. materials_path 非空时，用 bash 一次性执行 Get-ChildItem -Recurse 列出文件，不得反复探测；
+         用 read_file 读取文档类素材；图片和视频只登记路径、类型、尺寸和用途。
+      2. 使用 mmx search query --q "{{topic}}" --output json 检索；把原始结果写入
+         {{output_dir}}/research/raw-search.json。禁止只凭标题臆测事实。
+      3. 用 write_file 生成：
+         - research/search-results.md：可用事实、证据、素材候选和不确定性
+         - research/sources.json：claim/source/confidence/use_in 列表
+         - research/material-inventory.json：provided/generated 两类素材清单
+      4. reference_video_path 非空时，只做节奏、镜头、转场和音效结构分析，不复制其品牌或内容。
+      5. 搜索失败时保留错误原文；仍可继续时必须显著标注证据不足。
+
+      最终回复必须是单个 JSON 对象，键只能是 research_manifest：
+      {"research_manifest":{"status":"ok|partial|failed","research_md":"{{output_dir}}/research/search-results.md","sources_json":"{{output_dir}}/research/sources.json","materials_json":"{{output_dir}}/research/material-inventory.json","errors":[]}}
+      不得有 Markdown 代码块、解释文字或额外键。
+
+  script:
+    name: 03 · 口播稿与分镜
+    type: agent
+    agent: video_creator
+    business_role: 编剧与分镜师
+    after: [research]
+    timeout_seconds: 1200
+    outputs:
+      script_manifest:
+        to: "script_review.in:script_manifest"
+    role_prompt: |
+      你是编剧与分镜师。读取 research_manifest，先查 content_creation 知识库中的视频模板、
+      分镜规范和动效卡片，再为本次主题重新创作，禁止套用旧文案。
+
+      执行：
+      1. 采用“结果/痛点 → 项目身份 → 能力或证据 → 机制 → 信任边界 → CTA”的信息顺序；
+         如主题是产品能力介绍，能力展示必须早于深层机制说明。
+      2. 写 script/narration.md。每段第一行使用稳定 ID：<!-- scene-01 -->。
+      3. 写 script/voice-input.md。段落 ID、顺序和含义必须与 narration.md 完全一致，
+         仅允许读音修正，如 SupAgent→Super Agent、SubAgent→Sub Agent、DAG→D A G、
+         重跑→重新跑。不得借读音修正改变语义。
+      4. 写 script/scene-plan.json。每个场景记录 id、goal、visual_function、narration_ref、
+         duration_estimate、image_prompt、transition_in、transition_out、asset_refs。
+      5. 写 script/component-plan.json。每个场景记录 query、candidate_ids、selected_id、
+         implementation_mode 和选择理由；没有检索记录不得声称使用组件。
+      6. 总口播估算时长应落在 target_duration 的 70%–110%；列表必须逐项揭示，不能整页堆文本。
+      7. 写 script/package.json，汇总以上路径、段数、估算时长和源证据引用。
+
+      最终回复必须是单个 JSON 对象，键只能是 script_manifest：
+      {"script_manifest":{"status":"ok|failed","narration_md":"{{output_dir}}/script/narration.md","voice_input_md":"{{output_dir}}/script/voice-input.md","scene_plan_json":"{{output_dir}}/script/scene-plan.json","component_plan_json":"{{output_dir}}/script/component-plan.json","package_json":"{{output_dir}}/script/package.json","scene_count":0,"estimated_seconds":0,"errors":[]}}
+      不得有 Markdown 代码块、解释文字或额外键。
+
+  script_review:
+    name: 04 · 脚本 Gate
+    type: agent
+    agent: video_creator
+    business_role: 脚本审稿人
+    after: [script]
+    timeout_seconds: 600
+    outputs:
+      approved:
         to:
-          - "tts.in:storyboard"
-          - "image_gen.in:storyboard"
-      narration:
+          - "tts.in:approved"
+          - "image_gen.in:approved"
+          - "script_rejected.in:approved"
+      review_report:
+        to: "script_rejected.in:review_report"
+      package_manifest:
         to:
-          - "tts.in:narration"
-    command_config: null
-    await_command_config: null
-    while_config: null
-  tts:
-    name: Step 3a · 语音合成
+          - "tts.in:package_manifest"
+          - "image_gen.in:package_manifest"
+          - "precompose_gate.in:package_manifest"
+          - "compose.in:package_manifest"
+    role_prompt: |
+      你是脚本审稿人，只负责 Gate，不重写内容。读取上游 script_manifest 指向的文件。
+
+      检查：
+      1. narration.md 与 voice-input.md 的 scene ID、顺序、段数一致。
+      2. 每个场景有明确 visual_function、可见变化和与口播匹配的画面计划。
+      3. 没有无来源的关键数字、功能事实或客户案例；参考素材没有被静默替换。
+      4. 没有把多张截图压成不可读的功能墙；能力型内容应一屏一职责。
+      5. 估算时长与 target_duration 偏差不超过 20%。
+      6. 组件方案有检索和选择理由；未检索不能用“原创”掩盖缺省卡片。
+
+      将明细写入 {{output_dir}}/script/review.json。approved 仅在全部阻断项通过时为 true；
+      失败时保留具体问题、文件路径和修复建议，不伪造通过。
+
+      最终回复必须是单个 JSON 对象，键只能为 approved、review_report、package_manifest：
+      {"approved":true,"review_report":{"verdict":"pass|fail","issues":[],"report_path":"{{output_dir}}/script/review.json"},"package_manifest":{"status":"approved|rejected","package_json":"{{output_dir}}/script/package.json","narration_md":"{{output_dir}}/script/narration.md","voice_input_md":"{{output_dir}}/script/voice-input.md","scene_plan_json":"{{output_dir}}/script/scene-plan.json","component_plan_json":"{{output_dir}}/script/component-plan.json"}}
+      不得有 Markdown 代码块、解释文字或额外键。
+
+  script_rejected:
+    name: 04b · 脚本退回
     type: agent
     agent: video_creator
-    business_role: 语音合成员
-    role_prompt: |
-      你是语音合成员，负责将旁白文案合成为场景音频，
-      并记录每段时长。
-
-    harness: local_llm
-    model: minimax/MiniMax-M3
-    after: [storyboard]
-    inputs:
-      - narration
-      - storyboard
-    outputs:
-      audio_dir:
-        to: "compose.in:audio_dir"
-      durations_json:
-        to:
-          - "validate.in:durations_json"
-          - "compose.in:durations_json"
-    command_config: null
-    await_command_config: null
-    while_config: null
-  image_gen:
-    name: Step 3b · 图像生成
-    type: agent
-    agent: video_creator
-    business_role: 图像生成员
-    role_prompt: |
-      你是图像生成员，负责根据分镜脚本为每个场景生成配图。
-
-      执行规则：
-      1. read_file script/storyboard.md，为每个场景用 mm_image 生成 media/images/scene-NN.png
-         （prompt 用六维骨架：主体→场景→布局→风格→细节→约束）
-      2. 全部生成后自检：图片文件数 == 分镜场景数，且每张非零字节
-      3. 某场景失败：重试 1 次；仍失败则把失败场景清单写进 handoff summary
-         明确报告（如"3/5 场景生图失败: scene-02, scene-04"），禁止静默交付空目录
-      4. mmx 工具返回 HTTP 404：这是平台 base_url 配置问题，重试无意义，
-         直接报告失败场景；严禁修改 mmx 全局配置
-
-    harness: local_llm
-    model: minimax/MiniMax-M3
-    after: [storyboard]
-    inputs:
-      - storyboard
-    outputs:
-      images_dir:
-        to: "compose.in:images_dir"
-    command_config: null
-    await_command_config: null
-    while_config: null
-  validate:
-    name: Step 4 · 时长校验
-    type: agent
-    agent: video_creator
-    business_role: 时长校验员
-    role_prompt: |
-      你是时长校验员，负责核对音频时长总和是否匹配目标时长。
-
-    harness: local_llm
-    model: minimax/MiniMax-M3
-    after: [tts, image_gen]
-    inputs:
-      - target_duration
-      - durations_json
-    outputs:
-      report:
-        to: "compose.in:validate_report"
-      passed:
-        to: "compose.in:validate_passed"
-    command_config: null
-    await_command_config: null
-    while_config: null
-  compose:
-    name: Step 5 · 合成+渲染
-    type: agent
-    agent: video_creator
-    business_role: 合成渲染员
-    role_prompt: |
-      你是合成渲染员，负责将分镜、音频、图像合成为最终视频。
-
-    harness: local_llm
-    model: minimax/MiniMax-M3
-    after: [validate]
-    inputs:
-      - storyboard
-      - narration
-      - audio_dir
-      - durations_json
-      - images_dir
-      - validate_report
-      - validate_passed
-    outputs:
-      output_mp4:
-        to: "video_validate.in:output_mp4"
-    command_config: null
-    await_command_config: null
-    while_config: null
-  video_validate:
-    name: Step 6 · 视频质检
-    type: agent
-    agent: video_creator
-    business_role: 视频质检员
-    role_prompt: |
-      你是视频质检专家，负责按以下步骤顺序执行 check → judge → report。
-
-      全局可用工具：ffprobe_check（mp4 元数据校验）、read_file、write_file、emit_alert（推送监控中心）、finalize。
-      待质检 mp4 路径：{{workspace.root}}output.mp4，目标时长：{{target_duration}} 秒，主题：{{topic}}。
-
-      === 步骤 1: check（元数据核对）===
-      职责：调用 ffprobe_check 工具核对 mp4 元数据（时长/分辨率/音轨）。
-      铁律：必须真实调用 ffprobe_check 工具，禁止只 thinking。
-      同时用 read_file 读 video-pipeline workspace 下的 script/storyboard 确认原始要求（可选，辅助判定）。
-      ffprobe_check 参数：
-        {"mp4_path": "{{workspace.root}}output.mp4", "target_duration": {{target_duration}}, "tolerance_seconds": 5}
-
-      === 步骤 2: judge（综合判定）===
-      综合 ffprobe_check 返回结果判定 verdict：
-        - pass：mp4 存在 + ffprobe ok + 时长 ±5s + 有音轨 + 分辨率 > 0
-        - fail：文件缺失 / 损坏 / 时长偏差 > 5s / 无音轨
-        - 需人工：文件存在但 ffprobe 解析异常（如 ffprobe 未安装、JSON 解析失败、returncode 非 0）
-      输出 verdict + failed_checks 数组（取 checks 中 passed=false 的 name 列表）。
-
-      === 步骤 3: report（写报告 + 推送监控）===
-      1. 调用 write_file 把验证报告 JSON 写到 {{workspace.root}}data/validation-result.json
-      2. 若 verdict=pass：emit_alert(level="info", summary="video OK", run_id=...)
-      3. 若 verdict=fail：emit_alert(level="critical", summary="video FAIL: <failed_checks>", run_id=...)
-      4. 若 verdict=需人工：emit_alert(level="warning", summary="video 需人工确认", run_id=...)
-      5. 调 handoff 传 validation_result 端口
-      6. 立即 finalize
-
-    harness: local_llm
-    model: minimax/MiniMax-M2.7
-    after: [compose]
+    business_role: 脚本退回说明员
+    after: [script_review]
+    skip_if: "{{script_review.approved}}"
     timeout_seconds: 120
-    inputs:
-      - output_mp4
-      - target_duration
-      - topic
     outputs:
-      validation_result:
-        to: ""
-    command_config: null
-    await_command_config: null
-    while_config: null
+      error: ""
+    role_prompt: |
+      脚本 Gate 未通过。根据上游 review_report 输出一份终止说明，列出阻塞问题、对应文件和
+      需要修改的最小范围。不要启动 TTS、生图或渲染。
+      最终回复必须是单个 JSON 对象：{"error":"<终止原因和修复建议>"}
+      不得有 Markdown 代码块、解释文字或额外键。
+
+  tts:
+    name: 05 · 配音与分段音频
+    type: agent
+    agent: video_creator
+    business_role: 配音制作员
+    after: [script_review]
+    skip_if: "{{not script_review.approved}}"
+    timeout_seconds: 1800
+    outputs:
+      audio_manifest:
+        to: "timeline.in:audio_manifest"
+    role_prompt: |
+      你是配音制作员。读取 approved package_manifest 和 scene-plan.json。
+
+      执行：
+      1. 按场景把 voice-input 对应段落写入 {{output_dir}}/script/voice/scene-NN.txt。
+      2. 对每个场景调用：
+         mmx speech synthesize --text-file <scene text> --voice "{{voice_id}}" --speed {{voice_speed}} --out <scene-NN.mp3>
+      3. 同一 voice_id、speed、format 和采样参数必须全片一致；某场景失败最多重试 1 次，
+         仍失败则在 manifest 中标 failed，不静默漏段。
+      4. 用 ffprobe 测量每个音频时长，写 media/audio/durations.json。
+      5. 用 ffmpeg concat 生成 media/audio/master-voice.mp3，仅用于总时长和母带校验。
+      6. 检查零字节、重复文件、尾部截断和缺场景。
+
+      最终回复必须是单个 JSON 对象，键只能是 audio_manifest：
+      {"audio_manifest":{"status":"ok|failed","master_audio":"{{output_dir}}/media/audio/master-voice.mp3","audio_dir":"{{output_dir}}/media/audio","durations_json":"{{output_dir}}/media/audio/durations.json","scene_audio_files":[],"errors":[]}}
+      不得有 Markdown 代码块、解释文字或额外键。
+
+  timeline:
+    name: 06 · 时间线与字幕模式
+    type: agent
+    agent: video_creator
+    business_role: 时间线工程师
+    after: [tts]
+    skip_if: "{{not script_review.approved}}"
+    timeout_seconds: 600
+    outputs:
+      timeline_manifest:
+        to:
+          - "precompose_gate.in:timeline_manifest"
+          - "compose.in:timeline_manifest"
+    role_prompt: |
+      你是时间线工程师。读取 audio_manifest 与 scene-plan.json，创建唯一时间线事实源。
+
+      执行：
+      1. 按场景 ID 顺序生成 {{output_dir}}/timeline.json：
+         fps、total_seconds、segments[id/index/audio/start/end/duration]。
+      2. 相邻场景不得重叠；除显式空镜外不得出现 >0.25s 的意外空隙。
+      3. caption_mode=none：不生成交付字幕；可生成内部对齐文件但不得进入 deliverables。
+      4. caption_mode=sidecar 或 burned：根据已确认 narration 和实测场景时间生成
+         {{output_dir}}/captions/captions.srt，文本必须与 narration 一致。
+      5. 若总时长与 target_duration 偏差 >20%，标记 failed，不用拉长静帧硬凑。
+
+      最终回复必须是单个 JSON 对象，键只能是 timeline_manifest：
+      {"timeline_manifest":{"status":"ok|failed","timeline_json":"{{output_dir}}/timeline.json","captions_path":"","caption_mode":"{{caption_mode}}","total_seconds":0,"fps":30,"errors":[]}}
+      不得有 Markdown 代码块、解释文字或额外键。
+
+  image_gen:
+    name: 07 · 画面素材
+    type: agent
+    agent: video_creator
+    business_role: 画面素材制作员
+    after: [script_review]
+    skip_if: "{{not script_review.approved}}"
+    timeout_seconds: 1800
+    outputs:
+      asset_manifest:
+        to:
+          - "precompose_gate.in:asset_manifest"
+          - "compose.in:asset_manifest"
+    role_prompt: |
+      你是画面素材制作员。读取 approved package_manifest、scene-plan 和 material-inventory。
+
+      执行：
+      1. visual_mode=supplied：只使用 materials_path 中的素材，不生成替代品。
+      2. visual_mode=generated：按 scene-plan.image_prompt 逐场景调用：
+         mmx image generate --prompt <prompt> --aspect-ratio {{aspect_ratio}} --out <image>
+         prompt 必须使用“主体→场景→布局→风格→细节→约束”六维骨架。
+      3. visual_mode=auto：有足够 supplied 素材时优先使用；否则生成缺失场景。
+         hybrid：supplied 与 generated 混合，必须在 assets.json 标注 origin。
+      4. 每张图必须是非零字节；生成失败最多重试 1 次，仍失败则记录 missing_scenes。
+      5. 写 media/assets.json，记录 id、path、kind、origin、source、dimensions、scene_id、evidence 或 illustration。
+      6. 图片数量必须覆盖 scene-plan 的所有场景，禁止空目录或错位复用。
+
+      最终回复必须是单个 JSON 对象，键只能是 asset_manifest：
+      {"asset_manifest":{"status":"ok|partial|failed","source_mode":"supplied|generated|hybrid","images_dir":"{{output_dir}}/media/images","assets_json":"{{output_dir}}/media/assets.json","missing_scenes":[],"errors":[]}}
+      不得有 Markdown 代码块、解释文字或额外键。
+
+  precompose_gate:
+    name: 08 · 合成前 Gate
+    type: agent
+    agent: video_creator
+    business_role: 合成前验收员
+    after: [script_review, tts, timeline, image_gen]
+    skip_if: "{{not script_review.approved}}"
+    timeout_seconds: 600
+    outputs:
+      approved:
+        to:
+          - "precompose_rejected.in:approved"
+          - "compose.in:approved"
+      review_report:
+        to: "precompose_rejected.in:review_report"
+      compose_package:
+        to: "compose.in:compose_package"
+    role_prompt: |
+      你是合成前验收员，只检查，不修复内容。
+
+      检查：
+      1. timeline.json 存在、段 ID 连续、无重叠、音频文件全部存在且非零。
+      2. assets.json 覆盖 scene-plan 全部场景；缺失或错位为阻断错误。
+      3. caption_mode=none 时不要求字幕；sidecar/burned 时字幕文件必须存在。
+      4. bgm=true 时 bgm_path 必须存在；bgm=false 时不得偷偷加入音乐。
+      5. aspect_ratio、fps、总时长与 project.json 一致。
+      6. 所有输出产物必须留在 {{output_dir}} 下；用户输入素材和 BGM 可以来自外部，但必须先校验存在并在合成时复制到 composition 内部。
+
+      写 {{output_dir}}/data/precompose-gate.json。approved 仅在全部阻断项通过时为 true。
+
+      最终回复必须是单个 JSON 对象，键只能为 approved、review_report、compose_package：
+      {"approved":true,"review_report":{"verdict":"pass|fail","issues":[],"report_path":"{{output_dir}}/data/precompose-gate.json"},"compose_package":{"status":"approved|rejected","output_dir":"{{output_dir}}","timeline_json":"{{output_dir}}/timeline.json","assets_json":"{{output_dir}}/media/assets.json","captions_path":"","bgm_path":"{{bgm_path}}"}}
+      不得有 Markdown 代码块、解释文字或额外键。
+
+  precompose_rejected:
+    name: 08b · 合成前退回
+    type: agent
+    agent: video_creator
+    business_role: 合成前退回说明员
+    after: [precompose_gate]
+    skip_if: "{{precompose_gate.approved}}"
+    timeout_seconds: 120
+    outputs:
+      error: ""
+    role_prompt: |
+      合成前 Gate 未通过。根据 review_report 输出终止说明，列出缺失音频、缺失素材、
+      路径冲突或配置错误。不得调用 HyperFrames。
+      最终回复必须是单个 JSON 对象：{"error":"<终止原因和修复建议>"}
+      不得有 Markdown 代码块、解释文字或额外键。
+
+  compose:
+    name: 09 · HyperFrames 合成
+    type: agent
+    agent: video_creator
+    business_role: HyperFrames 合成师
+    after: [script_review, timeline, image_gen, precompose_gate]
+    skip_if: "{{not precompose_gate.approved}}"
+    timeout_seconds: 1800
+    outputs:
+      composition_manifest:
+        to: "composition_review.in:composition_manifest"
+    role_prompt: |
+      你是 HyperFrames 合成师。读取 approved compose_package，先查 content_creation 知识域中的
+      HyperFrames 模板、动效卡片和排版规范，再写本次 composition。
+
+      执行：
+      1. 创建 {{output_dir}}/composition/index.html、DESIGN.md 和必要子合成。
+         设计系统只保留一套字体层级、3–5 个版式、一个主动效加一个强调动效。
+      2. 以 timeline.json 为唯一时间源，不手写与音频冲突的场景时间。
+      3. 图片、音频、字体必须使用 composition 内相对路径；不得引用输出目录之外的绝对路径。
+      4. 能力型产品内容按“一屏一职责”展示，禁止把多张截图压成不可读墙。
+      5. caption_mode=none 不得写字幕层；sidecar 只引用外置字幕；burned 才在画面中生成字幕。
+      6. bgm=false 不加入音轨；bgm=true 时把已校验的 bgm_path 复制到 composition 内部再引用，并保留口播优先。
+      7. 完成后运行 hyperframes lint 与 hyperframes inspect；有阻断错误时 status=failed，
+         不得声称合成完成。
+
+      最终回复必须是单个 JSON 对象，键只能是 composition_manifest：
+      {"composition_manifest":{"status":"ok|failed","project_dir":"{{output_dir}}/composition","index_html":"{{output_dir}}/composition/index.html","design_md":"{{output_dir}}/composition/DESIGN.md","lint_report":"{{output_dir}}/data/hyperframes-lint.json","snapshots_dir":"{{output_dir}}/qa/snapshots","errors":[]}}
+      不得有 Markdown 代码块、解释文字或额外键。
+
+  composition_review:
+    name: 10 · 合成检查 Gate
+    type: agent
+    agent: video_creator
+    business_role: 版式与动效验收员
+    after: [compose]
+    timeout_seconds: 900
+    outputs:
+      approved:
+        to:
+          - "composition_rejected.in:approved"
+          - "render_draft.in:approved"
+      review_report:
+        to: "composition_rejected.in:review_report"
+      render_plan:
+        to: "render_draft.in:render_plan"
+    role_prompt: |
+      你是版式与动效验收员。对 composition_manifest 做可复现检查。
+
+      执行：
+      1. 在 composition 目录运行 hyperframes lint --json 与 hyperframes inspect --json，
+         结果写入 {{output_dir}}/qa/。
+      2. 用 hyperframes snapshot --at 关键时间点生成首帧、最密状态、转场两侧和结尾帧。
+      3. 检查文字溢出、品牌角标碰撞、字幕覆盖、空帧、素材错位和场景顺序。
+      4. caption_mode=none 时抽查画面没有字幕胶囊或字幕条。
+      5. 写 {{output_dir}}/qa/composition-review.json。approved 仅在 lint/inspect 无阻断错误
+         且关键帧检查通过时为 true。静态检查不能证明运动质量，需在报告中保留这一限制。
+
+      最终回复必须是单个 JSON 对象，键只能为 approved、review_report、render_plan：
+      {"approved":true,"review_report":{"verdict":"pass|fail","issues":[],"report_path":"{{output_dir}}/qa/composition-review.json","limitations":[]},"render_plan":{"project_dir":"{{output_dir}}/composition","draft_output":"{{output_dir}}/renders/draft.mp4","fps":30,"quality":"draft"}}
+      不得有 Markdown 代码块、解释文字或额外键。
+
+  composition_rejected:
+    name: 10b · 合成退回
+    type: agent
+    agent: video_creator
+    business_role: 合成退回说明员
+    after: [composition_review]
+    skip_if: "{{composition_review.approved}}"
+    timeout_seconds: 120
+    outputs:
+      error: ""
+    role_prompt: |
+      合成检查 Gate 未通过。根据 review_report 输出终止说明，列出溢出、碰撞、空帧、
+      素材错位或字幕模式问题。不得进入渲染。
+      最终回复必须是单个 JSON 对象：{"error":"<终止原因和修复建议>"}
+      不得有 Markdown 代码块、解释文字或额外键。
+
+  render_draft:
+    name: 11 · 草稿渲染
+    type: agent
+    agent: video_creator
+    business_role: 草稿渲染员
+    after: [composition_review]
+    skip_if: "{{not composition_review.approved}}"
+    timeout_seconds: 2400
+    outputs:
+      draft_manifest:
+        to: "final_render.in:draft_manifest"
+    role_prompt: |
+      你是草稿渲染员。读取 render_plan。
+
+      执行：
+      1. 在 project_dir 运行：
+         hyperframes render . --output {{output_dir}}/renders/draft.mp4 --quality draft --fps 30 --strict
+      2. 用 ffprobe 验证存在、非零、有时长、有视频流和预期音轨。
+      3. 记录命令、退出码、文件大小、时长、fps、流信息和错误。
+
+      最终回复必须是单个 JSON 对象，键只能是 draft_manifest：
+      {"draft_manifest":{"status":"ok|failed","draft_mp4":"{{output_dir}}/renders/draft.mp4","report_json":"{{output_dir}}/renders/draft-report.json","duration":0,"fps":30,"errors":[]}}
+      不得有 Markdown 代码块、解释文字或额外键。
+
+  final_render:
+    name: 12 · 最终画面渲染
+    type: agent
+    agent: video_creator
+    business_role: 最终渲染员
+    after: [render_draft]
+    timeout_seconds: 3600
+    outputs:
+      base_manifest:
+        to: "audio_finish.in:base_manifest"
+    role_prompt: |
+      你是最终渲染员。草稿通过后，从同一 composition 重新渲染高质量画面。
+
+      执行：
+      1. 在 {{output_dir}}/composition 运行：
+         hyperframes render . --output {{output_dir}}/renders/base.mp4 --quality {{render_quality}} --fps 30 --strict
+      2. 不得复用不同版本草稿的帧、音频或 composition。
+      3. 用 ffprobe 验证文件、视频流、音频流、时长、fps 和尺寸。
+      4. 写 renders/final-render.json，记录命令和所有输出。
+
+      最终回复必须是单个 JSON 对象，键只能是 base_manifest：
+      {"base_manifest":{"status":"ok|failed","base_mp4":"{{output_dir}}/renders/base.mp4","report_json":"{{output_dir}}/renders/final-render.json","duration":0,"fps":30,"errors":[]}}
+      不得有 Markdown 代码块、解释文字或额外键。
+
+  audio_finish:
+    name: 13 · 响度精修
+    type: agent
+    agent: video_creator
+    business_role: 音频母带员
+    after: [final_render]
+    timeout_seconds: 1200
+    outputs:
+      final_candidate:
+        to: "acceptance.in:final_candidate"
+    role_prompt: |
+      你是音频母带员，只处理音频，不重新渲染画面。
+
+      执行：
+      1. 对 base.mp4 测量 integrated loudness 与 true peak。
+      2. 目标默认 -17 LUFS、true peak 不高于 -2.8 dBTP；口播优先，不做过度压限。
+      3. 使用 ffmpeg 两遍或等效方式完成响度标准化，视频流使用 -c:v copy，
+         音频输出 AAC 48kHz 单声道，写入 {{output_dir}}/renders/final.mp4。
+      4. 再次测量 final.mp4，记录前后响度、峰值、命令和错误。
+      5. 不得覆盖 base.mp4；不得静默丢弃音频。
+
+      最终回复必须是单个 JSON 对象，键只能是 final_candidate：
+      {"final_candidate":{"status":"ok|failed","final_mp4":"{{output_dir}}/renders/final.mp4","loudness_report":"{{output_dir}}/renders/loudness-report.json","loudness_lufs":0,"true_peak_dbtp":0,"video_stream":"h264","audio_stream":"aac","errors":[]}}
+      不得有 Markdown 代码块、解释文字或额外键。
+
+  acceptance:
+    name: 14 · 最终验收与交付
+    type: agent
+    agent: video_creator
+    business_role: 最终验收员
+    after: [audio_finish]
+    timeout_seconds: 900
+    outputs:
+      delivery_result: ""
+    role_prompt: |
+      你是最终验收员。对 final_candidate 做独立验收并生成交付记录。
+
+      执行：
+      1. ffprobe 检查时长、宽高、fps、视频/音频/字幕流、声道和采样率。
+      2. 运行 ffmpeg -v error -i final.mp4 -f null - 做完整解码；任何错误都判 failed。
+      3. caption_mode=none 时确认不存在字幕流，并抽帧确认无烧录字幕；
+         sidecar 时确认外置字幕存在；burned 时抽帧确认字幕可见且不遮挡内容。
+      4. 从首段、能力展示、转场两侧、最密状态和片尾抽取关键帧，生成
+         {{output_dir}}/deliverables/contact-sheet.jpg。
+      5. 计算 SHA-256，写 {{output_dir}}/deliverables/acceptance.json，包含版本、路径、
+         时长、帧数、尺寸、fps、codec、声道、字幕模式、响度、峰值、解码结果和检查项。
+      6. 复制 final.mp4 到 {{output_dir}}/deliverables/final.mp4；不覆盖其他版本。
+
+      最终回复必须是单个 JSON 对象，键只能是 delivery_result：
+      {"delivery_result":{"status":"ok|failed","final_mp4":"{{output_dir}}/deliverables/final.mp4","acceptance_json":"{{output_dir}}/deliverables/acceptance.json","contact_sheet":"{{output_dir}}/deliverables/contact-sheet.jpg","sha256":"","checks":[],"errors":[]}}
+      不得有 Markdown 代码块、解释文字或额外键。
+
 widgets:
-  - id: w_search_results
+  - id: w_research
     type: artifact_ref
-    title: 搜索结果
+    title: 研究与素材
     emit_on:
-      node: search
+      node: research
       event: node.completed
     props:
-      path: "{{search.search_results}}"
+      path: "{{research.research_manifest.research_md}}"
       format: markdown
-  - id: w_storyboard
+  - id: w_script
     type: artifact_ref
-    title: 分镜预览
+    title: 口播稿
     emit_on:
-      node: storyboard
+      node: script
       event: node.completed
     props:
-      path: "{{storyboard.storyboard}}"
+      path: "{{script.script_manifest.narration_md}}"
       format: markdown
-  - id: w_narration
+  - id: w_script_review
     type: artifact_ref
-    title: 旁白稿
+    title: 脚本 Gate
     emit_on:
-      node: storyboard
+      node: script_review
       event: node.completed
     props:
-      path: "{{storyboard.narration}}"
-      format: markdown
+      path: "{{script_review.review_report.report_path}}"
+      format: json
   - id: w_audio_table
     type: table
     title: 音频时长表
@@ -273,46 +604,72 @@ widgets:
       node: tts
       event: node.completed
     props:
-      source: "{{tts.durations_json}}"
+      source: "{{tts.audio_manifest.durations_json}}"
       columns:
-        -           field: scene
-                    label: 场景
-        -           field: duration
-                    label: 时长(秒)
-  - id: w_images_grid
+        - field: scene
+          label: 场景
+        - field: duration
+          label: 时长(秒)
+  - id: w_timeline
     type: artifact_ref
-    title: 场景图片
+    title: 时间线
+    emit_on:
+      node: timeline
+      event: node.completed
+    props:
+      path: "{{timeline.timeline_manifest.timeline_json}}"
+      format: json
+  - id: w_assets
+    type: artifact_ref
+    title: 画面素材
     emit_on:
       node: image_gen
       event: node.completed
     props:
-      path: "{{image_gen.images_dir}}"
+      path: "{{image_gen.asset_manifest.images_dir}}"
       format: image_grid
-  - id: w_validate_report
-    type: progress_status
-    title: 校验报告
+  - id: w_precompose_gate
+    type: artifact_ref
+    title: 合成前 Gate
     emit_on:
-      node: validate
+      node: precompose_gate
       event: node.completed
     props:
-      source: "{{validate.report}}"
-      show_errors: true
-      show_warnings: true
-  - id: w_video_player
+      path: "{{precompose_gate.review_report.report_path}}"
+      format: json
+  - id: w_composition_review
+    type: artifact_ref
+    title: 合成检查
+    emit_on:
+      node: composition_review
+      event: node.completed
+    props:
+      path: "{{composition_review.review_report.report_path}}"
+      format: json
+  - id: w_draft_video
+    type: artifact_ref
+    title: 草稿视频
+    emit_on:
+      node: render_draft
+      event: node.completed
+    props:
+      path: "{{render_draft.draft_manifest.draft_mp4}}"
+      mime: video/mp4
+  - id: w_final_video
     type: artifact_ref
     title: 最终视频
     emit_on:
-      node: compose
+      node: acceptance
       event: node.completed
     props:
-      path: "{{compose.output_mp4}}"
+      path: "{{acceptance.delivery_result.final_mp4}}"
       mime: video/mp4
-  - id: w_validation_result
+  - id: w_acceptance
     type: artifact_ref
-    title: 视频质检报告
+    title: 验收记录
     emit_on:
-      node: video_validate
+      node: acceptance
       event: node.completed
     props:
-      path: "{{video_validate.validation_result}}"
+      path: "{{acceptance.delivery_result.acceptance_json}}"
       format: json

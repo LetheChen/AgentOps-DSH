@@ -158,7 +158,7 @@ export function verifyMigration(): VerifyResult {
         incompatibilities.push({ category: 'missing-agent', asset, detail: `节点 ${node.id} 引用 ${node.agentRef}` })
       }
     }
-    if (!ownedWorkflows.has(workflow.id)) {
+    if (!legacy && !ownedWorkflows.has(workflow.id)) {
       incompatibilities.push({
         category: 'unowned-workflow',
         asset,

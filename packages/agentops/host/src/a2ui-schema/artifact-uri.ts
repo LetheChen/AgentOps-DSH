@@ -18,6 +18,7 @@ const DAG_ACTOR_MEDIA_PREVIEW_URI = new RegExp(
     (?:avif|gif|jpg|png|webp|mp4|webm|mp3|m4a|ogg|wav|weba)\/content$`,
   'i',
 )
+const SURFACE_IMAGE_URI = /^\/api\/agentops\/surfaces\/asset\?digest=[a-f0-9]{64}$/i
 const RUN_ARTIFACT_CONTENT_URI = new RegExp(
   String.raw`^\/api\/(?:runs|sessions)\/[A-Z0-9][A-Z0-9._-]{0,255}\/artifacts\/[A-Z0-9][A-Z0-9._/%-]*\/content(?:\?.*)?$`,
   'i',
@@ -79,4 +80,5 @@ export function isSafeGenerativeUiPreviewUri(value: unknown): value is string {
     || /^\/api\/plugins\/artifacts\/[^/]+\/[^/]+\/[a-f0-9]{64}$/i.test(value)
     || DAG_ACTOR_MEDIA_PREVIEW_URI.test(value)
     || RUN_ARTIFACT_CONTENT_URI.test(value)
+    || SURFACE_IMAGE_URI.test(value)
 }
