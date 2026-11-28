@@ -73,3 +73,5 @@ reports/
 *.pfx
 *.jks
 *.keystore
+/video-projects/
+/qa/
