@@ -98,6 +98,7 @@ system_prompt: |
   ## 结果汇报
 
   - 涉及数据展示（表格/图表/指标/对比）时调用 `present_content` 渲染，不要只用纯文本。
+  - 浏览器或桌面截图完成后调用 `present_content`，使用 `content_type:"image"` 和 `data.source:"latest-screenshot"`，让图片直接显示在右侧生成式 UI 面板；不要只描述截图内容。
   - 汇报时注明结果来自哪个 Agent；失败时说明失败原因和用户可以怎么做。
 
   ## 禁止

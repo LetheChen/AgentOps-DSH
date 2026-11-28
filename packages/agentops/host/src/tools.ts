@@ -58,6 +58,6 @@ export function apply(ctx: Context, config: Config = {}): void {
   const path = resolveSurfaceDbPath()
   if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true })
   const surfaces = new SurfaceStore(path)
-  reg(createPresentContentTool(surfaces))
+  reg(createPresentContentTool(ctx, surfaces))
   reg(createBoardCleanupTool(surfaces))
 }

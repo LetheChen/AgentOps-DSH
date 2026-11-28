@@ -42,7 +42,32 @@ description: 生成式 UI 指南——用 present_content 工具把结构化结�
 推荐命名：`overview`（概览指标）、`trend`（趋势）、`breakdown`（结构/占比）、`table`（明细）、`flow`（流程）。
 **不要**每次都用新 id，那会把看板变成历史堆积。
 
-## 三、工具签名
+## 三、推送图片
+
+浏览器或桌面截图完成后，仍然使用生成式 UI 的 `present_content`，发布 `content_type: "image"` 卡片。它内部复用 A2UI 标准 `Image` 组件，不要再手写 `Image` 组件，也不要把 base64 塞进 `surface`。
+
+```json
+{
+  "name": "present_content",
+  "arguments": {
+    "title": "登录页截图",
+    "content_type": "image",
+    "data": {
+      "source": "latest-screenshot",
+      "caption": "修复后的登录页"
+    },
+    "viewId": "login-shot"
+  }
+}
+```
+
+- `data.source` 省略时默认 `latest-screenshot`：读取当前会话最近一次截图工具结果（浏览器 MCP、桌面截图均可）。Chrome DevTools 只返回“Saved screenshot to …”路径时，也会自动读取该文件。
+- 也可以传当前工作区内的 PNG/JPEG/WebP/GIF 路径，或安全的 HTTP(S) 图片 URL。
+- 同 `viewId` 再发一次会就地替换图片；省略 `viewId` 时替换默认图片卡片 `image`。
+- 不接受 data URL、HTML 或裸 base64；本地/截图图片必须是 PNG、JPEG、WebP 或 GIF。
+- `data`、`surface`、`content` 必须优先传对象；工具兼容 JSON 字符串，但不要主动把嵌套对象序列化成字符串。
+
+## 四、工具签名
 
 ```json
 {
@@ -60,7 +85,7 @@ description: 生成式 UI 指南——用 present_content 工具把结构化结�
 - `content`：**数据模型**，组件通过路径绑定读取（图表必须用）
 - 返回：`{ stored: true, id, components }`；失败时 `stored: false` 并给出 `reason`
 
-## 四、surface 骨架（固定三件）
+## 五、surface 骨架（固定三件）
 
 ```json
 {
@@ -81,7 +106,7 @@ description: 生成式 UI 指南——用 present_content 工具把结构化结�
 2. `id` 唯一；父组件用 `children: [id…]` 或 `child: id` 引用子组件
 3. **必须恰有一个 `id` 为 `root` 的根组件**，其余组件由它（或它的子组件）用 `children` 引用；schema 会强制校验这一条
 
-## 五、可用组件（只列常用的）
+## 六、可用组件（只列常用的）
 
 | 组件 | 必填 | 说明 |
 |---|---|---|
@@ -91,6 +116,7 @@ description: 生成式 UI 指南——用 present_content 工具把结构化结�
 | `AoProgress` | `value`（数字） | 进度/占比；`label` 可选 |
 | `AoStatusBadge` | `text` | 状态徽标 |
 | `Text` | `text` | 段落/说明；`variant` 只能是 `caption` 或 `body`（**没有 h1/h2/h3**） |
+| `Image` | `url` | A2UI 标准图片组件；`fit` 可选 `contain/cover/fill/none/scaleDown`。截图通过 `present_content` 的 `content_type:"image"` 发布 |
 | `AoBarChart` | `source` + `itemLabelPath` + `itemValuePath` | 条形/分组柱状 |
 | `AoPieChart` | `source` + `itemLabelPath` + `itemValuePath` | 饼图 |
 | `AoLineChart` | `source` + `xAxis` + `seriesNamePath` + `seriesDataPath` | 折线（多系列） |
@@ -98,7 +124,7 @@ description: 生成式 UI 指南——用 present_content 工具把结构化结�
 
 `tone` 只能是：`neutral` / `info` / `positive` / `warning` / `critical`。
 
-## 六、数据绑定（最容易错的地方）
+## 七、数据绑定（最容易错的地方）
 
 图表**不接受内联数组**，必须：
 
@@ -119,7 +145,7 @@ description: 生成式 UI 指南——用 present_content 工具把结构化结�
 ```
 组件侧：`"source": { "path": "/trend" }`, `"xAxis": { "path": "/x" }`, `"seriesNamePath": "/name"`, `"seriesDataPath": "/data"`。
 
-## 七、常见失败与自查
+## 八、常见失败与自查
 
 | 症状 | 原因 | 修法 |
 |---|---|---|
@@ -129,6 +155,7 @@ description: 生成式 UI 指南——用 present_content 工具把结构化结�
 | 校验报 `additionalProperties` | 组件用了不存在的字段（如给 AoMetric 加 `items`） | 只写上表字段 |
 | 校验报 `must be equal to constant` | 组件名拼错（大小写敏感） | 对照组件表 |
 | 大屏没更新 | 发布成功但页面没刷新 | 大屏自动轮询最新一份，等 4 秒或手动刷新 |
+| `present_content` 图片卡说没有截图 | `latest-screenshot` 只认本会话中的截图工具结果 | 先调用截图工具；或把截图保存到工作区后传文件路径 |
 
 **发布前自查三问**：数字对不对？单位和口径写了吗？标题能让人一眼知道范围吗？
 
@@ -138,7 +165,7 @@ description: 生成式 UI 指南——用 present_content 工具把结构化结�
 2. 属性**平铺**，不能包在 `props` 里
 3. `tone` 只用 `neutral/info/positive/warning/critical`；`Text.variant` 只用 `caption/body`
 
-## 八、一次完整调用（可直接改）
+## 九、一次完整调用（可直接改）
 
 ```json
 {
@@ -172,7 +199,7 @@ description: 生成式 UI 指南——用 present_content 工具把结构化结�
 }
 ```
 
-## 九、硬限制
+## 十、硬限制
 
 - 单个 surface ≤ **64 KB**
 - 组件数 ≤ **128**，直接子节点 ≤ **24**
