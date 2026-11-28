@@ -747,7 +747,7 @@ function decodeJsonArgument(value: unknown): unknown {
   const trimmed = value.trim()
   if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return value
   try {
-    return JSON.parse(trimmed) as unknown
+    return JSON.parse(trimmed)
   } catch {
     return value
   }
